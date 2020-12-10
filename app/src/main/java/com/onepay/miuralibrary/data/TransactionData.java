@@ -16,7 +16,7 @@ public class TransactionData {
     private String kSN;
     private String maskedTrack2Data;
 
-    public String getDeviceCode() {
+    public String deviceCode() {
         return deviceCode;
     }
 
@@ -112,7 +112,7 @@ public class TransactionData {
         this.kSN = kSN;
     }
 
-    public String getReturnReason() {
+    public String returnReason() {
         return returnReason;
     }
 
@@ -120,7 +120,7 @@ public class TransactionData {
         this.returnReason = returnReason;
     }
 
-    public String getMaskedTrack2Data() {
+    public String maskedTrack2Data() {
         return maskedTrack2Data;
     }
 
