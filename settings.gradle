@@ -1,0 +1,9 @@
+include ':app'
+rootProject.name = "MiuraLibrary"
+
+def sdkSourceDir = new File(javaSdkSourceDir)
+if (sdkSourceDir.exists()) {
+    includeBuild(sdkSourceDir) {
+        name = 'Miura-Java-SDK'
+    }
+}
