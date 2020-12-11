@@ -31,7 +31,7 @@ public class DeviceApi {
     private static DeviceApi instance = null;
     private DeviceInfoListener listener;
     private DeviceApiData deviceData = null;
-    private String btAddress ="";
+    private String btAddress = "";
 
     public interface DeviceInfoListener {
         void onGetDeviceInfoSuccess(DeviceApiData data);
@@ -48,10 +48,9 @@ public class DeviceApi {
 
     /**
      * @param btAddress Miura device bluetooth address
-     * @param listener  Call back listener for device information
      */
-    public void getDeviceInfo(String btAddress, DeviceInfoListener listener) {
-        this.listener = listener;
+    public void getDeviceInfo(String btAddress) {
+
         this.btAddress = btAddress;
         BluetoothConnect.getInstance().connect(btAddress, new BluetoothConnect.DeviceConnectListener() {
             @Override
@@ -84,6 +83,11 @@ public class DeviceApi {
                 Log.d("TAG", "onDeviceDisconnected: ");
             }
         });
+    }
+
+
+    public void onDeviceInfo(DeviceInfoListener listener) {
+        this.listener = listener;
     }
 
     private void loadDataPED() {
