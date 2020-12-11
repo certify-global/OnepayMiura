@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import com.onepay.miuralibrary.api.Config;
 import com.onepay.miuralibrary.api.Device;
 import com.onepay.miuralibrary.api.Transaction;
 import com.onepay.miuralibrary.data.DeviceData;
@@ -85,5 +86,20 @@ public class MainActivity extends Activity {
 
     public void onCancelTransaction(View view) {
         Transaction.getInstance().cancelTransaction();
+    }
+
+    public void onUpdateConfig(View view){
+        Config.getInstance().performConfig(this, "0C:9A:42:89:2E:B9", new Config.ConfigInfoListener() {
+            @Override
+            public void onConfigSuccess() {
+
+            }
+
+            @Override
+            public void onConfigError(String errorMessage) {
+
+                Log.d("TAG", "Naga1........" + errorMessage);
+            }
+        });
     }
 }
