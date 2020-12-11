@@ -1,6 +1,6 @@
 package com.onepay.miura.data;
 
-public class DeviceData {
+public class DeviceApiData {
     private String address;
     private String type;
     private String serialNumber;

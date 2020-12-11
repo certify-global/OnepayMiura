@@ -17,7 +17,6 @@ import androidx.annotation.WorkerThread;
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.events.ConnectionInfo;
 import com.miurasystems.mpi.events.MpiEventHandler;
-import com.onepay.miura.api.Transaction;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ public class BluetoothModule {
 
     private BluetoothDevice defaultBluetoothDevice;
     private static BluetoothModule instance;
-    private static final String TAG = Transaction.class.getSimpleName();
+    private static final String TAG = BluetoothModule.class.getSimpleName();
 
     @Nullable
     private MyHandler mHandler;

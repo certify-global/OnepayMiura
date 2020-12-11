@@ -17,7 +17,7 @@ import com.miurasystems.mpi.api.objects.SoftwareInfo;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.core.Config;
-import com.onepay.miura.data.DeviceData;
+import com.onepay.miura.data.DeviceApiData;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -26,22 +26,22 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 
-public class Device {
-    private static final String TAG = Device.class.getSimpleName();
-    private static Device instance = null;
+public class DeviceApi {
+    private static final String TAG = DeviceApi.class.getSimpleName();
+    private static DeviceApi instance = null;
     private DeviceInfoListener listener;
-    private DeviceData deviceData = null;
+    private DeviceApiData deviceData = null;
     private String btAddress ="";
 
     public interface DeviceInfoListener {
-        void onGetDeviceInfoSuccess(DeviceData data);
+        void onGetDeviceInfoSuccess(DeviceApiData data);
 
         void onGetDeviceInfoError(String errorMessage);
     }
 
-    public static Device getInstance() {
+    public static DeviceApi getInstance() {
         if (instance == null) {
-            instance = new Device();
+            instance = new DeviceApi();
         }
         return instance;
     }
@@ -87,7 +87,7 @@ public class Device {
     }
 
     private void loadDataPED() {
-        deviceData = new DeviceData();
+        deviceData = new DeviceApiData();
         deviceData.setAddress(btAddress);
         deviceData.setType("PED");
         MiuraManager.getInstance().getBatteryStatus(new ApiBatteryStatusListener() {

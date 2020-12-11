@@ -41,7 +41,7 @@ import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
 import com.onepay.miura.core.Config;
 import com.onepay.miura.core.MiuraApplication;
-import com.onepay.miura.data.TransactionData;
+import com.onepay.miura.data.TransactionApiData;
 import com.onepay.miura.transactions.EmvTransactionAsync;
 import com.onepay.miura.transactions.MagSwipeTransaction;
 import com.onepay.miura.transactions.MagSwipeTransactionAsync;
@@ -56,9 +56,9 @@ import java.util.TimerTask;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
-public class Transaction {
-    private static final String TAG = Transaction.class.getSimpleName();
-    private static Transaction instance = null;
+public class TransactionApi {
+    private static final String TAG = TransactionApi.class.getSimpleName();
+    private static TransactionApi instance = null;
     private float amount = 0f;
     private String description = "";
     private String bluetoothAddress = "";
@@ -77,16 +77,16 @@ public class Transaction {
 
 
     public interface TransactionListener {
-        void onTransactionSuccess(TransactionData data);
+        void onTransactionSuccess(TransactionApiData data);
 
         void onTransactionError(String errorMessage);
 
         void onTransactionAborted(boolean status);
     }
 
-    public static Transaction getInstance() {
+    public static TransactionApi getInstance() {
         if (instance == null) {
-            instance = new Transaction();
+            instance = new TransactionApi();
         }
         return instance;
     }
@@ -590,8 +590,8 @@ public class Transaction {
         transactionInProgress = false;
     }
 
-    private TransactionData createTransactionData(CardData cardData) {
-        TransactionData transactionData = new TransactionData();
+    private TransactionApiData createTransactionData(CardData cardData) {
+        TransactionApiData transactionData = new TransactionApiData();
 
         transactionData.setDeviceId(pedDeviceId);
         transactionData.setAmount(this.amount);

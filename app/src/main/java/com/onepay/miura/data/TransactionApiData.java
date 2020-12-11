@@ -1,6 +1,6 @@
 package com.onepay.miura.data;
 
-public class TransactionData {
+public class TransactionApiData {
     private String deviceCode;
     private String entryMode;
     private String  encryptedCardData;
