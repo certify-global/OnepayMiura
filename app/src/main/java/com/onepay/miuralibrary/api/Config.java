@@ -57,11 +57,14 @@ public class Config {
                     @WorkerThread
                     @Override
                     public void onSuccess(final ArrayList<Capability> capabilities) {
-                        MiuraManager.getInstance().executeAsync(client -> {
-                            try {
-                                doFileUploads(client);
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                        MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
+                            @Override
+                            public void runOnAsyncThread(MpiClient client) {
+                                try {
+                                    doFileUploads(client);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         });
                     }
