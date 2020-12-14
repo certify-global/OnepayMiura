@@ -7,15 +7,17 @@
     tools:context=".MainActivity">
 
     <Button
-    android:id="@+id/deviceInfoButton"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="Info"
-    android:onClick="deviceInfo"
-    app:layout_constraintBottom_toBottomOf="parent"
-    app:layout_constraintLeft_toLeftOf="parent"
-    app:layout_constraintRight_toRightOf="parent"
-    app:layout_constraintTop_toTopOf="parent" />
+        android:id="@+id/deviceInfoButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="deviceInfo"
+        android:text="Info"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.476"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.12" />
 
     <Button
         android:id="@+id/transactionButton"
@@ -23,11 +25,9 @@
         android:layout_height="wrap_content"
         android:onClick="onTransaction"
         android:text="Transaction"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.619" />
+        app:layout_constraintTop_toBottomOf="@+id/deviceInfoButton" />
 
     <Button
         android:id="@+id/cancelTransactionButton"
@@ -35,24 +35,28 @@
         android:layout_height="wrap_content"
         android:onClick="onCancelTransaction"
         android:text="Canacel Transaction"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHorizontal_bias="0.541"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.721" />
+        app:layout_constraintTop_toBottomOf="@+id/onUpdateConfig" />
 
     <Button
         android:id="@+id/onUpdateConfig"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:onClick="onCancelTransaction"
+        android:onClick="onUpdateConfig"
         android:text="Update config"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHorizontal_bias="0.55"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.836" />
+        app:layout_constraintTop_toBottomOf="@+id/transactionButton" />
+
+    <Button
+        android:id="@+id/onManualTransaction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onManualTransaction"
+        android:text="Manual Transaction"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cancelTransactionButton" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

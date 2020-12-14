@@ -8,13 +8,14 @@ import android.widget.Button;
 
 import com.onepay.miuralibrary.api.Config;
 import com.onepay.miuralibrary.api.Device;
+import com.onepay.miuralibrary.api.ManualTransaction;
 import com.onepay.miuralibrary.api.Transaction;
 import com.onepay.miuralibrary.data.DeviceData;
 import com.onepay.miuralibrary.data.TransactionData;
 
 public class MainActivity extends Activity {
 
-    Button deviceInfo, transaction, cancelTransaction;
+    Button deviceInfo, transaction, cancelTransaction, manualTransaction;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,7 +25,7 @@ public class MainActivity extends Activity {
         deviceInfo = findViewById(R.id.deviceInfoButton);
         transaction = findViewById(R.id.transactionButton);
         cancelTransaction = findViewById(R.id.cancelTransactionButton);
-
+        manualTransaction = findViewById(R.id.onManualTransaction);
     }
 
     public void deviceInfo(View view) {
@@ -88,7 +89,7 @@ public class MainActivity extends Activity {
         Transaction.getInstance().cancelTransaction();
     }
 
-    public void onUpdateConfig(View view){
+    public void onUpdateConfig(View view) {
         Config.getInstance().performConfig(this, "0C:9A:42:89:2E:B9", new Config.ConfigInfoListener() {
             @Override
             public void onConfigSuccess() {
@@ -99,6 +100,22 @@ public class MainActivity extends Activity {
             public void onConfigError(String errorMessage) {
 
                 Log.d("TAG", "Naga1........" + errorMessage);
+            }
+        });
+    }
+
+    public void onManualTransaction(View view) {
+        ManualTransaction.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60);
+
+        ManualTransaction.getInstance().performManualTransaction(new ManualTransaction.ManualTransactionListener() {
+            @Override
+            public void onManualTransactionSuccess(String successMessage) {
+
+            }
+
+            @Override
+            public void onManualTransactionError(String errorMessage) {
+
             }
         });
     }

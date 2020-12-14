@@ -12,9 +12,13 @@ import com.miurasystems.mpi.MpiClient;
 import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
+import com.miurasystems.mpi.api.objects.EncryptedPan;
+import com.miurasystems.mpi.enums.GetCommandsOptions;
+import com.miurasystems.mpi.enums.GetEncryptedPanError;
 import com.miurasystems.mpi.tlv.CardData;
 import com.miurasystems.transactions.magswipe.*;
 
+import java.util.EnumSet;
 import java.util.Objects;
 
 public class MagSwipeTransactionAsync {
@@ -28,6 +32,7 @@ public class MagSwipeTransactionAsync {
     private final MpiClient mMpiClient;
     private final MagSwipeTransaction mMagSwipeTransaction;
     private final PaymentMagType mType;
+    public Result<EncryptedPan, GetEncryptedPanError> result = null;
 
     @AnyThread
     public MagSwipeTransactionAsync(MiuraManager miuraManager, PaymentMagType magType) {
@@ -40,6 +45,31 @@ public class MagSwipeTransactionAsync {
         mMpiClient = client;
         mType = magType;
         mMagSwipeTransaction = new MagSwipeTransaction(mMpiClient);
+    }
+
+    public MagSwipeTransactionAsync(MiuraManager miuraManager) {
+        MpiClient client = miuraManager.getMpiClient();
+        if (client == null) {
+            throw new IllegalArgumentException("MiuraManager has a null client?");
+        }
+
+        mMiuraManager = miuraManager;
+        PaymentMagType magType = null;
+        mMpiClient = client;
+        mType = magType;
+        mMagSwipeTransaction = new MagSwipeTransaction(mMpiClient);
+    }
+
+    public void manualTransaction(){
+        EnumSet<GetCommandsOptions> options;
+        options = GetCommandsOptions.makeOptionsSet(
+                GetCommandsOptions.BacklightOn,
+                GetCommandsOptions.KeyboardBacklightOn,
+                GetCommandsOptions.ShowStatusBar);
+
+        //result = mMpiClient.getSecurePan(options, 30);
+        //boolean getPan, boolean getStartDate, boolean getExpiryDate, boolean getCVV, boolean yyMm,
+        result = mMpiClient.getSecureCardData(true, false, true, false, true, options, 30);
     }
 
     @UiThread
