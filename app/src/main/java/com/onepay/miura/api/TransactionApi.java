@@ -611,7 +611,7 @@ public class TransactionApi {
             }
             transactionData.setMaskedTrack2Data(cardData.getMaskedTrack2Data().toString());
             transactionData.setKSN(cardData.getSredKSN().toUpperCase());
-            transactionData.setCardData(cardData.getSredData().toUpperCase());
+            transactionData.setEncryptedCardData(cardData.getSredData().toUpperCase());
             //transactionData.setTransactionType("Swipe");
             transactionData.setReturnStatus(true);
         } else {

@@ -32,11 +32,11 @@ public class TransactionApiData {
         this.entryMode = entryMode;
     }
 
-    public String cardData() {
+    public String encryptedCardData() {
         return encryptedCardData;
     }
 
-    public void setCardData(String cardData) {
+    public void setEncryptedCardData(String cardData) {
         this.encryptedCardData = cardData;
     }
 

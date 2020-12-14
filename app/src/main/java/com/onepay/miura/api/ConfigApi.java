@@ -27,7 +27,7 @@ public class ConfigApi {
     private static final String TAG = ConfigApi.class.getSimpleName();
     private static ConfigApi instance = null;
     private ConfigInfoListener listener;
-    private String btAddress = "";
+    private String bluetoothAddress = "";
     private Context context = null;
 
     public interface ConfigInfoListener {
@@ -43,12 +43,11 @@ public class ConfigApi {
         return instance;
     }
 
-    public void performConfig(Context context, String btAddress, ConfigInfoListener listener) {
+    public void performConfig(Context context, String btAddress) {
         this.context = context;
-        this.listener = listener;
-        this.btAddress = btAddress;
+        bluetoothAddress = btAddress;
 
-        BluetoothConnect.getInstance().connect(btAddress, new BluetoothConnect.DeviceConnectListener() {
+        BluetoothConnect.getInstance().connect(bluetoothAddress, new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
@@ -56,11 +55,14 @@ public class ConfigApi {
                     @WorkerThread
                     @Override
                     public void onSuccess(final ArrayList<Capability> capabilities) {
-                        MiuraManager.getInstance().executeAsync(client -> {
-                            try {
-                                doFileUploads(client);
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                        MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
+                            @Override
+                            public void runOnAsyncThread(MpiClient client) {
+                                try {
+                                    doFileUploads(client);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         });
                     }
@@ -84,6 +86,10 @@ public class ConfigApi {
                 Log.d("TAG", "onDeviceDisconnected: ");
             }
         });
+    }
+
+    public void onConfigInfo(ConfigInfoListener listener) {
+        this.listener = listener;
     }
 
     private void doFileUploads(@NonNull MpiClient client) throws IOException {
