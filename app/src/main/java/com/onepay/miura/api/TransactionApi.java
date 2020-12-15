@@ -424,13 +424,6 @@ public class TransactionApi {
                         if (response != TransactionResponse.UNKNOWN) {
                             text += ": " + response;
                         }
-
-                        if (transactionListener != null) {
-                            returnReason = text;
-                            transactionData.setReturnStatus(2);
-                            transactionListener.onTransactionComplete(createTransactionData(cardData));
-                        }
-
                         resetTransactionState();
                     }
                 });
@@ -480,132 +473,14 @@ public class TransactionApi {
         }
 
         this.cardData = cardData;
-        MagSwipeSummary magSwipeSummary = result.asSuccess().getValue();
-        startSwipeTransaction(magSwipeSummary, PaymentMagType.Auto);
-    }
-
-    @UiThread
-    protected void startSwipeTransaction(
-            MagSwipeSummary magSwipeSummary,
-            PaymentMagType paymentMagType
-    ) {
-        Log.d(TAG, "startSwipeTransaction");
-
-        mMagSwipeTransaction = new MagSwipeTransactionAsync(MiuraManager.getInstance(), paymentMagType);
-        mMagSwipeTransaction.startTransactionAsync(
-                magSwipeSummary,
-                //mStartInfo.mAmountInPennies,
-                (int) this.amount,
-                MiuraApplication.currencyCode.getValue(),
-                new MagSwipeTransactionAsync.Callback() {
-                    @NonNull
-                    @Override
-                    public SignatureSummary getSignatureFromUser()
-                            throws MagSwipeTransactionException {
-                        return getSignature();
-                    }
-
-                    @Override
-                    public void onPinSuccess(
-                            @NonNull final MagSwipeSummary magSwipeSummary,
-                            @NonNull final OnlinePinSummary onlinePinSummary
-                    ) {
-                        Log.d(TAG, "\"Online PIN success, PIN block: " +
-                                onlinePinSummary.mPinData + "\nKSN: "
-                                + onlinePinSummary.mPinKSN);
-
-                        Log.d(TAG, "Transaction Success");
-                        if (transactionListener != null) {
-                            transactionListener.onTransactionComplete(createTransactionData(cardData));
-                        }
-
-                        transactionInProgress = false;
-
-                        deregisterEventHandlers();
-                        BluetoothModule.getInstance().closeSession();
-                        clearTransactionData();
-                    }
-
-                    @Override
-                    public void onSignatureSuccess(
-                            @NonNull final MagSwipeSummary magSwipeSummary,
-                            @NonNull final SignatureSummary signature
-                    ) {
-
-                        Log.d(TAG, "Transaction Success");
-                        if (transactionListener != null) {
-                            transactionListener.onTransactionComplete(createTransactionData(cardData));
-                        }
-
-                        transactionInProgress = false;
-
-                        deregisterEventHandlers();
-                        BluetoothModule.getInstance().closeSession();
-                        clearTransactionData();
-                    }
-
-                    @Override
-                    public void onError(
-                            final @NonNull MagSwipeTransactionException exception
-                    ) {
-                        resetTransactionState();
-                        Log.d(TAG, "Naga.......onError: ");
-                        if (transactionListener != null) {
-                            if (transactionListener != null) {
-                                returnReason = exception.getMessage();
-                                transactionData.setReturnStatus(2);
-                                transactionListener.onTransactionComplete(createTransactionData(cardData));
-                            }
-                            if (exception.mErrorCode == null) {
-                                if (transactionListener != null) {
-                                    returnReason = "Transaction Error: " + exception.getMessage();
-                                    transactionData.setReturnStatus(2);
-                                    transactionListener.onTransactionComplete(createTransactionData(cardData));
-                                }
-                            } else {
-                                OnlinePINError error = exception.mErrorCode;
-                                if (OnlinePINError.NO_PIN_KEY == error) {
-                                    if (transactionListener != null) {
-                                        returnReason = "Online PIN error: No PIN key installed.";
-                                        transactionData.setReturnStatus(2);
-                                        transactionListener.onTransactionComplete(createTransactionData(cardData));
-                                    }
-                                } else {
-                                    if (OnlinePINError.INVALID_PARAM == error) {
-                                        Log.d(TAG, "Invalid parameter sent " + "to online PIN command.");
-                                        if (transactionListener != null) {
-                                            returnReason = "Invalid parameter sent " + "to online PIN command.";
-                                            transactionData.setReturnStatus(2);
-                                            transactionListener.onTransactionComplete(createTransactionData(cardData));
-                                        }
-                                    }
-                                    if (transactionListener != null) {
-                                        returnReason = "Online PIN error: Error performing online PIN. "
-                                                + "Retrieve log from PED.";
-                                        transactionData.setReturnStatus(2);
-                                        transactionListener.onTransactionComplete(createTransactionData(cardData));
-                                    }
-                                }
-                            }
-                        }
-                        clearTransactionData();
-                    }
-                });
-    }
-
-
-    private SignatureSummary getSignature() {
-        SignatureSummary signatureSummary = new SignatureSummary(Constants.bitmapValue);
-
-        try {
-            SynchronousQueue<SignatureSummary> mSignatureQueue = new SynchronousQueue<>();
-            mSignatureQueue.offer(signatureSummary, 15L, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (transactionListener != null) {
+            transactionListener.onTransactionComplete(createTransactionData(cardData));
         }
-
-        return signatureSummary;
+        BluetoothModule.getInstance().closeSession();
+        clearTransactionData();
+        clearData();
     }
+
 
     private void deregisterEventHandlers() {
         MPI_EVENTS.CardStatusChanged.deregister(mCardEventHandler);
