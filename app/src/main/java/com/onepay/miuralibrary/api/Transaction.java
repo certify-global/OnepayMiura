@@ -418,9 +418,9 @@ public class Transaction {
                             text += ": " + response;
                         }
 
-                        if (transactionListener != null) {
+                        /*if (transactionListener != null) {
                             transactionListener.onTransactionError(text);
-                        }
+                        }*/
 
                         resetTransactionState();
                     }
@@ -434,6 +434,7 @@ public class Transaction {
             return;
         }
         mEmvTransactionAsync.abortTransactionAsync(listener);
+        //mEmvTransactionAsync = null;
     }
 
     private void abortSwipeTransactionAsync(@Nullable MiuraDefaultListener listener) {
@@ -444,6 +445,7 @@ public class Transaction {
             return;
         }
         mMagSwipeTransaction.abortTransactionAsync(listener);
+        //mMagSwipeTransaction = null;
     }
 
 
@@ -455,6 +457,16 @@ public class Transaction {
         EmvChipInsertStatus insertStatus = EmvTransactionAsync.canProcessEmvChip(cardData);
         if (insertStatus == EmvChipInsertStatus.CardInsertedOk) {
             startEmvTransaction(EmvTransactionType.Chip);
+            return;
+        }
+
+        Result<MagSwipeSummary, MagSwipeError> result =
+                MagSwipeTransaction.canProcessMagSwipe(cardData);
+        if (result.isError()) {
+            MagSwipeError error = result.asError().getError();
+            resetTransactionState();
+            //transactionListener.onTransactionError("SWIPE ERROR Please try again");
+            Log.d(TAG, "SWIPE ERROR Please try again");
             return;
         }
 
