@@ -1,0 +1,79 @@
+﻿<metadata>
+	<!--
+  This sample removes the class: android.support.v4.content.AsyncTaskLoader.LoadTask:
+  <remove-node path="/api/package[@name='android.support.v4.content']/class[@name='AsyncTaskLoader.LoadTask']" />
+  
+  This sample removes the method: android.support.v4.content.CursorLoader.loadInBackground:
+  <remove-node path="/api/package[@name='android.support.v4.content']/class[@name='CursorLoader']/method[@name='loadInBackground']" />
+
+ 
+
+ -->
+
+
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetDeviceFileListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='byte[]']]" name="argsType">ApiDeviceFileListenerSuccessEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetDeviceFileListener']/method[@name='onProgress' and count(parameter)=1 and parameter[1][@type='float']]" name="argsType">ApiDeviceFileListenerProgressEventArgs</attr>
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetConfigListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='java.util.HashMap&lt;java.lang.String, java.lang.String&gt;']]" name="argsType">ApiConfigListenerSuccessEventArgs</attr>
+
+
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiMenuOptionListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='java.lang.String']]" name="argsType">ApiMenuOptionListenerSuccessEventArgs</attr>
+
+
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiPeripheralTypeListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='java.util.ArrayList&lt;java.lang.String&gt;']]" name="argsType">ApiPeripheralTypeListenerSuccessEventArgs</attr>
+
+
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiStartTransactionListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='byte[]']]" name="argsType">ApiStartTransactionListenerSuccessEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiStartTransactionListener']/method[@name='onError' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.enums.TransactionResponse']]" name="argsType">ApiStartTransactionListenerErrorEventArgs</attr>
+
+
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetNumericDataListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='java.lang.String']]" name="argsType">ApiGetNumericDataListenerSuccessEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetNumericDataListener']/method[@name='onError' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.enums.GetNumericDataError']]" name="argsType">ApiGetNumericDataListenerErrorEventArgs</attr>
+
+
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiContinueTransactionListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.enums.TransactionResponse']]" name="argsType">ApiContinueTransactionListenerSuccessEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiContinueTransactionListener']/method[@name='onError' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.enums.TransactionResponse']]" name="argsType">ApiContinueTransactionListenerErrorEventArgs</attr>
+
+
+
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetConfigListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramHashMap</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiPeripheralTypeListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramArrayList</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiBlueToothInfoListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramHashMap</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiCardStatusListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramCardData</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiCashDrawerListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramBoolean</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiContinueTransactionListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramArrayOfbyte</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetDeviceFileStreamListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramOutputStream</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetDeviceInfoListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramArrayList</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetDynamicTipListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramInt</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetSecureDataListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramEncryptedPan</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetSoftwareInfoListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramSoftwareInfo</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetSystemClockListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramDate</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiListFilesListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramList</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiP2PEStatusListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramP2PEStatus</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiPrinterStatusListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramPrinterStatus</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiTouchCaptureStatusListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramTouchCaptureStatus</attr>
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiStartTransactionListener']/method[@name='onError']/parameter[1]" name="managedName">paramTransactionResponse</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetNumericDataListener']/method[@name='onError']/parameter[1]" name="managedName">paramGetNumericDataError</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiContinueTransactionListener']/method[@name='onError']/parameter[1]" name="managedName">paramTransactionResponse</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetDeviceFileStreamListener']/method[@name='onError']/parameter[1]" name="managedName">paramOutputStream</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetDynamicTipListener']/method[@name='onError']/parameter[1]" name="managedName">paramGetNumericDataError</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetSecureDataListener']/method[@name='onError']/parameter[1]" name="managedName">paramGetEncryptedPanError</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiOnlinePinListener']/method[@name='onError']/parameter[1]" name="managedName">paramOnlinePINError</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiP2PEImportListener']/method[@name='onError']/parameter[1]" name="managedName">paramRKIError</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiMenuOptionListener']/method[@name='onError']/parameter[1]" name="managedName">paramGetMenuOptionError</attr>
+
+
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='APITransferFileListener']/method[@name='onProgress']/parameter[1]" name="managedName">paramInt</attr>
+
+
+
+</metadata>
