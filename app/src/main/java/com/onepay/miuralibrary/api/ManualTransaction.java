@@ -2,10 +2,8 @@ package com.onepay.miuralibrary.api;
 
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
-import android.util.Base64;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import com.miurasystems.mpi.MpiClient;
@@ -13,7 +11,6 @@ import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.ApiGetDeviceInfoListener;
 import com.miurasystems.mpi.api.listener.ApiGetSoftwareInfoListener;
-import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.BatteryData;
 import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.objects.EncryptedPan;
@@ -31,13 +28,14 @@ import com.onepay.miuralibrary.bluetooth.BluetoothConnect;
 import com.onepay.miuralibrary.bluetooth.BluetoothModule;
 import com.onepay.miuralibrary.core.Config;
 import com.onepay.miuralibrary.data.TransactionData;
-import com.onepay.miuralibrary.transactions.MagSwipeTransactionAsync;
+import com.onepay.miuralibrary.transactions.ManualTransactionAsync;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ManualTransaction {
 
@@ -49,7 +47,9 @@ public class ManualTransaction {
     private String description = "";
     private String bluetoothAddress = "";
     private String pedDeviceId = "";
-    private MagSwipeTransactionAsync mEmvTransactionAsync;
+    private Timer mTimer;
+    private int mTransactionTime = 60;
+    private ManualTransactionAsync mManualTransactionAsync;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
 
     public interface ManualTransactionListener {
@@ -92,7 +92,7 @@ public class ManualTransaction {
         this.manualTransactionListener = listener;
         if (bluetoothAddress.isEmpty() || amount == 0) {
             if (listener != null) {
-                //listener.onManualTransactionSuccess("Invalid Transaction parameters");
+                listener.onManualTransactionError("Invalid Transaction parameters");
             }
             return;
         }
@@ -282,11 +282,11 @@ public class ManualTransaction {
         @Override
         public void handle(@NonNull CardData cardData) {
             Log.d(TAG, "cardData " + cardData);
-            handleTransactionEvent(cardData);
+            handleTransactionEvent();
         }
     };
 
-    protected void handleTransactionEvent(CardData cardData) {
+    protected void handleTransactionEvent() {
         if (!BluetoothModule.getInstance().isSessionOpen()) {
             return;
         }
@@ -294,15 +294,19 @@ public class ManualTransaction {
     }
 
     private void startManualTransaction() {
-        mEmvTransactionAsync = new MagSwipeTransactionAsync(MiuraManager.getInstance());
-        mEmvTransactionAsync.manualTransaction();
+        startTransactionTimer();
 
-        Result<EncryptedPan, GetEncryptedPanError> result = mEmvTransactionAsync.result;
+        mManualTransactionAsync = new ManualTransactionAsync(MiuraManager.getInstance());
+        mManualTransactionAsync.manualTransaction();
+
+        Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
         EncryptedPan data = result.asSuccess().getValue();
         manualTransactionListener.onManualTransactionSuccess(createTransactionData(data));
 
         //ClearData
         BluetoothModule.getInstance().closeSession();
+        clearTransactionData();
+        clearData();
     }
 
     private TransactionData createTransactionData(EncryptedPan data) {
@@ -352,5 +356,41 @@ public class ManualTransaction {
         MPI_EVENTS.DeviceStatusChanged.deregister(mDeviceStatusHandler);
     }
 
-    // ClearData
+    /**
+     * Transaction Timer
+     */
+    private void startTransactionTimer() {
+        cancelTransactionTimer();
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            public void run() {
+                cancelTransaction();
+                this.cancel();
+            }
+        }, mTransactionTime * 1000);
+    }
+
+    private void cancelTransactionTimer() {
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
+    }
+
+    /**
+     * Method that reset the transaction parameters
+     */
+    private void clearTransactionData(){
+        mManualTransactionAsync = null;
+        cancelTransactionTimer();
+    }
+
+    /**
+     * Method that reset the transaction status
+     */
+    public void clearData() {
+        this.pedDeviceId = "";
+        this.amount = 0.0f;
+        this.description = "";
+    }
 }

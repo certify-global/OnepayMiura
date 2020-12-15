@@ -476,6 +476,7 @@ public class Transaction {
         }
         BluetoothModule.getInstance().closeSession();
         clearTransactionData();
+        clearData();
     }
 
     private void deregisterEventHandlers() {
