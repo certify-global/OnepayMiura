@@ -14,8 +14,8 @@ import com.miurasystems.mpi.api.utils.DisplayTextUtils;
 import com.miurasystems.mpi.enums.InterfaceType;
 import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SelectFileMode;
-import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
+import com.onepay.miura.data.ConfigApiData;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,11 +29,10 @@ public class ConfigApi {
     private ConfigInfoListener listener;
     private String bluetoothAddress = "";
     private Context context = null;
+    private ConfigApiData configData = null;
 
     public interface ConfigInfoListener {
-        void onConfigSuccess(String successMessage);
-
-        void onConfigError(String errorMessage);
+        void onConfigUpdateComplete(ConfigApiData data);
     }
 
     public static ConfigApi getInstance() {
@@ -47,7 +46,7 @@ public class ConfigApi {
         this.context = context;
         bluetoothAddress = btAddress;
 
-        BluetoothConnect.getInstance().connect(bluetoothAddress, new BluetoothConnect.DeviceConnectListener() {
+        ConnectApi.getInstance().connect(bluetoothAddress, new ConnectApi.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
@@ -144,14 +143,18 @@ public class ConfigApi {
         }
 
         if (listener != null) {
-            listener.onConfigSuccess("Success");
+            configData.setReturnStatus(1);
+            configData.setReturnReason("Success");
+            listener.onConfigUpdateComplete(configData);
         }
         client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
     }
 
     private void showBadFileUploadMessage(final String filename) {
+        configData.setReturnStatus(2);
+        configData.setReturnReason(" uploaded Error");
         if (listener != null) {
-            listener.onConfigError("Invalid Transaction parameters");
+            listener.onConfigUpdateComplete(configData);
         }
         Log.d(TAG, filename + " uploaded Error");
         closeSession(true);

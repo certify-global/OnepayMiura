@@ -1,4 +1,4 @@
-package com.onepay.miura.bluetooth;
+package com.onepay.miura.api;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -6,13 +6,16 @@ import android.bluetooth.BluetoothDevice;
 import androidx.annotation.UiThread;
 
 import com.miurasystems.mpi.api.executor.MiuraManager;
+import com.onepay.miura.bluetooth.BluetoothConnectionListener;
+import com.onepay.miura.bluetooth.BluetoothDeviceType;
+import com.onepay.miura.bluetooth.BluetoothModule;
 
-public class BluetoothConnect {
+public class ConnectApi {
 
     private BluetoothDevice mBluetoothDevice;
     private BluetoothDeviceType mDeviceType;
     private DeviceConnectListener connectListener;
-    private static BluetoothConnect instance = null;
+    private static ConnectApi instance = null;
 
     public interface DeviceConnectListener {
         void onConnectionSuccess();
@@ -22,9 +25,9 @@ public class BluetoothConnect {
         void onDeviceDisconnected();
     }
 
-    public static BluetoothConnect getInstance() {
+    public static ConnectApi getInstance() {
         if (instance == null) {
-            instance = new BluetoothConnect();
+            instance = new ConnectApi();
         }
         return instance;
     }

@@ -36,7 +36,6 @@ import com.miurasystems.transactions.magswipe.MagSwipeSummary;
 import com.miurasystems.transactions.magswipe.MagSwipeTransactionException;
 import com.miurasystems.transactions.magswipe.OnlinePinSummary;
 import com.miurasystems.transactions.magswipe.PaymentMagType;
-import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
 import com.onepay.miura.core.Config;
@@ -70,6 +69,7 @@ public class TransactionApi {
     private String pedDeviceId = "";
     private CardData cardData = null;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
+    TransactionApiData transactionData = null;
     @Nullable
     private EmvTransactionAsync mEmvTransactionAsync;
     @Nullable
@@ -77,11 +77,7 @@ public class TransactionApi {
 
 
     public interface TransactionListener {
-        void onTransactionSuccess(TransactionApiData data);
-
-        void onTransactionError(String errorMessage);
-
-        void onTransactionAborted(boolean status);
+        void onTransactionComplete(TransactionApiData data);
     }
 
     public static TransactionApi getInstance() {
@@ -106,12 +102,14 @@ public class TransactionApi {
         if (btAddress != null)
             this.bluetoothAddress = btAddress;
         this.mTransactionTime = tOut;
+        transactionData = new TransactionApiData();
     }
 
     /**
      * Method that initiate for canceling transaction
      */
     public void cancelTransaction() {
+        transactionData.setReturnStatus(3);
         if(mEmvTransactionAsync == null){
             return;
         }
@@ -126,7 +124,9 @@ public class TransactionApi {
                 BluetoothModule.getInstance().closeSession();
 
                 if (transactionListener != null) {
-                    transactionListener.onTransactionAborted(true);
+                    returnReason= "Abort success";
+                    transactionData.setReturnStatus(3);
+                    transactionListener.onTransactionComplete(createTransactionData(cardData));
                 }
             }
 
@@ -137,7 +137,9 @@ public class TransactionApi {
                 BluetoothModule.getInstance().closeSession();
 
                 if (transactionListener != null) {
-                    transactionListener.onTransactionAborted(false);
+                    returnReason= "Abort success";
+                    transactionData.setReturnStatus(3);
+                    transactionListener.onTransactionComplete(createTransactionData(cardData));
                 }
             }
         };
@@ -155,8 +157,10 @@ public class TransactionApi {
     public void performTransaction(final TransactionListener listener) {
         this.transactionListener = listener;
         if (bluetoothAddress.isEmpty() || amount == 0) {
-            if (listener != null) {
-                listener.onTransactionError("Invalid Transaction parameters");
+            if (transactionListener != null) {
+                returnReason= "Invalid Transaction parameters";
+                transactionData.setReturnStatus(2);
+                transactionListener.onTransactionComplete(createTransactionData(cardData));
             }
             return;
         }
@@ -165,7 +169,7 @@ public class TransactionApi {
         }
         transactionInProgress = true;
 
-        BluetoothConnect.getInstance().connect(this.bluetoothAddress, new BluetoothConnect.DeviceConnectListener() {
+        ConnectApi.getInstance().connect(this.bluetoothAddress, new ConnectApi.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
@@ -189,17 +193,20 @@ public class TransactionApi {
             public void onConnectionError() {
                 Log.d("TAG", "onConnectionError: ");
                 if (transactionListener != null) {
-                    transactionListener.onTransactionError("Bluetooth Connection Error");
                     returnReason = "Bluetooth Connection Error";
+                    transactionData.setReturnStatus(2);
+                    transactionListener.onTransactionComplete(createTransactionData(cardData));
                 }
             }
 
             @Override
             public void onDeviceDisconnected() {
                 Log.d("TAG", "onDeviceDisconnected: ");
+
                 if (transactionListener != null) {
-                    transactionListener.onTransactionError("Bluetooth Disconnected");
                     returnReason = "Bluetooth Disconnected";
+                    transactionData.setReturnStatus(2);
+                    transactionListener.onTransactionComplete(createTransactionData(cardData));
                 }
             }
         });
@@ -224,8 +231,9 @@ public class TransactionApi {
         if (!(keys.contains("Contactless"))) {
             Log.d(TAG, "PED device doesn't support ContactLess");
             if (transactionListener != null) {
-                transactionListener.onTransactionError("PED device doesn't support ContactLess");
                 returnReason = "PED device doesn't support ContactLess";
+                transactionData.setReturnStatus(2);
+                transactionListener.onTransactionComplete(createTransactionData(cardData));
             }
         }
 
@@ -418,7 +426,9 @@ public class TransactionApi {
                         }
 
                         if (transactionListener != null) {
-                            transactionListener.onTransactionError(text);
+                            returnReason = text;
+                            transactionData.setReturnStatus(2);
+                            transactionListener.onTransactionComplete(createTransactionData(cardData));
                         }
 
                         resetTransactionState();
@@ -506,7 +516,7 @@ public class TransactionApi {
 
                         Log.d(TAG, "Transaction Success");
                         if (transactionListener != null) {
-                            transactionListener.onTransactionSuccess(createTransactionData(cardData));
+                            transactionListener.onTransactionComplete(createTransactionData(cardData));
                         }
 
                         transactionInProgress = false;
@@ -524,7 +534,7 @@ public class TransactionApi {
 
                         Log.d(TAG, "Transaction Success");
                         if (transactionListener != null) {
-                            transactionListener.onTransactionSuccess(createTransactionData(cardData));
+                            transactionListener.onTransactionComplete(createTransactionData(cardData));
                         }
 
                         transactionInProgress = false;
@@ -541,24 +551,40 @@ public class TransactionApi {
                         resetTransactionState();
                         Log.d(TAG, "Naga.......onError: ");
                         if (transactionListener != null) {
-                            transactionListener.onTransactionError(exception.getMessage());
-                            returnReason = exception.getMessage();
+                            if (transactionListener != null) {
+                                returnReason = exception.getMessage();
+                                transactionData.setReturnStatus(2);
+                                transactionListener.onTransactionComplete(createTransactionData(cardData));
+                            }
                             if (exception.mErrorCode == null) {
-                                transactionListener.onTransactionError("Transaction Error: " + exception.getMessage());
-                                returnReason = "Transaction Error: " + exception.getMessage();
+                                if (transactionListener != null) {
+                                    returnReason = "Transaction Error: " + exception.getMessage();
+                                    transactionData.setReturnStatus(2);
+                                    transactionListener.onTransactionComplete(createTransactionData(cardData));
+                                }
                             } else {
                                 OnlinePINError error = exception.mErrorCode;
                                 if (OnlinePINError.NO_PIN_KEY == error) {
-                                    transactionListener.onTransactionError("Online PIN error: No PIN key installed.");
-                                    returnReason = "Online PIN error: No PIN key installed.";
+                                    if (transactionListener != null) {
+                                        returnReason = "Online PIN error: No PIN key installed.";
+                                        transactionData.setReturnStatus(2);
+                                        transactionListener.onTransactionComplete(createTransactionData(cardData));
+                                    }
                                 } else {
                                     if (OnlinePINError.INVALID_PARAM == error) {
                                         Log.d(TAG, "Invalid parameter sent " + "to online PIN command.");
+                                        if (transactionListener != null) {
+                                            returnReason = "Invalid parameter sent " + "to online PIN command.";
+                                            transactionData.setReturnStatus(2);
+                                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                                        }
                                     }
-                                    transactionListener.onTransactionError("Online PIN error: Error performing online PIN. "
-                                            + "Retrieve log from PED.");
-                                    returnReason = "Online PIN error: Error performing online PIN. "
-                                            + "Retrieve log from PED.";
+                                    if (transactionListener != null) {
+                                        returnReason = "Online PIN error: Error performing online PIN. "
+                                                + "Retrieve log from PED.";
+                                        transactionData.setReturnStatus(2);
+                                        transactionListener.onTransactionComplete(createTransactionData(cardData));
+                                    }
                                 }
                             }
                         }
@@ -591,7 +617,6 @@ public class TransactionApi {
     }
 
     private TransactionApiData createTransactionData(CardData cardData) {
-        TransactionApiData transactionData = new TransactionApiData();
 
         transactionData.setDeviceId(pedDeviceId);
         transactionData.setAmount(this.amount);
@@ -613,10 +638,11 @@ public class TransactionApi {
             transactionData.setKSN(cardData.getSredKSN().toUpperCase());
             transactionData.setEncryptedCardData(cardData.getSredData().toUpperCase());
             //transactionData.setTransactionType("Swipe");
-            transactionData.setReturnStatus(true);
+            transactionData.setReturnStatus(1);
         } else {
-            transactionData.setReturnStatus(false);
+            transactionData.setReturnStatus(2);
         }
+        transactionInProgress = true;
         return transactionData;
     }
 

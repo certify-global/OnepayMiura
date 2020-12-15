@@ -14,7 +14,6 @@ import com.miurasystems.mpi.api.listener.ApiP2PEStatusListener;
 import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.objects.P2PEStatus;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
-import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.core.Config;
 import com.onepay.miura.data.DeviceApiData;
@@ -34,9 +33,7 @@ public class DeviceApi {
     private String btAddress = "";
 
     public interface DeviceInfoListener {
-        void onGetDeviceInfoSuccess(DeviceApiData data);
-
-        void onGetDeviceInfoError(String errorMessage);
+        void onGetDeviceInfoComplete(DeviceApiData data);
     }
 
     public static DeviceApi getInstance() {
@@ -52,7 +49,7 @@ public class DeviceApi {
     public void getDeviceInfo(String btAddress) {
 
         this.btAddress = btAddress;
-        BluetoothConnect.getInstance().connect(btAddress, new BluetoothConnect.DeviceConnectListener() {
+        ConnectApi.getInstance().connect(btAddress, new ConnectApi.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
@@ -76,11 +73,21 @@ public class DeviceApi {
             @Override
             public void onConnectionError() {
                 Log.d("TAG", "onConnectionError: ");
+                if (listener != null) {
+                    deviceData.setReturnStatus(2);
+                    deviceData.setReturnReason("onConnectionError: ");
+                    listener.onGetDeviceInfoComplete(deviceData);
+                }
             }
 
             @Override
             public void onDeviceDisconnected() {
                 Log.d("TAG", "onDeviceDisconnected: ");
+                if (listener != null) {
+                    deviceData.setReturnStatus(2);
+                    deviceData.setReturnReason("onDeviceDisconnected: ");
+                    listener.onGetDeviceInfoComplete(deviceData);
+                }
             }
         });
     }
@@ -123,9 +130,11 @@ public class DeviceApi {
                         deviceData.setOsVersion(softwareInfo.getOsVersion());
                         deviceData.setMpiType(softwareInfo.getMpiType());
                         deviceData.setMpiVersion(softwareInfo.getMpiVersion());
+                        deviceData.setReturnStatus(1);
+                        deviceData.setReturnReason("Success");
 
                         if (listener != null) {
-                            listener.onGetDeviceInfoSuccess(deviceData);
+                            listener.onGetDeviceInfoComplete(deviceData);
                         }
 
                         MiuraManager.getInstance().getPEDConfig(new ApiGetConfigListener() {
@@ -170,9 +179,8 @@ public class DeviceApi {
                                     @WorkerThread
                                     @Override
                                     public void onError() {
-                                        if (listener != null) {
-                                            listener.onGetDeviceInfoError("Error! device p2peStatus");
-                                        }
+                                        deviceData.setReturnStatus(2);
+                                        deviceData.setReturnReason("Error! device p2peStatus");
                                     }
                                 });
                             }
@@ -180,9 +188,8 @@ public class DeviceApi {
                             @WorkerThread
                             @Override
                             public void onError() {
-                                if (listener != null) {
-                                    listener.onGetDeviceInfoError("Error! device config fetch failed");
-                                }
+                                deviceData.setReturnStatus(2);
+                                deviceData.setReturnReason("Error! device config fetch failed");
                             }
                         });
                     }
@@ -190,9 +197,8 @@ public class DeviceApi {
                     @WorkerThread
                     @Override
                     public void onError() {
-                        if (listener != null) {
-                            listener.onGetDeviceInfoError("Error! Couldn't find the MIURA device");
-                        }
+                        deviceData.setReturnStatus(2);
+                        deviceData.setReturnReason("Error! Couldn't find the MIURA device");
                         closeSession(true);
                     }
                 });

@@ -5,7 +5,7 @@ public class TransactionApiData {
     private String entryMode;
     private String  encryptedCardData;
     private float amount;
-    private boolean returnStatus;
+    private int returnStatus;
     private String returnReason;
     private String cardHolderName;
     private String cardNumber;
@@ -48,11 +48,11 @@ public class TransactionApiData {
         this.amount = amount;
     }
 
-    public boolean returnStatus() {
+    public int returnStatus() {
         return returnStatus;
     }
 
-    public void setReturnStatus(boolean returnStatus) {
+    public void setReturnStatus(int returnStatus) {
         this.returnStatus = returnStatus;
     }
 
