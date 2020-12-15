@@ -1,20 +1,25 @@
 package com.onepay.miuralibrary.api;
 
 import android.bluetooth.BluetoothDevice;
-import android.content.Context;
 import android.util.Log;
+import android.util.Base64;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import com.miurasystems.mpi.MpiClient;
+import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.ApiGetDeviceInfoListener;
 import com.miurasystems.mpi.api.listener.ApiGetSoftwareInfoListener;
+import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.BatteryData;
 import com.miurasystems.mpi.api.objects.Capability;
+import com.miurasystems.mpi.api.objects.EncryptedPan;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
 import com.miurasystems.mpi.enums.DeviceStatus;
+import com.miurasystems.mpi.enums.GetEncryptedPanError;
 import com.miurasystems.mpi.enums.InterfaceType;
 import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SystemLogMode;
@@ -25,8 +30,10 @@ import com.miurasystems.mpi.tlv.CardData;
 import com.onepay.miuralibrary.bluetooth.BluetoothConnect;
 import com.onepay.miuralibrary.bluetooth.BluetoothModule;
 import com.onepay.miuralibrary.core.Config;
+import com.onepay.miuralibrary.data.TransactionData;
 import com.onepay.miuralibrary.transactions.MagSwipeTransactionAsync;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -37,20 +44,20 @@ public class ManualTransaction {
     private static final String TAG = ManualTransaction.class.getSimpleName();
     private static ManualTransaction instance = null;
     private ManualTransactionListener manualTransactionListener;
-    private String btAddress = "";
-    private Context context = null;
     private String returnReason = "";
     private float amount = 0f;
     private String description = "";
     private String bluetoothAddress = "";
     private String pedDeviceId = "";
-    private MagSwipeTransactionAsync mTransaction;
+    private MagSwipeTransactionAsync mEmvTransactionAsync;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
 
     public interface ManualTransactionListener {
-        void onManualTransactionSuccess(String successMessage);
+        void onManualTransactionSuccess(TransactionData data);
 
         void onManualTransactionError(String errorMessage);
+
+        void onManualTransactionAborted(boolean status);
     }
 
     public static ManualTransaction getInstance() {
@@ -85,7 +92,7 @@ public class ManualTransaction {
         this.manualTransactionListener = listener;
         if (bluetoothAddress.isEmpty() || amount == 0) {
             if (listener != null) {
-                listener.onManualTransactionSuccess("Invalid Transaction parameters");
+                //listener.onManualTransactionSuccess("Invalid Transaction parameters");
             }
             return;
         }
@@ -127,6 +134,11 @@ public class ManualTransaction {
                 }
             }
         });
+    }
+
+    public void cancelTransaction() {
+        deregisterEventHandlers();
+        BluetoothModule.getInstance().closeSession();
     }
 
     private void startPayment() {
@@ -282,7 +294,63 @@ public class ManualTransaction {
     }
 
     private void startManualTransaction() {
-        mTransaction = new MagSwipeTransactionAsync(MiuraManager.getInstance());
-        mTransaction.manualTransaction();
+        mEmvTransactionAsync = new MagSwipeTransactionAsync(MiuraManager.getInstance());
+        mEmvTransactionAsync.manualTransaction();
+
+        Result<EncryptedPan, GetEncryptedPanError> result = mEmvTransactionAsync.result;
+        EncryptedPan data = result.asSuccess().getValue();
+        manualTransactionListener.onManualTransactionSuccess(createTransactionData(data));
+
+        //ClearData
+        BluetoothModule.getInstance().closeSession();
     }
+
+    private TransactionData createTransactionData(EncryptedPan data) {
+        TransactionData transactionData = new TransactionData();
+
+        transactionData.setDeviceId(pedDeviceId);
+        transactionData.setAmount(this.amount);
+        transactionData.setReturnReason(returnReason);
+        transactionData.setDeviceCode("41");
+        if (data != null) {
+            if (data.RedactedPan != null) {
+                transactionData.setCardNumber(data.RedactedPan);
+                String number = data.RedactedPan;
+
+                if (!number.isEmpty() && number.length() > 4) {
+                    transactionData.setAccountFirstFour(number.substring(0, 4));
+                    transactionData.setAccountLastFour(number.substring(number.length() - 4));
+                }
+            }
+            String ksn = bytesToHexString(data.P2peSredKsn);
+            String cardEncytpedData =  bytesToHexString(data.P2peSredData);
+            transactionData.setKSN(ksn.toUpperCase());
+            transactionData.setCardData(cardEncytpedData.toUpperCase());
+            transactionData.setReturnStatus(true);
+        } else {
+            transactionData.setReturnStatus(false);
+        }
+        return transactionData;
+    }
+
+    public static String bytesToHexString(byte[] src) {
+        StringBuilder stringBuilder = new StringBuilder("");
+        if (src == null || src.length <= 0) {
+            return null;
+        }
+        char[] buffer = new char[2];
+        for (int i = 0; i < src.length; i++) {
+            buffer[0] = Character.forDigit((src[i] >>> 4) & 0x0F, 16);
+            buffer[1] = Character.forDigit(src[i] & 0x0F, 16);
+            stringBuilder.append(buffer);
+        }
+        return stringBuilder.toString();
+    }
+
+    private void deregisterEventHandlers() {
+        MPI_EVENTS.CardStatusChanged.deregister(mCardEventHandler);
+        MPI_EVENTS.DeviceStatusChanged.deregister(mDeviceStatusHandler);
+    }
+
+    // ClearData
 }

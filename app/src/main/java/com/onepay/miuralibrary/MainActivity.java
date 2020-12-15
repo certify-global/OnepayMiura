@@ -6,16 +6,18 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.onepay.miuralibrary.api.Config;
 import com.onepay.miuralibrary.api.Device;
 import com.onepay.miuralibrary.api.ManualTransaction;
 import com.onepay.miuralibrary.api.Transaction;
+import com.onepay.miuralibrary.bluetooth.BluetoothModule;
 import com.onepay.miuralibrary.data.DeviceData;
 import com.onepay.miuralibrary.data.TransactionData;
 
 public class MainActivity extends Activity {
 
-    Button deviceInfo, transaction, cancelTransaction, manualTransaction;
+    Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +28,7 @@ public class MainActivity extends Activity {
         transaction = findViewById(R.id.transactionButton);
         cancelTransaction = findViewById(R.id.cancelTransactionButton);
         manualTransaction = findViewById(R.id.onManualTransaction);
+        cancelManualTransaction = findViewById(R.id.onManualCancelTransaction);
     }
 
     public void deviceInfo(View view) {
@@ -108,8 +111,9 @@ public class MainActivity extends Activity {
         ManualTransaction.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60);
 
         ManualTransaction.getInstance().performManualTransaction(new ManualTransaction.ManualTransactionListener() {
+
             @Override
-            public void onManualTransactionSuccess(String successMessage) {
+            public void onManualTransactionSuccess(TransactionData data) {
 
             }
 
@@ -117,6 +121,18 @@ public class MainActivity extends Activity {
             public void onManualTransactionError(String errorMessage) {
 
             }
+
+            @Override
+            public void onManualTransactionAborted(boolean status) {
+
+            }
         });
+    }
+
+    public void onCancelManualTransaction(View view){
+        /**
+         * Method that initiate for canceling transaction
+         */
+        ManualTransaction.getInstance().cancelTransaction();
     }
 }
