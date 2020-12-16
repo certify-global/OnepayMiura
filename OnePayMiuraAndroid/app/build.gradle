@@ -1,10 +1,11 @@
-apply plugin: 'com.android.library'
+apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.2"
 
     defaultConfig {
+        applicationId "com.onepay.miuralibrary"
         minSdkVersion 23
         targetSdkVersion 30
         versionCode 1
@@ -31,16 +32,3 @@ dependencies {
     implementation files('libs/JavaMpi-1-1.jar')
     implementation files('libs/Transactions-1-1.jar')
 }
-
-task clearJar(type: Delete) {
-    delete 'build/libs/myLib.jar'
-}
-
-task makeJar(type: Copy) {
-    from('build/intermediates/aar_main_jar/release/')
-    into('release/')
-    include('classes.jar')
-    rename ('classes.jar', 'OnepayMiura.jar')
-}
-
-makeJar.dependsOn(clearJar, build)

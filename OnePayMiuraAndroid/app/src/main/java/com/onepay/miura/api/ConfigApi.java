@@ -15,6 +15,7 @@ import com.miurasystems.mpi.enums.InterfaceType;
 import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SelectFileMode;
 import com.onepay.miura.bluetooth.BluetoothModule;
+import com.onepay.miura.core.Config;
 import com.onepay.miura.data.ConfigApiData;
 
 import java.io.IOException;
@@ -42,7 +43,9 @@ public class ConfigApi {
         return instance;
     }
 
-    public void performConfig(Context context, String btAddress) {
+    public void performConfig(Context context, String btAddress, ConfigInfoListener listener) {
+        configData = new ConfigApiData();
+        this.listener = listener;
         this.context = context;
         bluetoothAddress = btAddress;
 
@@ -85,10 +88,6 @@ public class ConfigApi {
                 Log.d("TAG", "onDeviceDisconnected: ");
             }
         });
-    }
-
-    public void onConfigInfo(ConfigInfoListener listener) {
-        this.listener = listener;
     }
 
     private void doFileUploads(@NonNull MpiClient client) throws IOException {
