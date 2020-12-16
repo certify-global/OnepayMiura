@@ -43,6 +43,7 @@ public class ConfigApi {
     }
 
     public void performConfig(Context context, String btAddress) {
+        configData = new ConfigApiData();
         this.context = context;
         bluetoothAddress = btAddress;
 
