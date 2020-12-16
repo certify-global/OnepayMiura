@@ -62,14 +62,17 @@ public class TransactionApi {
     private String description = "";
     private String bluetoothAddress = "";
     private String returnReason ="";
-    Timer mTimer;
+    private Timer mTimer;
     private int mTransactionTime = 60;
     private TransactionListener transactionListener;
     private Boolean transactionInProgress = false;
     private String pedDeviceId = "";
     private CardData cardData = null;
+    private boolean isTimerTimedOut = false;
+    private ConnectApi.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
     TransactionApiData transactionData = null;
+
     @Nullable
     private EmvTransactionAsync mEmvTransactionAsync;
     @Nullable
@@ -95,6 +98,7 @@ public class TransactionApi {
      * @param tOut Timeout for the transaction
      */
     public void setTransactionParams(float amt, String desc, String btAddress, int tOut) {
+        startTransactionTimer();
         clearData();
         this.amount = amt * 100;
         if (description != null)
@@ -169,7 +173,17 @@ public class TransactionApi {
         }
         transactionInProgress = true;
 
-        ConnectApi.getInstance().connect(this.bluetoothAddress, new ConnectApi.DeviceConnectListener() {
+        setDeviceReconnectListener();
+        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+    }
+
+    private void reConnectDevice(){
+        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+    }
+
+
+    private void setDeviceReconnectListener(){
+        deviceConnectListener = new ConnectApi.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
@@ -192,6 +206,10 @@ public class TransactionApi {
             @Override
             public void onConnectionError() {
                 Log.d("TAG", "onConnectionError: ");
+                if(!isTimerTimedOut){
+                    reConnectDevice();
+                    return;
+                }
                 if (transactionListener != null) {
                     returnReason = "Bluetooth Connection Error";
                     transactionData.setReturnStatus(2);
@@ -209,7 +227,7 @@ public class TransactionApi {
                     transactionListener.onTransactionComplete(createTransactionData(cardData));
                 }
             }
-        });
+        };
     }
 
     /**
@@ -387,8 +405,6 @@ public class TransactionApi {
 
 
     private void startEmvTransaction(EmvTransactionType emvTransactionType) {
-        startTransactionTimer();
-
         mEmvTransactionAsync = new EmvTransactionAsync(
                 MiuraManager.getInstance(), emvTransactionType
         );
@@ -525,10 +541,12 @@ public class TransactionApi {
      * Transaction Timer
      */
     private void startTransactionTimer() {
+        isTimerTimedOut = false;
         cancelTransactionTimer();
         mTimer = new Timer();
         mTimer.schedule(new TimerTask() {
             public void run() {
+                isTimerTimedOut = true;
                 cancelTransaction();
                 this.cancel();
             }
