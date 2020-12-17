@@ -104,8 +104,19 @@ public class TransactionApi {
      * Method that initiate for canceling transaction
      */
     public void cancelTransaction() {
+        transactionInProgress = false;
+        clearData();
         transactionData.setReturnStatus(3);
         if(mEmvTransactionAsync == null){
+            Log.d(TAG, "Naga.....cancelTransaction: ");
+            deregisterEventHandlers();
+            BluetoothModule.getInstance().closeSession();
+
+            if (transactionListener != null) {
+                returnReason= "Abort success";
+                transactionData.setReturnStatus(3);
+                transactionListener.onTransactionComplete(createTransactionData(cardData));
+            }
             return;
         }
         boolean isChip = mEmvTransactionAsync != null;
@@ -363,9 +374,25 @@ public class TransactionApi {
 
     private void performTransaction() {
         Log.d(TAG, "Starting Transaction");
-        registerEventHandlers();
+
+        String deviceText = amount + "\n Swipe card";
+
+        MiuraManager.getInstance().displayText(
+                deviceText,
+                new MiuraDefaultListener() {
+                    @Override
+                    public void onSuccess() {
+                        registerEventHandlers();
+                        MiuraManager.getInstance().cardStatus(true);
+                    }
+
+                    @Override
+                    public void onError() {
+                    }
+                });
+        /*registerEventHandlers();
         MiuraManager.getInstance().cardStatus(true);
-        startEmvTransaction(EmvTransactionType.Contactless);
+        startEmvTransaction(EmvTransactionType.Contactless);*/
     }
 
     private final MpiEventHandler<CardData> mCardEventHandler = new MpiEventHandler<CardData>() {
@@ -465,7 +492,8 @@ public class TransactionApi {
 
         EmvChipInsertStatus insertStatus = EmvTransactionAsync.canProcessEmvChip(cardData);
         if (insertStatus == EmvChipInsertStatus.CardInsertedOk) {
-            startEmvTransaction(EmvTransactionType.Chip);
+            //startEmvTransaction(EmvTransactionType.Chip);
+
             return;
         }
 
