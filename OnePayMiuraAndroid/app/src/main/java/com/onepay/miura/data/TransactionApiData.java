@@ -4,7 +4,7 @@ public class TransactionApiData {
     private String deviceCode;
     private String entryMode;
     private String  encryptedCardData;
-    private float amount;
+    private double amount;
     private int returnStatus;
     private String returnReason;
     private String cardHolderName;
@@ -40,11 +40,11 @@ public class TransactionApiData {
         this.encryptedCardData = cardData;
     }
 
-    public float amount() {
+    public double amount() {
         return amount;
     }
 
-    public void setAmount(float amount) {
+    public void setAmount(double amount) {
         this.amount = amount;
     }
 

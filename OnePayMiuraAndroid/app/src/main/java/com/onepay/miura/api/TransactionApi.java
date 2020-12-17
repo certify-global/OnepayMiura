@@ -5,7 +5,6 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
 
 import com.miurasystems.mpi.MpiClient;
@@ -19,7 +18,6 @@ import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
 import com.miurasystems.mpi.enums.DeviceStatus;
 import com.miurasystems.mpi.enums.InterfaceType;
-import com.miurasystems.mpi.enums.OnlinePINError;
 import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SystemLogMode;
 import com.miurasystems.mpi.enums.TransactionResponse;
@@ -33,18 +31,13 @@ import com.miurasystems.transactions.emv.EmvTransactionSummary;
 import com.miurasystems.transactions.emv.EmvTransactionType;
 import com.miurasystems.transactions.magswipe.MagSwipeError;
 import com.miurasystems.transactions.magswipe.MagSwipeSummary;
-import com.miurasystems.transactions.magswipe.MagSwipeTransactionException;
-import com.miurasystems.transactions.magswipe.OnlinePinSummary;
-import com.miurasystems.transactions.magswipe.PaymentMagType;
 import com.onepay.miura.bluetooth.BluetoothModule;
-import com.onepay.miura.common.Constants;
 import com.onepay.miura.core.Config;
 import com.onepay.miura.core.MiuraApplication;
 import com.onepay.miura.data.TransactionApiData;
 import com.onepay.miura.transactions.EmvTransactionAsync;
 import com.onepay.miura.transactions.MagSwipeTransaction;
 import com.onepay.miura.transactions.MagSwipeTransactionAsync;
-import com.onepay.miura.transactions.SignatureSummary;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -52,13 +45,11 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
 
 public class TransactionApi {
     private static final String TAG = TransactionApi.class.getSimpleName();
     private static TransactionApi instance = null;
-    private float amount = 0f;
+    private double amount = 0d;
     private String description = "";
     private String bluetoothAddress = "";
     private String returnReason ="";
@@ -97,7 +88,7 @@ public class TransactionApi {
      * @param btAddress Miura bluetooth device address
      * @param tOut Timeout for the transaction
      */
-    public void setTransactionParams(float amt, String desc, String btAddress, int tOut) {
+    public void setTransactionParams(double amt, String desc, String btAddress, int tOut, boolean isCVV) {
         startTransactionTimer();
         clearData();
         this.amount = amt * 100;
