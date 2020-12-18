@@ -92,7 +92,7 @@ public class TransactionApi {
      * @param btAddress Miura bluetooth device address
      * @param tOut      Timeout for the transaction
      */
-    public void setTransactionParams(float amt, String desc, String btAddress, int tOut) {
+    public void setTransactionParams(double amt, String desc, String btAddress, int tOut) {
         startTransactionTimer();
         clearData();
         this.amount = amt * 100;
