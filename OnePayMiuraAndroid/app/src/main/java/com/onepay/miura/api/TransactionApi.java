@@ -32,6 +32,7 @@ import com.miurasystems.transactions.emv.EmvTransactionType;
 import com.miurasystems.transactions.magswipe.MagSwipeError;
 import com.miurasystems.transactions.magswipe.MagSwipeSummary;
 import com.onepay.miura.bluetooth.BluetoothModule;
+import com.onepay.miura.common.Constants;
 import com.onepay.miura.core.Config;
 import com.onepay.miura.core.MiuraApplication;
 import com.onepay.miura.data.TransactionApiData;
@@ -49,10 +50,12 @@ import java.util.TimerTask;
 public class TransactionApi {
     private static final String TAG = TransactionApi.class.getSimpleName();
     private static TransactionApi instance = null;
-    private float amount = 0f;
+    private double amount = 0d;
     private String description = "";
     private String bluetoothAddress = "";
-    private String returnReason ="";
+    private String returnReason = "";
+    private int returnStatus = 0;
+    private String entryMode = "Swipe";
     private Timer mTimer;
     private int mTransactionTime = 60;
     private TransactionListener transactionListener;
@@ -83,10 +86,11 @@ public class TransactionApi {
 
     /**
      * Method that sets the transaction parameters
-     * @param amt Payment amount for the transaction
-     * @param desc Description for the transaction
+     *
+     * @param amt       Payment amount for the transaction
+     * @param desc      Description for the transaction
      * @param btAddress Miura bluetooth device address
-     * @param tOut Timeout for the transaction
+     * @param tOut      Timeout for the transaction
      */
     public void setTransactionParams(float amt, String desc, String btAddress, int tOut) {
         startTransactionTimer();
@@ -101,71 +105,16 @@ public class TransactionApi {
     }
 
     /**
-     * Method that initiate for canceling transaction
-     */
-    public void cancelTransaction() {
-        transactionInProgress = false;
-        clearData();
-        transactionData.setReturnStatus(3);
-        if(mEmvTransactionAsync == null){
-            Log.d(TAG, "Naga.....cancelTransaction: ");
-            deregisterEventHandlers();
-            BluetoothModule.getInstance().closeSession();
-
-            if (transactionListener != null) {
-                returnReason= "Abort success";
-                transactionData.setReturnStatus(3);
-                transactionListener.onTransactionComplete(createTransactionData(cardData));
-            }
-            return;
-        }
-        boolean isChip = mEmvTransactionAsync != null;
-        boolean isSwipe = mMagSwipeTransaction != null;
-
-        MiuraDefaultListener listener = new MiuraDefaultListener() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "Abort Success");
-                deregisterEventHandlers();
-                BluetoothModule.getInstance().closeSession();
-
-                if (transactionListener != null) {
-                    returnReason= "Abort success";
-                    transactionData.setReturnStatus(3);
-                    transactionListener.onTransactionComplete(createTransactionData(cardData));
-                }
-            }
-
-            @Override
-            public void onError() {
-                Log.d(TAG, "Abort Failed");
-                deregisterEventHandlers();
-                BluetoothModule.getInstance().closeSession();
-
-                if (transactionListener != null) {
-                    returnReason= "Abort success";
-                    transactionData.setReturnStatus(3);
-                    transactionListener.onTransactionComplete(createTransactionData(cardData));
-                }
-            }
-        };
-        if (isChip) {
-            abortEmvTransactionAsync(listener);
-        } else {
-            abortSwipeTransactionAsync(listener);
-        }
-    }
-
-    /**
      * Method that initiates the transaction
+     *
      * @param listener callback listener for the transaction
      */
     public void performTransaction(final TransactionListener listener) {
         this.transactionListener = listener;
         if (bluetoothAddress.isEmpty() || amount == 0) {
             if (transactionListener != null) {
-                returnReason= "Invalid Transaction parameters";
-                transactionData.setReturnStatus(2);
+                returnReason = Constants.InvalidParametersReason;
+                returnStatus = Constants.InvalidParametersStatus;
                 transactionListener.onTransactionComplete(createTransactionData(cardData));
             }
             return;
@@ -179,12 +128,11 @@ public class TransactionApi {
         ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
 
-    private void reConnectDevice(){
+    private void reConnectDevice() {
         ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
 
-
-    private void setDeviceReconnectListener(){
+    private void setDeviceReconnectListener() {
         deviceConnectListener = new ConnectApi.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
@@ -208,13 +156,13 @@ public class TransactionApi {
             @Override
             public void onConnectionError() {
                 Log.d("TAG", "onConnectionError: ");
-                if(!isTimerTimedOut){
+                if (!isTimerTimedOut) {
                     reConnectDevice();
                     return;
                 }
                 if (transactionListener != null) {
-                    returnReason = "Bluetooth Connection Error";
-                    transactionData.setReturnStatus(2);
+                    returnReason = Constants.BluetoothConnectionErrorReason;
+                    returnStatus = Constants.BluetoothConnectionErrorStatus;
                     transactionListener.onTransactionComplete(createTransactionData(cardData));
                 }
             }
@@ -224,8 +172,8 @@ public class TransactionApi {
                 Log.d("TAG", "onDeviceDisconnected: ");
 
                 if (transactionListener != null) {
-                    returnReason = "Bluetooth Disconnected";
-                    transactionData.setReturnStatus(2);
+                    returnReason = Constants.BluetoothDisconnectedReason;
+                    returnStatus = Constants.BluetoothDisconnectedStatus;
                     transactionListener.onTransactionComplete(createTransactionData(cardData));
                 }
             }
@@ -233,7 +181,63 @@ public class TransactionApi {
     }
 
     /**
+     * Method that initiate for canceling transaction
+     */
+    public void cancelTransaction() {
+        transactionInProgress = false;
+        clearData();
+
+        if (mEmvTransactionAsync == null) {
+            deregisterEventHandlers();
+            BluetoothModule.getInstance().closeSession();
+
+            if (transactionListener != null) {
+                returnReason = Constants.CancelReason;
+                returnStatus = Constants.CancelStatus;
+                transactionListener.onTransactionComplete(createTransactionData(cardData));
+            }
+            return;
+        }
+        boolean isChip = mEmvTransactionAsync != null;
+        boolean isSwipe = mMagSwipeTransaction != null;
+
+        MiuraDefaultListener listener = new MiuraDefaultListener() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Abort Success");
+                deregisterEventHandlers();
+                BluetoothModule.getInstance().closeSession();
+
+                if (transactionListener != null) {
+                    returnReason = Constants.CancelReason;
+                    returnStatus = Constants.CancelStatus;
+                    transactionListener.onTransactionComplete(createTransactionData(cardData));
+                }
+            }
+
+            @Override
+            public void onError() {
+                Log.d(TAG, "Abort Failed");
+                deregisterEventHandlers();
+                BluetoothModule.getInstance().closeSession();
+
+                if (transactionListener != null) {
+                    returnReason = Constants.CancelReason;
+                    returnStatus = Constants.CancelStatus;
+                    transactionListener.onTransactionComplete(createTransactionData(cardData));
+                }
+            }
+        };
+        if (isChip) {
+            abortEmvTransactionAsync(listener);
+        } else {
+            abortSwipeTransactionAsync(listener);
+        }
+    }
+
+    /**
      * Method that gets the miura device payment capabilities
+     *
      * @param capabilities list of capabilities supported
      */
     private void getDeviceCapabilities(ArrayList<Capability> capabilities) {
@@ -251,8 +255,8 @@ public class TransactionApi {
         if (!(keys.contains("Contactless"))) {
             Log.d(TAG, "PED device doesn't support ContactLess");
             if (transactionListener != null) {
-                returnReason = "PED device doesn't support ContactLess";
-                transactionData.setReturnStatus(2);
+                returnReason = Constants.ErrorReason;
+                returnStatus = Constants.ErrorStatus;
                 transactionListener.onTransactionComplete(createTransactionData(cardData));
             }
         }
@@ -509,6 +513,8 @@ public class TransactionApi {
 
         this.cardData = cardData;
         if (transactionListener != null) {
+            returnReason = Constants.SuccessReason;
+            returnStatus = Constants.SuccessStatus;
             transactionListener.onTransactionComplete(createTransactionData(cardData));
         }
         BluetoothModule.getInstance().closeSession();
@@ -528,9 +534,11 @@ public class TransactionApi {
 
     private TransactionApiData createTransactionData(CardData cardData) {
 
+        transactionData.setEntryMode(entryMode);
         transactionData.setDeviceId(pedDeviceId);
         transactionData.setAmount(this.amount);
         transactionData.setReturnReason(returnReason);
+        transactionData.setReturnStatus(returnStatus);
         transactionData.setDeviceCode("41");
         if (cardData != null) {
             transactionData.setCardHolderName(cardData.getCardholderName());
@@ -547,12 +555,10 @@ public class TransactionApi {
             transactionData.setMaskedTrack2Data(cardData.getMaskedTrack2Data().toString());
             transactionData.setKSN(cardData.getSredKSN().toUpperCase());
             transactionData.setEncryptedCardData(cardData.getSredData().toUpperCase());
-            //transactionData.setTransactionType("Swipe");
-            transactionData.setReturnStatus(1);
         } else {
             transactionData.setReturnStatus(2);
         }
-        transactionInProgress = true;
+        cancelTransactionTimer();
         return transactionData;
     }
 
@@ -582,7 +588,7 @@ public class TransactionApi {
     /**
      * Method that reset the transaction parameters
      */
-    private void clearTransactionData(){
+    private void clearTransactionData() {
         mEmvTransactionAsync = null;
         mMagSwipeTransaction = null;
         transactionInProgress = false;
@@ -592,10 +598,13 @@ public class TransactionApi {
     /**
      * Method that reset the transaction status
      */
-    public void clearData() {
+    private void clearData() {
+        cancelTransactionTimer();
         this.pedDeviceId = "";
-        this.amount = 0.0f;
+        this.amount = 0.0d;
         this.description = "";
         this.cardData = null;
+        this.returnReason = "";
+        this.returnStatus = 0;
     }
 }

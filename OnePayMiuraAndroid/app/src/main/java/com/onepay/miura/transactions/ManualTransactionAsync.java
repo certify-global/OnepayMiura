@@ -23,7 +23,7 @@ public class ManualTransactionAsync {
         mMpiClient = client;
     }
 
-    public void manualTransaction() {
+    public void manualTransaction(boolean isCvv) {
         EnumSet<GetCommandsOptions> options;
         options = GetCommandsOptions.makeOptionsSet(
                 GetCommandsOptions.BacklightOn,
@@ -32,6 +32,6 @@ public class ManualTransactionAsync {
 
         //result = mMpiClient.getSecurePan(options, 30);
         //boolean getPan, boolean getStartDate, boolean getExpiryDate, boolean getCVV, boolean yyMm,
-        result = mMpiClient.getSecureCardData(true, false, true, false, true, options, 30);
+        result = mMpiClient.getSecureCardData(true, false, true, isCvv, true, options, 30);
     }
 }

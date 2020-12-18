@@ -15,12 +15,14 @@ import com.miurasystems.mpi.enums.InterfaceType;
 import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SelectFileMode;
 import com.onepay.miura.bluetooth.BluetoothModule;
-import com.onepay.miura.core.Config;
+import com.onepay.miura.common.Constants;
 import com.onepay.miura.data.ConfigApiData;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import static com.miurasystems.mpi.enums.InterfaceType.MPI;
 
@@ -30,7 +32,13 @@ public class ConfigApi {
     private ConfigInfoListener listener;
     private String bluetoothAddress = "";
     private Context context = null;
+    private int mTimeOut = 60;
+    private boolean isTimerTimedOut = false;
     private ConfigApiData configData = null;
+    private Timer mTimer;
+    private String returnReason = "";
+    private int returnStatus = 0;
+    private ConnectApi.DeviceConnectListener deviceConnectListener;
 
     public interface ConfigInfoListener {
         void onConfigUpdateComplete(ConfigApiData data);
@@ -43,13 +51,25 @@ public class ConfigApi {
         return instance;
     }
 
-    public void performConfig(Context context, String btAddress, ConfigInfoListener listener) {
-        configData = new ConfigApiData();
+    public void performConfig(Context context, String btAddress, int tOut, ConfigInfoListener listener) {
         this.listener = listener;
+        startTimer();
+        //clearData();
         this.context = context;
         bluetoothAddress = btAddress;
+        mTimeOut = tOut;
+        configData = new ConfigApiData();
 
-        ConnectApi.getInstance().connect(bluetoothAddress, new ConnectApi.DeviceConnectListener() {
+        setDeviceReconnectListener();
+        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+    }
+
+    private void reConnectDevice() {
+        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+    }
+
+    private void setDeviceReconnectListener() {
+        deviceConnectListener = new ConnectApi.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
@@ -81,13 +101,32 @@ public class ConfigApi {
             @Override
             public void onConnectionError() {
                 Log.d("TAG", "onConnectionError: ");
+                if (!isTimerTimedOut) {
+                    reConnectDevice();
+                    return;
+                }
+                if (listener != null) {
+                    returnReason = Constants.BluetoothConnectionErrorReason;
+                    returnStatus = Constants.BluetoothConnectionErrorStatus;
+                    listener.onConfigUpdateComplete(createConfigData());
+                }
             }
 
             @Override
             public void onDeviceDisconnected() {
                 Log.d("TAG", "onDeviceDisconnected: ");
+
+              /*  if (listener != null) {
+                    returnReason = Constants.BluetoothDisconnectedReason;
+                    returnStatus = Constants.BluetoothDisconnectedStatus;
+                    listener.onConfigUpdateComplete(createConfigData());
+                }*/
             }
-        });
+        };
+    }
+
+    public void onConfigInfo(ConfigInfoListener listener) {
+        this.listener = listener;
     }
 
     private void doFileUploads(@NonNull MpiClient client) throws IOException {
@@ -142,25 +181,50 @@ public class ConfigApi {
         }
 
         if (listener != null) {
-            configData.setReturnStatus(1);
-            configData.setReturnReason("Success");
-            listener.onConfigUpdateComplete(configData);
+            returnReason = Constants.SuccessReason;
+            returnStatus = Constants.SuccessStatus;
+            listener.onConfigUpdateComplete(createConfigData());
         }
         client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
     }
 
     private void showBadFileUploadMessage(final String filename) {
-        configData.setReturnStatus(2);
-        configData.setReturnReason(" uploaded Error");
         if (listener != null) {
+            returnReason = Constants.ErrorReason;
+            returnStatus = Constants.ErrorStatus;
             listener.onConfigUpdateComplete(configData);
         }
         Log.d(TAG, filename + " uploaded Error");
-        closeSession(true);
+        BluetoothModule.getInstance();
     }
 
-    public void closeSession(final boolean interrupted) {
-        BluetoothModule.getInstance().closeSession();
-        Log.d("TAG", "bluetooth interrupted");
+    private ConfigApiData createConfigData() {
+        configData.setReturnReason(returnReason);
+        configData.setReturnStatus(returnStatus);
+        cancelTimer();
+        return configData;
+    }
+
+    /**
+     * Timer
+     */
+    private void startTimer() {
+        isTimerTimedOut = false;
+        cancelTimer();
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            public void run() {
+                isTimerTimedOut = true;
+                BluetoothModule.getInstance().closeSession();
+                this.cancel();
+            }
+        }, mTimeOut * 1000);
+    }
+
+    private void cancelTimer() {
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
     }
 }

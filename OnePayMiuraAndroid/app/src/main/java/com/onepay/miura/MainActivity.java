@@ -81,21 +81,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onUpdateConfig(View view) {
-        ConfigApi.getInstance().performConfig(this, "0C:9A:42:89:2E:B9", new ConfigApi.ConfigInfoListener() {
+        ConfigApi.getInstance().performConfig(this, "0C:9A:42:89:2E:B9", 60, new ConfigApi.ConfigInfoListener() {
             @Override
             public void onConfigUpdateComplete(ConfigApiData data) {
-                Log.d("TAG", "Naga1........" + data.returnReason());
+                Log.d("TAG", "Naga2........" + data.returnReason());
+                Log.d("TAG", "Naga2........" + data.returnStatus());
             }
         });
     }
 
     public void onManualTransaction(View view) {
-        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60);
+        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60, true);
 
         ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 
             @Override
             public void onManualTransactionComplete(TransactionApiData data) {
+
+                Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
+                Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
+                Log.d("TAG", "Naga...... amount : " + data.amount());
+                Log.d("TAG", "Naga...... returnStatus : " + data.returnStatus());
+                Log.d("TAG", "Naga...... cardHolderName : " + data.cardHolderName());
+                Log.d("TAG", "Naga...... cardNumber : " + data.cardNumber());
+                Log.d("TAG", "Naga...... ccFirstFour : " + data.accountFirstFour());
+                Log.d("TAG", "Naga...... ccLastFour : " + data.accountLastFour());
+                Log.d("TAG", "Naga...... expiryDate : " + data.expiryDate());
+                Log.d("TAG", "Naga...... pedDeviceId : " + data.deviceId());
+                Log.d("TAG", "Naga...... sRedKSN : " + data.KSN());
 
             }
         });

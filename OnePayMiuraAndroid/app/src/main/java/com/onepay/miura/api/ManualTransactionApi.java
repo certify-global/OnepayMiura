@@ -25,6 +25,7 @@ import com.miurasystems.mpi.events.MpiEventHandler;
 import com.miurasystems.mpi.events.MpiEvents;
 import com.miurasystems.mpi.tlv.CardData;
 import com.onepay.miura.bluetooth.BluetoothModule;
+import com.onepay.miura.common.Constants;
 import com.onepay.miura.core.Config;
 import com.onepay.miura.data.TransactionApiData;
 import com.onepay.miura.transactions.ManualTransactionAsync;
@@ -41,14 +42,19 @@ public class ManualTransactionApi {
     private static ManualTransactionApi instance = null;
     private ManualTransactionListener manualTransactionListener;
     private String returnReason = "";
-    private float amount = 0f;
+    private double amount = 0f;
     private String description = "";
     private String bluetoothAddress = "";
     private String pedDeviceId = "";
     private Timer mTimer;
     private int mTransactionTime = 60;
+    private int returnStatus = 0;
+    private String entryMode = "Manual";
+    private boolean isTimerTimedOut = false;
+    private boolean isCvv = false;
     private ManualTransactionAsync mManualTransactionAsync;
     TransactionApiData transactionData = null;
+    private ConnectApi.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
     EncryptedPan data = null;
 
@@ -71,12 +77,18 @@ public class ManualTransactionApi {
      * @param btAddress Miura bluetooth device address
      * @param tOut      Timeout for the transaction
      */
-    public void setManualTransactionParams(float amt, String desc, String btAddress, int tOut) {
+    public void setManualTransactionParams(double amt, String desc, String btAddress, int tOut, boolean isCvvRequired) {
+        startTransactionTimer();
+        clearData();
         this.amount = amt * 100;
         if (description != null)
             this.description = desc;
         if (btAddress != null)
             this.bluetoothAddress = btAddress;
+        this.mTransactionTime = tOut;
+        this.isCvv = isCvvRequired;
+
+        transactionData = new TransactionApiData();
     }
 
     /**
@@ -88,14 +100,24 @@ public class ManualTransactionApi {
         this.manualTransactionListener = listener;
         if (bluetoothAddress.isEmpty() || amount == 0) {
             if (manualTransactionListener != null) {
-                returnReason = "Invalid Transaction parameters";
-                transactionData.setReturnStatus(2);
+                returnReason = Constants.InvalidParametersReason;
+                returnStatus = Constants.InvalidParametersStatus;
                 manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
             }
             return;
         }
 
-        ConnectApi.getInstance().connect(this.bluetoothAddress, new ConnectApi.DeviceConnectListener() {
+        setDeviceReconnectListener();
+        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+    }
+
+    private void reConnectDevice() {
+        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+    }
+
+
+    private void setDeviceReconnectListener() {
+        deviceConnectListener = new ConnectApi.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
@@ -110,7 +132,6 @@ public class ManualTransactionApi {
                     @Override
                     public void onError() {
                         BluetoothModule.getInstance().closeSession();
-
                     }
                 });
             }
@@ -118,9 +139,14 @@ public class ManualTransactionApi {
             @Override
             public void onConnectionError() {
                 Log.d("TAG", "onConnectionError: ");
+                if (!isTimerTimedOut) {
+                    reConnectDevice();
+                    return;
+                }
+
                 if (manualTransactionListener != null) {
-                    returnReason = "Bluetooth Connection Error";
-                    transactionData.setReturnStatus(2);
+                    returnReason = Constants.BluetoothConnectionErrorReason;
+                    returnStatus = Constants.BluetoothConnectionErrorStatus;
                     manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
                 }
             }
@@ -130,17 +156,28 @@ public class ManualTransactionApi {
                 Log.d("TAG", "onDeviceDisconnected: ");
 
                 if (manualTransactionListener != null) {
-                    returnReason = "Bluetooth Disconnected";
-                    transactionData.setReturnStatus(2);
+                    returnReason = Constants.BluetoothDisconnectedReason;
+                    returnStatus = Constants.BluetoothDisconnectedStatus;
                     manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
                 }
             }
-        });
+        };
     }
 
     public void cancelTransaction() {
-       // deregisterEventHandlers();
-       // BluetoothModule.getInstance().closeSession();
+        if (manualTransactionListener != null) {
+            returnReason = Constants.CancelReason;
+            returnStatus = Constants.CancelStatus;
+            manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+        }
+
+        clearData();
+        deregisterEventHandlers();
+
+        if (!BluetoothModule.getInstance().isSessionOpen()) {
+            BluetoothModule.getInstance().closeSession();
+            return;
+        }
     }
 
     private void startPayment() {
@@ -296,27 +333,29 @@ public class ManualTransactionApi {
     }
 
     private void startManualTransaction() {
-        startTransactionTimer();
-
         mManualTransactionAsync = new ManualTransactionAsync(MiuraManager.getInstance());
-        mManualTransactionAsync.manualTransaction();
+        mManualTransactionAsync.manualTransaction(isCvv);
 
         Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
         data = result.asSuccess().getValue();
-        manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+        if (manualTransactionListener != null) {
+            returnReason = Constants.SuccessReason;
+            returnStatus = Constants.SuccessStatus;
+            manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+        }
 
-        //ClearData
         BluetoothModule.getInstance().closeSession();
         clearTransactionData();
         clearData();
     }
 
     private TransactionApiData createTransactionData(EncryptedPan data) {
-        TransactionApiData transactionData = new TransactionApiData();
 
+        transactionData.setEntryMode(entryMode);
         transactionData.setDeviceId(pedDeviceId);
         transactionData.setAmount(this.amount);
         transactionData.setReturnReason(returnReason);
+        transactionData.setReturnStatus(returnStatus);
         transactionData.setDeviceCode("41");
         if (data != null) {
             if (data.RedactedPan != null) {
@@ -332,14 +371,14 @@ public class ManualTransactionApi {
             String cardEncytpedData = bytesToHexString(data.P2peSredData);
             transactionData.setKSN(ksn.toUpperCase());
             transactionData.setEncryptedCardData(cardEncytpedData.toUpperCase());
-            transactionData.setReturnStatus(1);
         } else {
-            transactionData.setReturnStatus(2);
+            transactionData.setReturnStatus(returnStatus);
         }
+        cancelTransactionTimer();
         return transactionData;
     }
 
-    public static String bytesToHexString(byte[] src) {
+    private static String bytesToHexString(byte[] src) {
         StringBuilder stringBuilder = new StringBuilder("");
         if (src == null || src.length <= 0) {
             return null;
@@ -362,10 +401,12 @@ public class ManualTransactionApi {
      * Transaction Timer
      */
     private void startTransactionTimer() {
+        isTimerTimedOut = false;
         cancelTransactionTimer();
         mTimer = new Timer();
         mTimer.schedule(new TimerTask() {
             public void run() {
+                isTimerTimedOut = true;
                 cancelTransaction();
                 this.cancel();
             }
@@ -390,9 +431,14 @@ public class ManualTransactionApi {
     /**
      * Method that reset the transaction status
      */
-    public void clearData() {
+    private void clearData() {
+        cancelTransactionTimer();
         this.pedDeviceId = "";
-        this.amount = 0.0f;
+        this.amount = 0.0d;
         this.description = "";
+        this.isCvv = false;
+        this.data = null;
+        this.returnReason = "";
+        this.returnStatus = 0;
     }
 }
