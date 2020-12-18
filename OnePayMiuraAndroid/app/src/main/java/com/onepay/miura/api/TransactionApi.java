@@ -558,7 +558,7 @@ public class TransactionApi {
         } else {
             transactionData.setReturnStatus(2);
         }
-        transactionInProgress = true;
+        cancelTransactionTimer();
         return transactionData;
     }
 
@@ -599,6 +599,7 @@ public class TransactionApi {
      * Method that reset the transaction status
      */
     private void clearData() {
+        cancelTransactionTimer();
         this.pedDeviceId = "";
         this.amount = 0.0d;
         this.description = "";

@@ -374,6 +374,7 @@ public class ManualTransactionApi {
         } else {
             transactionData.setReturnStatus(returnStatus);
         }
+        cancelTransactionTimer();
         return transactionData;
     }
 
@@ -431,6 +432,7 @@ public class ManualTransactionApi {
      * Method that reset the transaction status
      */
     private void clearData() {
+        cancelTransactionTimer();
         this.pedDeviceId = "";
         this.amount = 0.0d;
         this.description = "";

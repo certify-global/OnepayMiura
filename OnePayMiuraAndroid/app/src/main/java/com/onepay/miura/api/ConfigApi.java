@@ -115,11 +115,11 @@ public class ConfigApi {
             public void onDeviceDisconnected() {
                 Log.d("TAG", "onDeviceDisconnected: ");
 
-                if (listener != null) {
+              /*  if (listener != null) {
                     returnReason = Constants.BluetoothDisconnectedReason;
                     returnStatus = Constants.BluetoothDisconnectedStatus;
                     listener.onConfigUpdateComplete(createConfigData());
-                }
+                }*/
             }
         };
     }
@@ -182,7 +182,7 @@ public class ConfigApi {
         if (listener != null) {
             returnReason = Constants.SuccessReason;
             returnStatus = Constants.SuccessStatus;
-            listener.onConfigUpdateComplete(configData);
+            listener.onConfigUpdateComplete(createConfigData());
         }
         client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
     }
@@ -194,12 +194,13 @@ public class ConfigApi {
             listener.onConfigUpdateComplete(configData);
         }
         Log.d(TAG, filename + " uploaded Error");
-        closeSession(true);
+        BluetoothModule.getInstance().closeSession();
     }
 
     private ConfigApiData createConfigData() {
         configData.setReturnReason(returnReason);
         configData.setReturnStatus(returnStatus);
+        cancelTimer();
         return configData;
     }
 
@@ -224,11 +225,5 @@ public class ConfigApi {
             mTimer.cancel();
             mTimer = null;
         }
-    }
-
-
-    public void closeSession(final boolean interrupted) {
-        BluetoothModule.getInstance().closeSession();
-        Log.d("TAG", "bluetooth interrupted");
     }
 }
