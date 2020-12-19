@@ -1,6 +1,5 @@
 package com.onepay.miura.api;
 
-import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -14,12 +13,13 @@ import com.miurasystems.mpi.api.utils.DisplayTextUtils;
 import com.miurasystems.mpi.enums.InterfaceType;
 import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SelectFileMode;
+import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
 import com.onepay.miura.data.ConfigApiData;
 
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -31,14 +31,14 @@ public class ConfigApi {
     private static ConfigApi instance = null;
     private ConfigInfoListener listener;
     private String bluetoothAddress = "";
-    private Context context = null;
     private int mTimeOut = 60;
     private boolean isTimerTimedOut = false;
     private ConfigApiData configData = null;
     private Timer mTimer;
     private String returnReason = "";
+    private String filepath = "";
     private int returnStatus = 0;
-    private ConnectApi.DeviceConnectListener deviceConnectListener;
+    private BluetoothConnect.DeviceConnectListener deviceConnectListener;
 
     public interface ConfigInfoListener {
         void onConfigUpdateComplete(ConfigApiData data);
@@ -51,24 +51,27 @@ public class ConfigApi {
         return instance;
     }
 
-    public void performConfig(Context context, String btAddress, int tOut) {
-        startTimer();
-        //clearData();
-        this.context = context;
+    public void performConfig(String btAddress, int tOut, String filePath) {
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
+        this.filepath = filePath;
         configData = new ConfigApiData();
+        startTimer();
 
         setDeviceReconnectListener();
-        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+    }
+
+    public void setConfigListener(ConfigInfoListener listener){
+        this.listener = listener;
     }
 
     private void reConnectDevice() {
-        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
 
     private void setDeviceReconnectListener() {
-        deviceConnectListener = new ConnectApi.DeviceConnectListener() {
+        deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
@@ -92,7 +95,6 @@ public class ConfigApi {
                     @Override
                     public void onError() {
                         BluetoothModule.getInstance().closeSession();
-
                     }
                 });
             }
@@ -153,8 +155,9 @@ public class ConfigApi {
 
         for (String filename : configArray) {
 
-            String path = "mpi_config/" + filename;
-            InputStream inputStream = context.getAssets().open(path);
+            //String path = Environment.getExternalStorageDirectory() + "/mpi_config/"+ filename;
+            String path = this.filepath + filename;
+            FileInputStream inputStream = new FileInputStream(path);
 
             Log.d(TAG, "Config file uploaded-: " + path);
 
@@ -194,7 +197,7 @@ public class ConfigApi {
             listener.onConfigUpdateComplete(configData);
         }
         Log.d(TAG, filename + " uploaded Error");
-        BluetoothModule.getInstance().closeSession();
+        BluetoothModule.getInstance();
     }
 
     private ConfigApiData createConfigData() {

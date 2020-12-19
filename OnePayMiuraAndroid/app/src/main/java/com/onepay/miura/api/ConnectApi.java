@@ -1,28 +1,30 @@
 package com.onepay.miura.api;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
+import android.util.Log;
 
-import androidx.annotation.UiThread;
-
-import com.miurasystems.mpi.api.executor.MiuraManager;
-import com.onepay.miura.bluetooth.BluetoothConnectionListener;
-import com.onepay.miura.bluetooth.BluetoothDeviceType;
+import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
+import com.onepay.miura.common.Constants;
+import com.onepay.miura.data.ConnectApiData;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ConnectApi {
 
-    private BluetoothDevice mBluetoothDevice;
-    private BluetoothDeviceType mDeviceType;
-    private DeviceConnectListener connectListener;
+    private ConnectListener listener;
     private static ConnectApi instance = null;
+    private ConnectApiData connectData = null;
+    private int mTimeOut = 60;
+    private String bluetoothAddress = "";
+    private String returnReason = "";
+    private int returnStatus = 0;
+    private boolean isTimerTimedOut = false;
+    private Timer mTimer;
+    private BluetoothConnect.DeviceConnectListener deviceConnectListener;
 
-    public interface DeviceConnectListener {
-        void onConnectionSuccess();
-
-        void onConnectionError();
-
-        void onDeviceDisconnected();
+    public interface ConnectListener {
+        void onConnectionComplete(ConnectApiData data);
     }
 
     public static ConnectApi getInstance() {
@@ -32,55 +34,104 @@ public class ConnectApi {
         return instance;
     }
 
-
     /**
      * For connecting to the Miura device
+     *
      * @param btAddress Miura device bluetooth address
-     * @param listener callback listener for the connection results
      */
-    public void connect(String btAddress, DeviceConnectListener listener) {
-        mBluetoothDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(btAddress);
-        this.connectListener = listener;
-        mDeviceType = BluetoothDeviceType.getByDeviceTypeByName(mBluetoothDevice.getName());
-        BluetoothModule.getInstance().setTimeoutEnable(false);
-        BluetoothModule.getInstance().setSelectedBluetoothDevice(mBluetoothDevice);
-        bindConnection();
+    public void connect(String btAddress, int tOut) {
+        bluetoothAddress = btAddress;
+        mTimeOut = tOut;
+        connectData = new ConnectApiData();
+        startTimer();
+
+        setDeviceReconnectListener();
+        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+    }
+
+    public void setConnectListener(ConnectListener listener){
+        this.listener = listener;
+    }
+
+    private void reConnectDevice() {
+        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+    }
+
+    private void setDeviceReconnectListener() {
+        deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
+            @Override
+            public void onConnectionSuccess() {
+                Log.d("TAG", "onConnectionSuccess: ");
+                BluetoothModule.getInstance().closeSession();
+                if (listener != null) {
+                    returnReason = Constants.SuccessReason;
+                    returnStatus = Constants.SuccessStatus;
+                    listener.onConnectionComplete(createConnectData());
+                }
+            }
+
+            @Override
+            public void onConnectionError() {
+                Log.d("TAG", "onConnectionError: ");
+                if (!isTimerTimedOut) {
+                    reConnectDevice();
+                    return;
+                }
+                if (listener != null) {
+                    returnReason = Constants.BluetoothConnectionErrorReason;
+                    returnStatus = Constants.BluetoothConnectionErrorStatus;
+                    listener.onConnectionComplete(createConnectData());
+                }
+            }
+
+            @Override
+            public void onDeviceDisconnected() {
+                Log.d("TAG", "onDeviceDisconnected: ");
+
+                if (listener != null) {
+                    returnReason = Constants.BluetoothDisconnectedReason;
+                    returnStatus = Constants.BluetoothDisconnectedStatus;
+                    listener.onConnectionComplete(createConnectData());
+                }
+            }
+        };
+    }
+
+    private ConnectApiData createConnectData() {
+        connectData.setReturnReason(returnReason);
+        connectData.setReturnStatus(returnStatus);
+        cancelTimer();
+        return connectData;
+    }
+
+    private void endConnection() {
+        if (listener != null) {
+            returnReason = Constants.TimeoutReason;
+            returnStatus = Constants.TimeoutStatus;
+            listener.onConnectionComplete(createConnectData());
+        }
     }
 
     /**
-     * Miura device bluetooth connection
+     * Timer
      */
-    private void bindConnection() {
+    private void startTimer() {
+        isTimerTimedOut = false;
+        cancelTimer();
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            public void run() {
+                isTimerTimedOut = true;
+                endConnection();
+                this.cancel();
+            }
+        }, mTimeOut * 1000);
+    }
 
-        MiuraManager.getInstance().setDeviceType(mDeviceType == BluetoothDeviceType.PED ?
-                MiuraManager.DeviceType.PED : MiuraManager.DeviceType.POS);
-        BluetoothModule.getInstance().setTimeoutEnable(true);
-        BluetoothModule.getInstance().openSessionDefaultDevice(
-                new BluetoothConnectionListener() {
-                    @UiThread
-                    @Override
-                    public void onConnected() {
-                        if (connectListener != null) {
-                            connectListener.onConnectionSuccess();
-                        }
-                    }
-
-                    @UiThread
-                    @Override
-                    public void onDisconnected() {
-                        if (connectListener != null) {
-                            connectListener.onDeviceDisconnected();
-                        }
-                    }
-
-                    @UiThread
-                    @Override
-                    public void onConnectionAttemptFailed() {
-                        if (connectListener != null) {
-                            connectListener.onConnectionError();
-                        }
-                    }
-                }
-        );
+    private void cancelTimer() {
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
     }
 }
