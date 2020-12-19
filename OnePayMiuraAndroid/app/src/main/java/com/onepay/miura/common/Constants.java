@@ -3,7 +3,7 @@ package com.onepay.miura.common;
 public class Constants {
     public static String SuccessReason = "Success";
     public static String ErrorReason = "Error";
-    public static String CancelReason = "Error";
+    public static String CancelReason = "Cancel";
     public static String BluetoothConnectionErrorReason = "Bluetooth Connection Error";
     public static String BluetoothDisconnectedReason = "Bluetooth Disconnected";
     public static String TimeoutReason = "Timeout";
