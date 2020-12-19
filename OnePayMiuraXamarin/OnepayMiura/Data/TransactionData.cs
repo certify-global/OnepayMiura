@@ -7,7 +7,7 @@ namespace Onepay.Miura.Data
         private String deviceCode;
         private String entryMode;
         private String encryptedCardData;
-        private float amount;
+        private double amount;
         private int returnStatus;
         private String returnReason;
         private String cardHolderName;
@@ -22,7 +22,7 @@ namespace Onepay.Miura.Data
         public string DeviceCode { get => deviceCode; set => deviceCode = value; }
         public string EntryMode { get => entryMode; set => entryMode = value; }
         public string EncryptedCardData { get => encryptedCardData; set => encryptedCardData = value; }
-        public float Amount { get => amount; set => amount = value; }
+        public double Amount { get => amount; set => amount = value; }
         public int ReturnStatus { get => returnStatus; set => returnStatus = value; }
         public string ReturnReason { get => returnReason; set => returnReason = value; }
         public string CardHolderName { get => cardHolderName; set => cardHolderName = value; }

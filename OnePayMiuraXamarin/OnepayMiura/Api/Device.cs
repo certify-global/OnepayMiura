@@ -11,11 +11,11 @@ namespace Onepay.Miura.Api
 
         public void GetDeviceInfo(string btAddress)
         {
-            DeviceApi.Instance.OnDeviceInfo(new DeviceListner());
+            DeviceApi.Instance.OnDeviceInfo(new DeviceListener());
             DeviceApi.Instance.GetDeviceInfo(btAddress);
         }
 
-        public class DeviceListner : Java.Lang.Object, DeviceApi.IDeviceInfoListener
+        public class DeviceListener : Java.Lang.Object, DeviceApi.IDeviceInfoListener
         {
             public void OnGetDeviceInfoComplete(DeviceApiData deviceApiData)
             {

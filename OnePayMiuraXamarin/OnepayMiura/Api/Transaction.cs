@@ -9,7 +9,7 @@ namespace Onepay.Miura.Api
     public class Transaction
     {
         public static event EventHandler<TransactionData> TransactionComplete;
-        public void PerformTransaction(float amt, String desc, String btAddress, int tOut)
+        public void PerformTransaction(double amt, String desc, String btAddress, int tOut)
         {
             TransactionApi.Instance.SetTransactionParams(amt, desc, btAddress, tOut);
             TransactionApi.Instance.PerformTransaction(new Transaction.TransactionListener());
@@ -18,11 +18,6 @@ namespace Onepay.Miura.Api
         {
             TransactionApi.Instance.CancelTransaction();
 
-        }
-
-        public void ClearData()
-        {
-            TransactionApi.Instance.ClearData();
         }
 
         public class TransactionListener : Java.Lang.Object, TransactionApi.ITransactionListener
