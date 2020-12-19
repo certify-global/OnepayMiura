@@ -31,6 +31,7 @@ import com.miurasystems.transactions.emv.EmvTransactionSummary;
 import com.miurasystems.transactions.emv.EmvTransactionType;
 import com.miurasystems.transactions.magswipe.MagSwipeError;
 import com.miurasystems.transactions.magswipe.MagSwipeSummary;
+import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
 import com.onepay.miura.core.Config;
@@ -50,12 +51,12 @@ import java.util.TimerTask;
 public class TransactionApi {
     private static final String TAG = TransactionApi.class.getSimpleName();
     private static TransactionApi instance = null;
-    private double amount = 0d;
+    private double amount = 0.00d;
     private String description = "";
     private String bluetoothAddress = "";
     private String returnReason = "";
     private int returnStatus = 0;
-    private String entryMode = "Swipe";
+    private String entryMode = Constants.Swipe;
     private Timer mTimer;
     private int mTransactionTime = 60;
     private TransactionListener transactionListener;
@@ -63,7 +64,8 @@ public class TransactionApi {
     private String pedDeviceId = "";
     private CardData cardData = null;
     private boolean isTimerTimedOut = false;
-    private ConnectApi.DeviceConnectListener deviceConnectListener;
+    private boolean isTransactionTimeOut = false;
+    private BluetoothConnect.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
     TransactionApiData transactionData = null;
 
@@ -92,10 +94,9 @@ public class TransactionApi {
      * @param btAddress Miura bluetooth device address
      * @param tOut      Timeout for the transaction
      */
-    public void setTransactionParams(float amt, String desc, String btAddress, int tOut) {
-        startTransactionTimer();
+    public void setTransactionParams(double amt, String desc, String btAddress, int tOut) {
         clearData();
-        this.amount = amt * 100;
+        this.amount = amt;
         if (description != null)
             this.description = desc;
         if (btAddress != null)
@@ -110,6 +111,7 @@ public class TransactionApi {
      * @param listener callback listener for the transaction
      */
     public void performTransaction(final TransactionListener listener) {
+        startTransactionTimer();
         this.transactionListener = listener;
         if (bluetoothAddress.isEmpty() || amount == 0) {
             if (transactionListener != null) {
@@ -125,18 +127,19 @@ public class TransactionApi {
         transactionInProgress = true;
 
         setDeviceReconnectListener();
-        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
 
     private void reConnectDevice() {
-        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
 
     private void setDeviceReconnectListener() {
-        deviceConnectListener = new ConnectApi.DeviceConnectListener() {
+        deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
+                startTransactionTimer();
                 MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
                     @WorkerThread
                     @Override
@@ -185,15 +188,21 @@ public class TransactionApi {
      */
     public void cancelTransaction() {
         transactionInProgress = false;
-        clearData();
 
         if (mEmvTransactionAsync == null) {
             deregisterEventHandlers();
             BluetoothModule.getInstance().closeSession();
 
             if (transactionListener != null) {
-                returnReason = Constants.CancelReason;
-                returnStatus = Constants.CancelStatus;
+                if(isTransactionTimeOut) {
+                    returnReason = Constants.TimeoutReason;
+                    returnStatus = Constants.TimeoutStatus;
+                }
+                else{
+                    returnReason = Constants.CancelReason;
+                    returnStatus = Constants.CancelStatus;
+                }
+
                 transactionListener.onTransactionComplete(createTransactionData(cardData));
             }
             return;
@@ -209,8 +218,13 @@ public class TransactionApi {
                 BluetoothModule.getInstance().closeSession();
 
                 if (transactionListener != null) {
-                    returnReason = Constants.CancelReason;
-                    returnStatus = Constants.CancelStatus;
+                    if (isTransactionTimeOut) {
+                        returnReason = Constants.TimeoutReason;
+                        returnStatus = Constants.TimeoutStatus;
+                    } else {
+                        returnReason = Constants.CancelReason;
+                        returnStatus = Constants.CancelStatus;
+                    }
                     transactionListener.onTransactionComplete(createTransactionData(cardData));
                 }
             }
@@ -425,7 +439,6 @@ public class TransactionApi {
         MPI_EVENTS.DeviceStatusChanged.register(mDeviceStatusHandler);
     }
 
-
     private void startEmvTransaction(EmvTransactionType emvTransactionType) {
         mEmvTransactionAsync = new EmvTransactionAsync(
                 MiuraManager.getInstance(), emvTransactionType
@@ -488,7 +501,6 @@ public class TransactionApi {
         //mMagSwipeTransaction = null;
     }
 
-
     protected void handleTransactionEvent(CardData cardData) {
         if (!BluetoothModule.getInstance().isSessionOpen()) {
             return;
@@ -522,7 +534,6 @@ public class TransactionApi {
         clearData();
     }
 
-
     private void deregisterEventHandlers() {
         MPI_EVENTS.CardStatusChanged.deregister(mCardEventHandler);
         MPI_EVENTS.DeviceStatusChanged.deregister(mDeviceStatusHandler);
@@ -555,8 +566,6 @@ public class TransactionApi {
             transactionData.setMaskedTrack2Data(cardData.getMaskedTrack2Data().toString());
             transactionData.setKSN(cardData.getSredKSN().toUpperCase());
             transactionData.setEncryptedCardData(cardData.getSredData().toUpperCase());
-        } else {
-            transactionData.setReturnStatus(2);
         }
         cancelTransactionTimer();
         return transactionData;
@@ -571,6 +580,7 @@ public class TransactionApi {
         mTimer = new Timer();
         mTimer.schedule(new TimerTask() {
             public void run() {
+                isTransactionTimeOut = true;
                 isTimerTimedOut = true;
                 cancelTransaction();
                 this.cancel();

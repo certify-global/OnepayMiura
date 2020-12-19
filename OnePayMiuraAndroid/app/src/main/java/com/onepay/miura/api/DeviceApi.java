@@ -14,6 +14,7 @@ import com.miurasystems.mpi.api.listener.ApiP2PEStatusListener;
 import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.objects.P2PEStatus;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
+import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.core.Config;
 import com.onepay.miura.data.DeviceApiData;
@@ -49,7 +50,7 @@ public class DeviceApi {
     public void getDeviceInfo(String btAddress) {
 
         this.btAddress = btAddress;
-        ConnectApi.getInstance().connect(btAddress, new ConnectApi.DeviceConnectListener() {
+        BluetoothConnect.getInstance().connect(btAddress, new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");

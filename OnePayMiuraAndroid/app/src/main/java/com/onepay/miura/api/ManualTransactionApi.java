@@ -24,6 +24,7 @@ import com.miurasystems.mpi.events.DeviceStatusChange;
 import com.miurasystems.mpi.events.MpiEventHandler;
 import com.miurasystems.mpi.events.MpiEvents;
 import com.miurasystems.mpi.tlv.CardData;
+import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
 import com.onepay.miura.core.Config;
@@ -49,12 +50,12 @@ public class ManualTransactionApi {
     private Timer mTimer;
     private int mTransactionTime = 60;
     private int returnStatus = 0;
-    private String entryMode = "Manual";
+    private String entryMode = Constants.Manual;
     private boolean isTimerTimedOut = false;
     private boolean isCvv = false;
     private ManualTransactionAsync mManualTransactionAsync;
     TransactionApiData transactionData = null;
-    private ConnectApi.DeviceConnectListener deviceConnectListener;
+    private BluetoothConnect.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
     EncryptedPan data = null;
 
@@ -80,7 +81,7 @@ public class ManualTransactionApi {
     public void setManualTransactionParams(double amt, String desc, String btAddress, int tOut, boolean isCvvRequired) {
         startTransactionTimer();
         clearData();
-        this.amount = amt * 100;
+        this.amount = amt;
         if (description != null)
             this.description = desc;
         if (btAddress != null)
@@ -108,16 +109,16 @@ public class ManualTransactionApi {
         }
 
         setDeviceReconnectListener();
-        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
 
     private void reConnectDevice() {
-        ConnectApi.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
 
 
     private void setDeviceReconnectListener() {
-        deviceConnectListener = new ConnectApi.DeviceConnectListener() {
+        deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");

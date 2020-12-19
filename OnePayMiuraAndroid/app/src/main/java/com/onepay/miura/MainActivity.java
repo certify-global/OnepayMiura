@@ -2,6 +2,9 @@ package com.onepay.miura;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -13,6 +16,7 @@ import com.onepay.miura.api.DeviceApi;
 import com.onepay.miura.api.ManualTransactionApi;
 import com.onepay.miura.api.TransactionApi;
 import com.onepay.miura.data.ConfigApiData;
+import com.onepay.miura.data.ConnectApiData;
 import com.onepay.miura.data.DeviceApiData;
 import com.onepay.miura.data.TransactionApiData;
 
@@ -25,6 +29,17 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        if (Build.VERSION.SDK_INT >= 26 && (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)) {
+            requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE}, 1000);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
+                    checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                    checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE}, 1000);
+            }
+        }
+
         deviceInfo = findViewById(R.id.deviceInfoButton);
         transaction = findViewById(R.id.transactionButton);
         cancelTransaction = findViewById(R.id.cancelTransactionButton);
@@ -34,30 +49,18 @@ public class MainActivity extends AppCompatActivity {
 
     public void deviceInfo(View view) {
         //initDevice("C4:3A:35:D0:29:A4");
-        DeviceApi.getInstance().getDeviceInfo("0C:9A:42:89:2E:B9");
-      /*  , new DeviceApi.DeviceInfoListener() {
+        ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 10, new ConnectApi.ConnectListener(){
 
             @Override
-            public void onGetDeviceInfoComplete(DeviceApiData data) {
-                Log.d("TAG", "Naga...... address : " + data.address());
-                Log.d("TAG", "Naga...... type : " + data.type());
-                Log.d("TAG", "Naga...... serialNumber : " + data.serialNumber());
-                Log.d("TAG", "Naga...... osType : " + data.osType());
-                Log.d("TAG", "Naga...... osVersion : " + data.osVersion());
-                Log.d("TAG", "Naga...... mpiType : " + data.mpiType());
-                Log.d("TAG", "Naga...... mpiVersion : " + data.mpiVersion());
-                Log.d("TAG", "Naga...... chargingStatus : " + data.chargingStatus());
-                Log.d("TAG", "Naga...... batteryLevel : " + data.batteryLevel());
-                Log.d("TAG", "Naga...... pinKeyStatus : " + data.pinKeyStatus());
-                Log.d("TAG", "Naga...... sRedStatus : " + data.sREDStatus());
-                Log.d("TAG", "Naga...... dateTime : " + data.dateTime());
+            public void onConnectionComplete(ConnectApiData data) {
+                Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
+                Log.d("TAG", "Naga...... returnStatus : " + data.returnStatus());
             }
-        });*/
-
-    }
+        });
+       }
 
     public void onTransaction(View view) {
-        TransactionApi.getInstance().setTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60);
+        TransactionApi.getInstance().setTransactionParams(1234.56, "", "0C:9A:42:89:2E:B9", 20);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -65,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
                 Log.d("TAG", "Naga...... amount : " + data.amount());
                 Log.d("TAG", "Naga...... returnStatus : " + data.returnStatus());
+                Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
                 Log.d("TAG", "Naga...... cardHolderName : " + data.cardHolderName());
                 Log.d("TAG", "Naga...... cardNumber : " + data.cardNumber());
                 Log.d("TAG", "Naga...... ccFirstFour : " + data.accountFirstFour());
@@ -81,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onUpdateConfig(View view) {
-        ConfigApi.getInstance().performConfig(this, "0C:9A:42:89:2E:B9", 60, new ConfigApi.ConfigInfoListener() {
+        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 60, "", new ConfigApi.ConfigInfoListener() {
             @Override
             public void onConfigUpdateComplete(ConfigApiData data) {
                 Log.d("TAG", "Naga2........" + data.returnReason());
