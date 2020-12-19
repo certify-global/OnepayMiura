@@ -38,9 +38,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AndroidBindingLibrary">
-      <HintPath>..\AndroidBindingLibrary\bin\Debug\AndroidBindingLibrary.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Mono.Android" />
     <Reference Include="mscorlib" />
@@ -56,6 +53,7 @@
     <Compile Include="Api\ManualTransaction.cs" />
     <Compile Include="Api\Transaction.cs" />
     <Compile Include="Data\ConfigDeviceData.cs" />
+    <Compile Include="Data\ConnectData.cs" />
     <Compile Include="Data\DeviceData.cs" />
     <Compile Include="Data\TransactionData.cs" />
     <Compile Include="Resources\Resource.designer.cs" />
@@ -72,6 +70,12 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\drawable\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AndroidBindingLibrary\AndroidBindingLibrary.csproj">
+      <Project>{772afc02-056f-4990-964c-c0e51ab71dbe}</Project>
+      <Name>AndroidBindingLibrary</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

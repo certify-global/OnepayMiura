@@ -9,31 +9,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Com.Onepay.Miura.Api;
+using Com.Onepay.Miura.Data;
+using Onepay.Miura.Data;
 
 namespace Onepay.Miura.Api
 {
     public class Connect
     {
-        public void ConnectDevice(string btAddress, ConnectListener listener)
+
+        public static event EventHandler<ConnectData> ConnectionComplete;
+
+        public void ConnectDevice(string btAddress, int timeOut)
         {
-            ConnectApi.Instance.Connect(btAddress, listener);
+            ConnectApi.Instance.Connect(btAddress, timeOut);
         }
 
-        public class ConnectListener : Java.Lang.Object, ConnectApi.IDeviceConnectListener
+        public class ConnectListener : Java.Lang.Object, ConnectApi.IConnectListener
         {
-            public void OnConnectionError()
+            public void OnConnectionComplete(ConnectApiData connectApiData)
             {
-                //throw new NotImplementedException();
-            }
+                ConnectData connectData = new ConnectData();
+                connectData.ReturnReason = connectApiData.ReturnReason();
+                connectData.ReturnStatus = connectApiData.ReturnStatus();
 
-            public void OnConnectionSuccess()
-            {
-                //throw new NotImplementedException();
-            }
-
-            public void OnDeviceDisconnected()
-            {
-                //throw new NotImplementedException();
+                ConnectionComplete?.Invoke(this, connectData);
             }
         }
     }

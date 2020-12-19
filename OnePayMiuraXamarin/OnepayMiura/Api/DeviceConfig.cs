@@ -10,10 +10,10 @@ namespace Onepay.Miura.Api
     {
         public static event EventHandler<ConfigDeviceData> ConfigUpdateComplete;
 
-        public void PerformConfig(Context context, string btAddress, int timeOut)
+        public void PerformConfig(string btAddress, int timeOut, string filePath)
         {
             ConfigApi.Instance.OnConfigInfo(new ConfigListner());
-            ConfigApi.Instance.PerformConfig(context, btAddress, timeOut);
+            ConfigApi.Instance.PerformConfig(btAddress, timeOut, filePath);
         }
 
         public class ConfigListner : Java.Lang.Object, ConfigApi.IConfigInfoListener
