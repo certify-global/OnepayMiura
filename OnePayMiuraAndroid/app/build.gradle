@@ -37,10 +37,10 @@ task clearJar(type: Delete) {
 }
 
 task makeJar(type: Copy) {
-    from('build/intermediates/aar_main_jar/release/')
+    from('build/outputs/aar/')
     into('release/')
-    include('classes.jar')
-    rename ('classes.jar', 'OnepayMiura.jar')
+    include('app-debug.aar')
+    rename ('app-debug.aar', 'OnepayMiura.aar')
 }
 
 makeJar.dependsOn(clearJar, build)
