@@ -72,7 +72,9 @@ public class BluetoothConnect {
                     @UiThread
                     @Override
                     public void onConnectionAttemptFailed() {
-
+                        if (connectListener != null) {
+                            connectListener.onConnectionError();
+                        }
                     }
                 }
         );

@@ -31,6 +31,7 @@ import com.onepay.miura.core.Config;
 import com.onepay.miura.data.TransactionApiData;
 import com.onepay.miura.transactions.ManualTransactionAsync;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -54,10 +55,12 @@ public class ManualTransactionApi {
     private boolean isTimerTimedOut = false;
     private boolean isCvv = false;
     private ManualTransactionAsync mManualTransactionAsync;
-    TransactionApiData transactionData = null;
+    private TransactionApiData transactionData = null;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
-    EncryptedPan data = null;
+    private EncryptedPan data = null;
+    private static DecimalFormat decimalFormat = new DecimalFormat("#.##");
+
 
     public interface ManualTransactionListener {
         void onManualTransactionComplete(TransactionApiData data);
@@ -79,8 +82,8 @@ public class ManualTransactionApi {
      * @param tOut      Timeout for the transaction
      */
     public void setManualTransactionParams(double amt, String desc, String btAddress, int tOut, boolean isCvvRequired) {
-        startTransactionTimer();
-        clearData();
+
+        amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
         if (description != null)
             this.description = desc;
@@ -98,6 +101,7 @@ public class ManualTransactionApi {
      * @param listener callback listener for the transaction
      */
     public void performManualTransaction(ManualTransactionListener listener) {
+        startTransactionTimer();
         this.manualTransactionListener = listener;
         if (bluetoothAddress.isEmpty() || amount == 0) {
             if (manualTransactionListener != null) {
@@ -351,14 +355,13 @@ public class ManualTransactionApi {
     }
 
     private TransactionApiData createTransactionData(EncryptedPan data) {
-
-        transactionData.setEntryMode(entryMode);
         transactionData.setDeviceId(pedDeviceId);
         transactionData.setAmount(this.amount);
         transactionData.setReturnReason(returnReason);
         transactionData.setReturnStatus(returnStatus);
         transactionData.setDeviceCode("41");
         if (data != null) {
+            transactionData.setEntryMode(entryMode);
             if (data.RedactedPan != null) {
                 transactionData.setCardNumber(data.RedactedPan);
                 String number = data.RedactedPan;

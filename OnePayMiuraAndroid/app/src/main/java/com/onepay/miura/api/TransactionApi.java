@@ -41,6 +41,7 @@ import com.onepay.miura.transactions.EmvTransactionAsync;
 import com.onepay.miura.transactions.MagSwipeTransaction;
 import com.onepay.miura.transactions.MagSwipeTransactionAsync;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -67,7 +68,8 @@ public class TransactionApi {
     private boolean isTransactionTimeOut = false;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
-    TransactionApiData transactionData = null;
+    private TransactionApiData transactionData = null;
+    private static DecimalFormat decimalFormat = new DecimalFormat("#.##");
 
     @Nullable
     private EmvTransactionAsync mEmvTransactionAsync;
@@ -95,7 +97,7 @@ public class TransactionApi {
      * @param tOut      Timeout for the transaction
      */
     public void setTransactionParams(double amt, String desc, String btAddress, int tOut) {
-        clearData();
+        amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
         if (description != null)
             this.description = desc;
@@ -121,10 +123,6 @@ public class TransactionApi {
             }
             return;
         }
-        if (transactionInProgress) {
-            return;
-        }
-        transactionInProgress = true;
 
         setDeviceReconnectListener();
         BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
@@ -544,13 +542,13 @@ public class TransactionApi {
 
     private TransactionApiData createTransactionData(CardData cardData) {
 
-        transactionData.setEntryMode(entryMode);
         transactionData.setDeviceId(pedDeviceId);
         transactionData.setAmount(this.amount);
         transactionData.setReturnReason(returnReason);
         transactionData.setReturnStatus(returnStatus);
         transactionData.setDeviceCode("41");
         if (cardData != null) {
+            transactionData.setEntryMode(entryMode);
             transactionData.setCardHolderName(cardData.getCardholderName());
             if (cardData.getMaskedTrack2Data() != null) {
                 transactionData.setExpiryDate(cardData.getMaskedTrack2Data().getExpirationDate());
