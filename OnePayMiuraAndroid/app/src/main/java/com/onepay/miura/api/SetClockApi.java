@@ -2,56 +2,60 @@ package com.onepay.miura.api;
 
 import android.util.Log;
 
+import com.miurasystems.mpi.api.executor.MiuraManager;
+import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
-import com.onepay.miura.data.ConnectApiData;
+import com.onepay.miura.data.SetClockApiData;
 
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class ConnectApi {
+public class SetClockApi {
 
-    private ConnectListener listener;
-    private static ConnectApi instance = null;
-    private ConnectApiData connectData = null;
+    private SetClockListener listener;
+    private static SetClockApi instance = null;
+    private SetClockApiData setClockData = null;
     private int mTimeOut = 60;
     private String bluetoothAddress = "";
     private String returnReason = "";
     private int returnStatus = 0;
     private boolean isTimerTimedOut = false;
-    private Timer mTimer;
+    private Timer mTimer, mBtDisconnectTimer;
+    private Date date;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
 
-    public interface ConnectListener {
-        void onConnectionComplete(ConnectApiData data);
+    public interface SetClockListener {
+        void onConnectionComplete(SetClockApiData data);
     }
 
-    public static ConnectApi getInstance() {
+    public static SetClockApi getInstance() {
         if (instance == null) {
-            instance = new ConnectApi();
+            instance = new SetClockApi();
         }
         return instance;
     }
 
     /**
      * For connecting to the Miura device
-     *
      * @param btAddress Miura device bluetooth address
      */
-    public void connect(String btAddress, int tOut) {
+    public void setDeviceClock(String btAddress, int tOut, Date date) {
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
-        connectData = new ConnectApiData();
+        this.date = date;
+        setClockData = new SetClockApiData();
         startTimer();
 
         setDeviceReconnectListener();
         BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
-
-    public void setConnectListener(ConnectListener listener){
+    public void setConnectListener(SetClockListener listener){
         this.listener = listener;
     }
+
 
     private void reConnectDevice() {
         BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
@@ -62,11 +66,9 @@ public class ConnectApi {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
-                if (listener != null) {
-                    returnReason = Constants.SuccessReason;
-                    returnStatus = Constants.SuccessStatus;
-                    listener.onConnectionComplete(createConnectData());
-                }
+
+                setDeviceClock();
+                disconnectBtTimer();
             }
 
             @Override
@@ -79,7 +81,7 @@ public class ConnectApi {
                 if (listener != null) {
                     returnReason = Constants.BluetoothConnectionErrorReason;
                     returnStatus = Constants.BluetoothConnectionErrorStatus;
-                    listener.onConnectionComplete(createConnectData());
+                    listener.onConnectionComplete(createSetClockData());
                 }
             }
 
@@ -90,24 +92,46 @@ public class ConnectApi {
                 if (listener != null) {
                     returnReason = Constants.BluetoothDisconnectedReason;
                     returnStatus = Constants.BluetoothDisconnectedStatus;
-                    listener.onConnectionComplete(createConnectData());
+                    listener.onConnectionComplete(createSetClockData());
                 }
             }
         };
     }
 
-    private ConnectApiData createConnectData() {
-        connectData.setReturnReason(returnReason);
-        connectData.setReturnStatus(returnStatus);
-        cancelTimer();
-        return connectData;
+    private void setDeviceClock(){
+        MiuraManager.getInstance().setSystemClock(date, new MiuraDefaultListener() {
+            @Override
+            public void onSuccess() {
+                if (listener != null) {
+                    returnReason = Constants.SuccessReason;
+                    returnStatus = Constants.SuccessStatus;
+                    listener.onConnectionComplete(createSetClockData());
+                }
+            }
+
+            @Override
+            public void onError() {
+                if (listener != null) {
+                    returnReason = Constants.ErrorReason;
+                    returnStatus = Constants.ErrorStatus;
+                    listener.onConnectionComplete(createSetClockData());
+                }
+            }
+        });
     }
 
-    private void endConnection() {
+    private SetClockApiData createSetClockData() {
+        setClockData.setReturnReason(returnReason);
+        setClockData.setReturnStatus(returnStatus);
+        cancelTimer();
+        return setClockData;
+    }
+
+    private void endConnection(){
         if (listener != null) {
             returnReason = Constants.TimeoutReason;
             returnStatus = Constants.TimeoutStatus;
-            listener.onConnectionComplete(createConnectData());
+            listener.onConnectionComplete(createSetClockData());
         }
     }
 
@@ -127,19 +151,25 @@ public class ConnectApi {
         }, mTimeOut * 1000);
     }
 
-    private void disconnectBt(){
-        cancelTimer();
-        mTimer = new Timer();
-        mTimer.schedule(new TimerTask() {
-            public void run() {
-                isTimerTimedOut = true;
+    private void cancelTimer() {
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
+    }
 
+    private void disconnectBtTimer(){
+        cancelDisconnectBtTimer();
+        mBtDisconnectTimer = new Timer();
+        mBtDisconnectTimer.schedule(new TimerTask() {
+            public void run() {
+                BluetoothModule.getInstance().closeSession();
                 this.cancel();
             }
         }, 2 * 1000);
     }
 
-    private void cancelTimer() {
+    private void cancelDisconnectBtTimer() {
         if (mTimer != null) {
             mTimer.cancel();
             mTimer = null;
