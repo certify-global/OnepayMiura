@@ -9,6 +9,7 @@ import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
 import com.onepay.miura.data.SetClockApiData;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -42,10 +43,10 @@ public class SetClockApi {
      * For connecting to the Miura device
      * @param btAddress Miura device bluetooth address
      */
-    public void setDeviceClock(String btAddress, int tOut, Date date) {
+    public void setDeviceClock(String btAddress, int tOut, String dateTime) throws Exception {
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
-        this.date = date;
+        this.date = convertDateTime(dateTime);;
         setClockData = new SetClockApiData();
         startTimer();
 
@@ -118,6 +119,11 @@ public class SetClockApi {
                 }
             }
         });
+    }
+
+    private Date convertDateTime(String dateTime) throws Exception {
+        Date date=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(dateTime);
+        return date;
     }
 
     private SetClockApiData createSetClockData() {
