@@ -58,7 +58,6 @@ public class ConnectApi {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
-                BluetoothModule.getInstance().closeSession();
                 if (listener != null) {
                     returnReason = Constants.SuccessReason;
                     returnStatus = Constants.SuccessStatus;

@@ -351,14 +351,13 @@ public class ManualTransactionApi {
     }
 
     private TransactionApiData createTransactionData(EncryptedPan data) {
-
-        transactionData.setEntryMode(entryMode);
         transactionData.setDeviceId(pedDeviceId);
         transactionData.setAmount(this.amount);
         transactionData.setReturnReason(returnReason);
         transactionData.setReturnStatus(returnStatus);
         transactionData.setDeviceCode("41");
         if (data != null) {
+            transactionData.setEntryMode(entryMode);
             if (data.RedactedPan != null) {
                 transactionData.setCardNumber(data.RedactedPan);
                 String number = data.RedactedPan;

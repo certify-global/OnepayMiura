@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
        }
 
     public void onTransaction(View view) {
-        TransactionApi.getInstance().setTransactionParams(1234.56, "", "0C:9A:42:89:2E:B9", 20);
+        TransactionApi.getInstance().setTransactionParams(7.991, "", "0C:9A:42:89:2E:B9", 20);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
