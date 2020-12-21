@@ -228,39 +228,40 @@ namespace Com.Onepay.Miura.Api {
 			}
 		}
 
-		static Delegate cb_setDeviceClock_Ljava_lang_String_ILjava_util_Date_;
+		static Delegate cb_setDeviceClock_Ljava_lang_String_ILjava_lang_String_;
 #pragma warning disable 0169
-		static Delegate GetSetDeviceClock_Ljava_lang_String_ILjava_util_Date_Handler ()
+		static Delegate GetSetDeviceClock_Ljava_lang_String_ILjava_lang_String_Handler ()
 		{
-			if (cb_setDeviceClock_Ljava_lang_String_ILjava_util_Date_ == null)
-				cb_setDeviceClock_Ljava_lang_String_ILjava_util_Date_ = JNINativeWrapper.CreateDelegate ((_JniMarshal_PPLIL_V) n_SetDeviceClock_Ljava_lang_String_ILjava_util_Date_);
-			return cb_setDeviceClock_Ljava_lang_String_ILjava_util_Date_;
+			if (cb_setDeviceClock_Ljava_lang_String_ILjava_lang_String_ == null)
+				cb_setDeviceClock_Ljava_lang_String_ILjava_lang_String_ = JNINativeWrapper.CreateDelegate ((_JniMarshal_PPLIL_V) n_SetDeviceClock_Ljava_lang_String_ILjava_lang_String_);
+			return cb_setDeviceClock_Ljava_lang_String_ILjava_lang_String_;
 		}
 
-		static void n_SetDeviceClock_Ljava_lang_String_ILjava_util_Date_ (IntPtr jnienv, IntPtr native__this, IntPtr native_btAddress, int tOut, IntPtr native_date)
+		static void n_SetDeviceClock_Ljava_lang_String_ILjava_lang_String_ (IntPtr jnienv, IntPtr native__this, IntPtr native_btAddress, int tOut, IntPtr native_dateTime)
 		{
 			var __this = global::Java.Lang.Object.GetObject<global::Com.Onepay.Miura.Api.SetClockApi> (jnienv, native__this, JniHandleOwnership.DoNotTransfer);
 			var btAddress = JNIEnv.GetString (native_btAddress, JniHandleOwnership.DoNotTransfer);
-			var date = global::Java.Lang.Object.GetObject<global::Java.Util.Date> (native_date, JniHandleOwnership.DoNotTransfer);
-			__this.SetDeviceClock (btAddress, tOut, date);
+			var dateTime = JNIEnv.GetString (native_dateTime, JniHandleOwnership.DoNotTransfer);
+			__this.SetDeviceClock (btAddress, tOut, dateTime);
 		}
 #pragma warning restore 0169
 
-		// Metadata.xml XPath method reference: path="/api/package[@name='com.onepay.miura.api']/class[@name='SetClockApi']/method[@name='setDeviceClock' and count(parameter)=3 and parameter[1][@type='java.lang.String'] and parameter[2][@type='int'] and parameter[3][@type='java.util.Date']]"
-		[Register ("setDeviceClock", "(Ljava/lang/String;ILjava/util/Date;)V", "GetSetDeviceClock_Ljava_lang_String_ILjava_util_Date_Handler")]
-		public virtual unsafe void SetDeviceClock (string btAddress, int tOut, global::Java.Util.Date date)
+		// Metadata.xml XPath method reference: path="/api/package[@name='com.onepay.miura.api']/class[@name='SetClockApi']/method[@name='setDeviceClock' and count(parameter)=3 and parameter[1][@type='java.lang.String'] and parameter[2][@type='int'] and parameter[3][@type='java.lang.String']]"
+		[Register ("setDeviceClock", "(Ljava/lang/String;ILjava/lang/String;)V", "GetSetDeviceClock_Ljava_lang_String_ILjava_lang_String_Handler")]
+		public virtual unsafe void SetDeviceClock (string btAddress, int tOut, string dateTime)
 		{
-			const string __id = "setDeviceClock.(Ljava/lang/String;ILjava/util/Date;)V";
+			const string __id = "setDeviceClock.(Ljava/lang/String;ILjava/lang/String;)V";
 			IntPtr native_btAddress = JNIEnv.NewString (btAddress);
+			IntPtr native_dateTime = JNIEnv.NewString (dateTime);
 			try {
 				JniArgumentValue* __args = stackalloc JniArgumentValue [3];
 				__args [0] = new JniArgumentValue (native_btAddress);
 				__args [1] = new JniArgumentValue (tOut);
-				__args [2] = new JniArgumentValue ((date == null) ? IntPtr.Zero : ((global::Java.Lang.Object) date).Handle);
+				__args [2] = new JniArgumentValue (native_dateTime);
 				_members.InstanceMethods.InvokeVirtualVoidMethod (__id, this, __args);
 			} finally {
 				JNIEnv.DeleteLocalRef (native_btAddress);
-				global::System.GC.KeepAlive (date);
+				JNIEnv.DeleteLocalRef (native_dateTime);
 			}
 		}
 

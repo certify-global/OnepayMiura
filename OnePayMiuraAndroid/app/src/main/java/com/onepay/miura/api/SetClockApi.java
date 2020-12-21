@@ -37,7 +37,7 @@ public class SetClockApi {
             instance = new SetClockApi();
         }
         return instance;
-    }
+}
 
     /**
      * For connecting to the Miura device

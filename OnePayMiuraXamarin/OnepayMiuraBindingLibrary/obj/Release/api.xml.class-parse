@@ -29440,7 +29440,7 @@
         visibility="public"
         bridge="false"
         synthetic="false"
-        jni-signature="(Ljava/lang/String;ILjava/util/Date;)V">
+        jni-signature="(Ljava/lang/String;ILjava/lang/String;)V">
         <parameter
           name="btAddress"
           type="java.lang.String"
@@ -29450,9 +29450,13 @@
           type="int"
           jni-type="I" />
         <parameter
-          name="date"
-          type="java.util.Date"
-          jni-type="Ljava/util/Date;" />
+          name="dateTime"
+          type="java.lang.String"
+          jni-type="Ljava/lang/String;" />
+        <exception
+          name="java/lang/Exception"
+          type="java.lang.Exception"
+          type-generic-aware="java.lang.Exception" />
       </method>
     </class>
     <class
