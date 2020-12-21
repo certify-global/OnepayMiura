@@ -20,7 +20,7 @@ public class ConnectApi {
     private String returnReason = "";
     private int returnStatus = 0;
     private boolean isTimerTimedOut = false;
-    private Timer mTimer;
+    private Timer mTimer, mBtDisconnectTimer;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
 
     public interface ConnectListener {
@@ -67,6 +67,8 @@ public class ConnectApi {
                     returnStatus = Constants.SuccessStatus;
                     listener.onConnectionComplete(createConnectData());
                 }
+
+                disconnectBtTimer();
             }
 
             @Override
@@ -127,19 +129,25 @@ public class ConnectApi {
         }, mTimeOut * 1000);
     }
 
-    private void disconnectBt(){
-        cancelTimer();
-        mTimer = new Timer();
-        mTimer.schedule(new TimerTask() {
-            public void run() {
-                isTimerTimedOut = true;
+    private void cancelTimer() {
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
+    }
 
+    private void disconnectBtTimer(){
+        cancelDisconnectBtTimer();
+        mBtDisconnectTimer = new Timer();
+        mBtDisconnectTimer.schedule(new TimerTask() {
+            public void run() {
+                BluetoothModule.getInstance().closeSession();
                 this.cancel();
             }
         }, 2 * 1000);
     }
 
-    private void cancelTimer() {
+    private void cancelDisconnectBtTimer() {
         if (mTimer != null) {
             mTimer.cancel();
             mTimer = null;
