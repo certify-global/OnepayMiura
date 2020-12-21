@@ -8,6 +8,8 @@ public class Constants {
     public static String BluetoothDisconnectedReason = "Bluetooth Disconnected";
     public static String TimeoutReason = "Timeout";
     public static String InvalidParametersReason = "Invalid Parameters";
+    public static String NoDirectoryReason = "No Such file or Directory";
+    public static String BadFileUploadedReason = "BadFileUploaded";
 
     public static int SuccessStatus = 1;
     public static int ErrorStatus = 2;
@@ -16,6 +18,8 @@ public class Constants {
     public static int BluetoothDisconnectedStatus = 5;
     public static int TimeoutStatus = 6;
     public static int InvalidParametersStatus = 7;
+    public static int NoDirectoryStatus = 8;
+    public static int BadFileUploadedStatus = 9;
 
     public static String Unknown = "00";
     public static String Manual = "01";
