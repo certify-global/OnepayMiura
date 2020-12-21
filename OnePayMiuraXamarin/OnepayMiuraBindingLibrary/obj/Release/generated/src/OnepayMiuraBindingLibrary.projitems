@@ -141,6 +141,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Api.ConnectApi.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Api.DeviceApi.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Api.ManualTransactionApi.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Api.SetClockApi.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Api.TransactionApi.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Bluetooth.AndroidBluetoothClientConnector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Bluetooth.BluetoothConnect.cs" />
@@ -156,6 +157,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Data.ConfigApiData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Data.ConnectApiData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Data.DeviceApiData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Data.SetClockApiData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Data.TransactionApiData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Transactions.EmvTransaction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Com.Onepay.Miura.Transactions.EmvTransactionAsync.cs" />

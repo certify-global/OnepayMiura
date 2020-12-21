@@ -52,7 +52,7 @@ public class SetClockApi {
         setDeviceReconnectListener();
         BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
-    public void setConnectListener(SetClockListener listener){
+    public void setClockListener(SetClockListener listener){
         this.listener = listener;
     }
 

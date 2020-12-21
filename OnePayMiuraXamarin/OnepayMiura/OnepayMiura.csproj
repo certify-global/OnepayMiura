@@ -51,10 +51,12 @@
     <Compile Include="Api\DeviceConfig.cs" />
     <Compile Include="Api\Device.cs" />
     <Compile Include="Api\ManualTransaction.cs" />
+    <Compile Include="Api\SetClock.cs" />
     <Compile Include="Api\Transaction.cs" />
     <Compile Include="Data\ConfigDeviceData.cs" />
     <Compile Include="Data\ConnectData.cs" />
     <Compile Include="Data\DeviceData.cs" />
+    <Compile Include="Data\SetClockData.cs" />
     <Compile Include="Data\TransactionData.cs" />
     <Compile Include="Resources\Resource.designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
