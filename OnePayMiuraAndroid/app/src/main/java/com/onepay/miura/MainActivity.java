@@ -3,9 +3,13 @@ package com.onepay.miura;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -14,15 +18,20 @@ import com.onepay.miura.api.ConfigApi;
 import com.onepay.miura.api.ConnectApi;
 import com.onepay.miura.api.DeviceApi;
 import com.onepay.miura.api.ManualTransactionApi;
+import com.onepay.miura.api.SetClockApi;
 import com.onepay.miura.api.TransactionApi;
 import com.onepay.miura.data.ConfigApiData;
 import com.onepay.miura.data.ConnectApiData;
 import com.onepay.miura.data.DeviceApiData;
+import com.onepay.miura.data.SetClockApiData;
 import com.onepay.miura.data.TransactionApiData;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction;
+    Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,10 +54,18 @@ public class MainActivity extends AppCompatActivity {
         cancelTransaction = findViewById(R.id.cancelTransactionButton);
         manualTransaction = findViewById(R.id.onManualTransaction);
         cancelManualTransaction = findViewById(R.id.onManualCancelTransaction);
+        setDeviceClock = findViewById(R.id.setDeviceClock);
     }
 
+    //1.Event Handler 2. BroadCast Message
     public void deviceInfo(View view) {
         //initDevice("C4:3A:35:D0:29:A4");
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+
+            }
+        };
         ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 10, new ConnectApi.ConnectListener(){
 
             @Override
@@ -60,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
        }
 
     public void onTransaction(View view) {
-        TransactionApi.getInstance().setTransactionParams(7.991, "", "0C:9A:42:89:2E:B9", 20);
+        TransactionApi.getInstance().setTransactionParams(1.00, "", "0C:9A:42:89:2E:B9", 20);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -85,7 +102,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onUpdateConfig(View view) {
-        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 60, "", new ConfigApi.ConfigInfoListener() {
+        String path = Environment.getExternalStorageDirectory() + "/mpi_config/";
+        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 60, path, new ConfigApi.ConfigInfoListener() {
             @Override
             public void onConfigUpdateComplete(ConfigApiData data) {
                 Log.d("TAG", "Naga2........" + data.returnReason());
@@ -123,5 +141,17 @@ public class MainActivity extends AppCompatActivity {
          * Method that initiate for canceling transaction
          */
         ManualTransactionApi.getInstance().cancelTransaction();
+    }
+
+    public void setDeviceClock(View view){
+        SimpleDateFormat format = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+        Date curDate = new Date(System.currentTimeMillis());
+        SetClockApi.getInstance().setDeviceClock("0C:9A:42:89:2E:B9", 30, curDate, new SetClockApi.SetClockListener() {
+            @Override
+            public void onConnectionComplete(SetClockApiData data) {
+                Log.d("TAG", "Naga............returnReason: " +data.returnReason());
+                Log.d("TAG", "Naga............returnStatus: " +data.returnStatus());
+            }
+        });
     }
 }

@@ -2,34 +2,38 @@ package com.onepay.miura.api;
 
 import android.util.Log;
 
+import com.miurasystems.mpi.api.executor.MiuraManager;
+import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
-import com.onepay.miura.data.ConnectApiData;
+import com.onepay.miura.data.SetClockApiData;
 
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class ConnectApi {
+public class SetClockApi {
 
-    private ConnectListener listener;
-    private static ConnectApi instance = null;
-    private ConnectApiData connectData = null;
+    private SetClockListener listener;
+    private static SetClockApi instance = null;
+    private SetClockApiData setClockData = null;
     private int mTimeOut = 60;
     private String bluetoothAddress = "";
     private String returnReason = "";
     private int returnStatus = 0;
     private boolean isTimerTimedOut = false;
     private Timer mTimer, mBtDisconnectTimer;
+    private Date date;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
 
-    public interface ConnectListener {
-        void onConnectionComplete(ConnectApiData data);
+    public interface SetClockListener {
+        void onConnectionComplete(SetClockApiData data);
     }
 
-    public static ConnectApi getInstance() {
+    public static SetClockApi getInstance() {
         if (instance == null) {
-            instance = new ConnectApi();
+            instance = new SetClockApi();
         }
         return instance;
     }
@@ -38,11 +42,12 @@ public class ConnectApi {
      * For connecting to the Miura device
      * @param btAddress Miura device bluetooth address
      */
-    public void connect(String btAddress, int tOut, ConnectListener listener) {
+    public void setDeviceClock(String btAddress, int tOut, Date date, SetClockListener listener) {
         this.listener = listener;
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
-        connectData = new ConnectApiData();
+        this.date = date;
+        setClockData = new SetClockApiData();
         startTimer();
 
         setDeviceReconnectListener();
@@ -58,12 +63,8 @@ public class ConnectApi {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
-                if (listener != null) {
-                    returnReason = Constants.SuccessReason;
-                    returnStatus = Constants.SuccessStatus;
-                    listener.onConnectionComplete(createConnectData());
-                }
 
+                setDeviceClock();
                 disconnectBtTimer();
             }
 
@@ -77,7 +78,7 @@ public class ConnectApi {
                 if (listener != null) {
                     returnReason = Constants.BluetoothConnectionErrorReason;
                     returnStatus = Constants.BluetoothConnectionErrorStatus;
-                    listener.onConnectionComplete(createConnectData());
+                    listener.onConnectionComplete(createSetClockData());
                 }
             }
 
@@ -88,24 +89,46 @@ public class ConnectApi {
                 if (listener != null) {
                     returnReason = Constants.BluetoothDisconnectedReason;
                     returnStatus = Constants.BluetoothDisconnectedStatus;
-                    listener.onConnectionComplete(createConnectData());
+                    listener.onConnectionComplete(createSetClockData());
                 }
             }
         };
     }
 
-    private ConnectApiData createConnectData() {
-        connectData.setReturnReason(returnReason);
-        connectData.setReturnStatus(returnStatus);
+    private void setDeviceClock(){
+        MiuraManager.getInstance().setSystemClock(date, new MiuraDefaultListener() {
+            @Override
+            public void onSuccess() {
+                if (listener != null) {
+                    returnReason = Constants.SuccessReason;
+                    returnStatus = Constants.SuccessStatus;
+                    listener.onConnectionComplete(createSetClockData());
+                }
+            }
+
+            @Override
+            public void onError() {
+                if (listener != null) {
+                    returnReason = Constants.ErrorReason;
+                    returnStatus = Constants.ErrorStatus;
+                    listener.onConnectionComplete(createSetClockData());
+                }
+            }
+        });
+    }
+
+    private SetClockApiData createSetClockData() {
+        setClockData.setReturnReason(returnReason);
+        setClockData.setReturnStatus(returnStatus);
         cancelTimer();
-        return connectData;
+        return setClockData;
     }
 
     private void endConnection(){
         if (listener != null) {
             returnReason = Constants.TimeoutReason;
             returnStatus = Constants.TimeoutStatus;
-            listener.onConnectionComplete(createConnectData());
+            listener.onConnectionComplete(createSetClockData());
         }
     }
 
