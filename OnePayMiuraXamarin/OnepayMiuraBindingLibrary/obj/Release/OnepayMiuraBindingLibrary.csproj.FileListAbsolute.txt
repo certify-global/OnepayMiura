@@ -1,0 +1,8 @@
+C:\SourceTree\OnepayMiura_2\OnePayMiuraXamarin\OnepayMiuraBindingLibrary\bin\Release\OnepayMiuraBindingLibrary.dll
+C:\SourceTree\OnepayMiura_2\OnePayMiuraXamarin\OnepayMiuraBindingLibrary\bin\Release\OnepayMiuraBindingLibrary.pdb
+C:\SourceTree\OnepayMiura_2\OnePayMiuraXamarin\OnepayMiuraBindingLibrary\obj\Release\MonoAndroid,Version=v9.0.AssemblyAttributes.cs
+C:\SourceTree\OnepayMiura_2\OnePayMiuraXamarin\OnepayMiuraBindingLibrary\obj\Release\stamp\_BuildLibraryImportsCache.stamp
+C:\SourceTree\OnepayMiura_2\OnePayMiuraXamarin\OnepayMiuraBindingLibrary\obj\Release\OnepayMiuraBindingLibrary.csproj.CoreCompileInputs.cache
+C:\SourceTree\OnepayMiura_2\OnePayMiuraXamarin\OnepayMiuraBindingLibrary\obj\Release\OnepayMiuraBindingLibrary.dll
+C:\SourceTree\OnepayMiura_2\OnePayMiuraXamarin\OnepayMiuraBindingLibrary\obj\Release\OnepayMiuraBindingLibrary.pdb
+C:\SourceTree\OnepayMiura_2\OnePayMiuraXamarin\OnepayMiuraBindingLibrary\obj\Release\__AndroidLibraryProjects__.zip

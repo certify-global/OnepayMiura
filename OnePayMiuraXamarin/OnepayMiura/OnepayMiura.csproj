@@ -72,9 +72,9 @@
     <Folder Include="Resources\drawable\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AndroidBindingLibrary\AndroidBindingLibrary.csproj">
-      <Project>{772afc02-056f-4990-964c-c0e51ab71dbe}</Project>
-      <Name>AndroidBindingLibrary</Name>
+    <ProjectReference Include="..\OnepayMiuraBindingLibrary\OnepayMiuraBindingLibrary.csproj">
+      <Project>{32f20005-d53d-4215-b2ed-60c37aa99d46}</Project>
+      <Name>OnepayMiuraBindingLibrary</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />

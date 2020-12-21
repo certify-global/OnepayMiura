@@ -1,0 +1,12 @@
+using System;
+
+namespace Org.Aspectj.Lang.Annotation {
+
+	[global::Android.Runtime.Annotation ("org.aspectj.lang.annotation.RequiredTypes")]
+	public partial class RequiredTypesAttribute : Attribute
+	{
+		[global::Android.Runtime.Register ("value")]
+		public string[] Value { get; set; }
+
+	}
+}

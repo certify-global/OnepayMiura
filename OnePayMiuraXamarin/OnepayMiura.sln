@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30611.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnepayMiura", "OnepayMiura\OnepayMiura.csproj", "{C838DA25-0DCD-46BE-835E-583A54ED8E24}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidBindingLibrary", "AndroidBindingLibrary\AndroidBindingLibrary.csproj", "{772AFC02-056F-4990-964C-C0E51AB71DBE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnepayMiuraBindingLibrary", "OnepayMiuraBindingLibrary\OnepayMiuraBindingLibrary.csproj", "{32F20005-D53D-4215-B2ED-60C37AA99D46}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{C838DA25-0DCD-46BE-835E-583A54ED8E24}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C838DA25-0DCD-46BE-835E-583A54ED8E24}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C838DA25-0DCD-46BE-835E-583A54ED8E24}.Release|Any CPU.Build.0 = Release|Any CPU
-		{772AFC02-056F-4990-964C-C0E51AB71DBE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{772AFC02-056F-4990-964C-C0E51AB71DBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{772AFC02-056F-4990-964C-C0E51AB71DBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{772AFC02-056F-4990-964C-C0E51AB71DBE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32F20005-D53D-4215-B2ED-60C37AA99D46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32F20005-D53D-4215-B2ED-60C37AA99D46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32F20005-D53D-4215-B2ED-60C37AA99D46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32F20005-D53D-4215-B2ED-60C37AA99D46}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
