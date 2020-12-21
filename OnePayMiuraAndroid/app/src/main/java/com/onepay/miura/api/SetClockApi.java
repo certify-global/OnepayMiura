@@ -40,8 +40,11 @@ public class SetClockApi {
 }
 
     /**
-     * For connecting to the Miura device
-     * @param btAddress Miura device bluetooth address
+     * This method for device clock
+     *
+     * @param btAddress   Miura device bluetooth address
+     * @param tOut        Timeout for the setDeviceClock
+     * @param dateTime    DateTime
      */
     public void setDeviceClock(String btAddress, int tOut, String dateTime) throws Exception {
         bluetoothAddress = btAddress;

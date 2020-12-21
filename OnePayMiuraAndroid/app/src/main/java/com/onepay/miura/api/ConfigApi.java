@@ -52,6 +52,13 @@ public class ConfigApi {
         return instance;
     }
 
+    /**
+     * Method that sets the config parameters
+     *
+     * @param btAddress   Miura bluetooth device address
+     * @param tOut        Timeout process
+     * @param filePath    Config file path
+     */
     public void performConfig(String btAddress, int tOut, String filePath) {
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
@@ -64,10 +71,6 @@ public class ConfigApi {
     }
 
     public void setConfigListener(ConfigInfoListener listener) {
-        this.listener = listener;
-    }
-
-    public void onConfigInfo(ConfigInfoListener listener) {
         this.listener = listener;
     }
 
