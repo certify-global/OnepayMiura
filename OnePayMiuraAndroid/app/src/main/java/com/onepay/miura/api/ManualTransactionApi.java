@@ -171,13 +171,12 @@ public class ManualTransactionApi {
             returnStatus = Constants.CancelStatus;
             manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
         }
-
         clearData();
         deregisterEventHandlers();
 
-        if (!BluetoothModule.getInstance().isSessionOpen()) {
-            BluetoothModule.getInstance().closeSession();
-            return;
+
+        if (mManualTransactionAsync != null) {
+            mManualTransactionAsync.abortManualTransaction();
         }
     }
 
@@ -338,11 +337,13 @@ public class ManualTransactionApi {
         mManualTransactionAsync.manualTransaction(isCvv);
 
         Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
-        data = result.asSuccess().getValue();
-        if (manualTransactionListener != null) {
-            returnReason = Constants.SuccessReason;
-            returnStatus = Constants.SuccessStatus;
-            manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+        if (data != null) {
+            data = result.asSuccess().getValue();
+            if (manualTransactionListener != null) {
+                returnReason = Constants.SuccessReason;
+                returnStatus = Constants.SuccessStatus;
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+            }
         }
 
         BluetoothModule.getInstance().closeSession();

@@ -38,6 +38,7 @@ public class ConfigApi {
     private String returnReason = "";
     private String filepath = "";
     private int returnStatus = 0;
+    private MpiClient mpiClient;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
 
     public interface ConfigInfoListener {
@@ -54,7 +55,6 @@ public class ConfigApi {
     public void performConfig(String btAddress, int tOut, String filePath, ConfigInfoListener listener) {
 
         this.listener = listener;
-        //clearData();
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
         this.filepath = filePath;
@@ -63,6 +63,10 @@ public class ConfigApi {
 
         setDeviceReconnectListener();
         BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+    }
+
+    public void onConfigInfo(ConfigInfoListener listener) {
+        this.listener = listener;
     }
 
     private void reConnectDevice() {
@@ -84,7 +88,13 @@ public class ConfigApi {
                                 try {
                                     doFileUploads(client);
                                 } catch (IOException e) {
-                                    e.printStackTrace();
+                                    Log.e(TAG, "runOnAsyncThread: " + e.toString());
+                                    if (listener != null) {
+                                        returnReason = Constants.NoDirectoryReason;
+                                        returnStatus = Constants.NoDirectoryStatus;
+                                        listener.onConfigUpdateComplete(createConfigData());
+                                    }
+                                    mpiClient.closeSession();
                                 }
                             }
                         });
@@ -116,7 +126,7 @@ public class ConfigApi {
             public void onDeviceDisconnected() {
                 Log.d("TAG", "onDeviceDisconnected: ");
 
-              /*  if (listener != null) {
+                /*if (listener != null) {
                     returnReason = Constants.BluetoothDisconnectedReason;
                     returnStatus = Constants.BluetoothDisconnectedStatus;
                     listener.onConfigUpdateComplete(createConfigData());
@@ -125,13 +135,10 @@ public class ConfigApi {
         };
     }
 
-    public void onConfigInfo(ConfigInfoListener listener) {
-        this.listener = listener;
-    }
-
     private void doFileUploads(@NonNull MpiClient client) throws IOException {
         InterfaceType interfaceType = InterfaceType.MPI;
 
+        this.mpiClient = client;
         boolean ok = client.displayText(MPI, DisplayTextUtils.getCenteredText("Updating....\nConfig files..."),
                 true, true, true);
         if (!ok) {
@@ -176,6 +183,11 @@ public class ConfigApi {
                     interfaceType, buffer, 0, 0, buffer.length, 100);
             if (!ok) {
                 showBadFileUploadMessage(filename);
+                if (listener != null) {
+                    returnReason = Constants.BadFileUploadedReason;
+                    returnStatus = Constants.BadFileUploadedStatus;
+                    listener.onConfigUpdateComplete(createConfigData());
+                }
                 Log.e(TAG, "Error Config-file");
                 client.closeSession();
             }

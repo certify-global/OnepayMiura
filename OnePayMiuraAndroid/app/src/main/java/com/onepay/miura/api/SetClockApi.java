@@ -1,5 +1,6 @@
 package com.onepay.miura.api;
 
+import android.text.PrecomputedText;
 import android.util.Log;
 
 import com.miurasystems.mpi.api.executor.MiuraManager;
@@ -9,6 +10,7 @@ import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
 import com.onepay.miura.data.SetClockApiData;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -42,11 +44,12 @@ public class SetClockApi {
      * For connecting to the Miura device
      * @param btAddress Miura device bluetooth address
      */
-    public void setDeviceClock(String btAddress, int tOut, Date date, SetClockListener listener) {
+    public void setDeviceClock(String btAddress, int tOut, String dateTime, SetClockListener listener) throws Exception {
         this.listener = listener;
+
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
-        this.date = date;
+        this.date = convertDateTime(dateTime);
         setClockData = new SetClockApiData();
         startTimer();
 
@@ -95,7 +98,13 @@ public class SetClockApi {
         };
     }
 
-    private void setDeviceClock(){
+    public Date convertDateTime(String dateTime) throws Exception {
+        //String sDate1="12/21/2020 12:29:24";
+        Date date=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(dateTime);
+        return date;
+    }
+
+    private int setDeviceClock(){
         MiuraManager.getInstance().setSystemClock(date, new MiuraDefaultListener() {
             @Override
             public void onSuccess() {
@@ -115,9 +124,12 @@ public class SetClockApi {
                 }
             }
         });
+
+        return 1;
     }
 
     private SetClockApiData createSetClockData() {
+        setClockData.setDateTime(date);
         setClockData.setReturnReason(returnReason);
         setClockData.setReturnStatus(returnStatus);
         cancelTimer();

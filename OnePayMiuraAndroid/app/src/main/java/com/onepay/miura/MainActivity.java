@@ -1,11 +1,6 @@
 package com.onepay.miura;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.Manifest;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -14,20 +9,21 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.onepay.miura.api.ConfigApi;
 import com.onepay.miura.api.ConnectApi;
-import com.onepay.miura.api.DeviceApi;
 import com.onepay.miura.api.ManualTransactionApi;
 import com.onepay.miura.api.SetClockApi;
 import com.onepay.miura.api.TransactionApi;
 import com.onepay.miura.data.ConfigApiData;
 import com.onepay.miura.data.ConnectApiData;
-import com.onepay.miura.data.DeviceApiData;
 import com.onepay.miura.data.SetClockApiData;
 import com.onepay.miura.data.TransactionApiData;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -59,15 +55,15 @@ public class MainActivity extends AppCompatActivity {
 
     //1.Event Handler 2. BroadCast Message
     public void deviceInfo(View view) {
-        //initDevice("C4:3A:35:D0:29:A4");
-        BroadcastReceiver receiver = new BroadcastReceiver() {
+
+     /*   DeviceApi.getInstance().getDeviceInfo("0C:9A:42:89:2E:B9", new DeviceApi.DeviceInfoListener() {
             @Override
-            public void onReceive(Context context, Intent intent) {
-
+            public void onGetDeviceInfoComplete(DeviceApiData data) {
+                Log.d("TAG", "Naga...... returnReason : " + data.dateTime());
             }
-        };
-        ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 10, new ConnectApi.ConnectListener(){
+        });*/
 
+     ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 15, new ConnectApi.ConnectListener(){
             @Override
             public void onConnectionComplete(ConnectApiData data) {
                 Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
@@ -113,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onManualTransaction(View view) {
-        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60, true);
+        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60, false);
 
         ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 
@@ -143,10 +139,11 @@ public class MainActivity extends AppCompatActivity {
         ManualTransactionApi.getInstance().cancelTransaction();
     }
 
-    public void setDeviceClock(View view){
-        SimpleDateFormat format = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-        Date curDate = new Date(System.currentTimeMillis());
-        SetClockApi.getInstance().setDeviceClock("0C:9A:42:89:2E:B9", 30, curDate, new SetClockApi.SetClockListener() {
+    public void setDeviceClock(View view) throws Exception {
+
+        String sDate1="12/21/2020 12:29:24";
+        //Log.d("TAG", "Naga...........setDeviceClock: " + sDate1);
+        SetClockApi.getInstance().setDeviceClock("0C:9A:42:89:2E:B9", 30, sDate1, new SetClockApi.SetClockListener() {
             @Override
             public void onConnectionComplete(SetClockApiData data) {
                 Log.d("TAG", "Naga............returnReason: " +data.returnReason());
@@ -154,4 +151,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    public Date convetDateTime() throws Exception {
+        String sDate1="12/21/2020 12:29:24";
+        Date date1=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(sDate1);
+        System.out.println(sDate1+"\t"+date1);
+        return date1;
+    }
+
+
 }

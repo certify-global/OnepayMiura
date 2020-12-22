@@ -1,15 +1,27 @@
 package com.onepay.miura.transactions;
 
+import android.util.Log;
+
+import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
+
 import com.miurasystems.mpi.MpiClient;
 import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
+import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.EncryptedPan;
 import com.miurasystems.mpi.enums.GetCommandsOptions;
 import com.miurasystems.mpi.enums.GetEncryptedPanError;
 
 import java.util.EnumSet;
+import java.util.Objects;
+
+import static com.miurasystems.mpi.enums.InterfaceType.MPI;
 
 public class ManualTransactionAsync {
+
+    private static final String TAG = ManualTransactionAsync.class.getSimpleName();
+
     private final MiuraManager mMiuraManager;
     private final MpiClient mMpiClient;
     public Result<EncryptedPan, GetEncryptedPanError> result = null;
@@ -30,8 +42,14 @@ public class ManualTransactionAsync {
                 GetCommandsOptions.KeyboardBacklightOn,
                 GetCommandsOptions.ShowStatusBar);
 
-        //result = mMpiClient.getSecurePan(options, 30);
-        //boolean getPan, boolean getStartDate, boolean getExpiryDate, boolean getCVV, boolean yyMm,
-        result = mMpiClient.getSecureCardData(true, false, true, isCvv, true, options, 30);
+        result = mMpiClient.getSecureCardData(true, false, true, isCvv, false, options, 30);
+    }
+
+    @UiThread
+    public void abortManualTransaction() {
+        Log.d(TAG, "abortTransactionAsync");
+        mMpiClient.abort(MPI, false);
+        mMpiClient.abort(MPI, false);
+        mMpiClient.abort(MPI, false);
     }
 }

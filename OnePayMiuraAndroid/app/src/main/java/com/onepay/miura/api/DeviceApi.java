@@ -4,6 +4,7 @@ import android.util.Log;
 
 import androidx.annotation.WorkerThread;
 
+import com.miurasystems.mpi.MpiClient;
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.ApiBatteryStatusListener;
 import com.miurasystems.mpi.api.listener.ApiGetConfigListener;
@@ -17,9 +18,11 @@ import com.miurasystems.mpi.api.objects.P2PEStatus;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
+import com.onepay.miura.common.Constants;
 import com.onepay.miura.core.Config;
 import com.onepay.miura.data.DeviceApiData;
 
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,6 +36,7 @@ public class DeviceApi {
     private DeviceInfoListener listener;
     private DeviceApiData deviceData = null;
     private String btAddress = "";
+    private BluetoothConnect.DeviceConnectListener deviceConnectListener;
 
     public interface DeviceInfoListener {
         void onGetDeviceInfoComplete(DeviceApiData data);
@@ -48,10 +52,20 @@ public class DeviceApi {
     /**
      * @param btAddress Miura device bluetooth address
      */
-    public void getDeviceInfo(String btAddress) {
-
+    public void getDeviceInfo(String btAddress, DeviceInfoListener listener) {
+        this.listener = listener;
         this.btAddress = btAddress;
-        BluetoothConnect.getInstance().connect(btAddress, new BluetoothConnect.DeviceConnectListener() {
+
+        setDeviceReconnectListener();
+        BluetoothConnect.getInstance().connect(this.btAddress, deviceConnectListener);
+    }
+
+    private void reConnectDevice() {
+        BluetoothConnect.getInstance().connect(this.btAddress, deviceConnectListener);
+    }
+
+    private void setDeviceReconnectListener() {
+        deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
@@ -91,7 +105,7 @@ public class DeviceApi {
                     listener.onGetDeviceInfoComplete(deviceData);
                 }
             }
-        });
+        };
     }
 
 
@@ -103,6 +117,24 @@ public class DeviceApi {
         deviceData = new DeviceApiData();
         deviceData.setAddress(btAddress);
         deviceData.setType("PED");
+
+        MiuraManager.getInstance().getSystemClock(new ApiGetSystemClockListener() {
+
+            @WorkerThread
+            @Override
+            public void onSuccess(final Date dateTime) {
+                DateFormat dateFormatApp = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.ENGLISH);
+                deviceData.setDateTime(dateFormatApp.format(dateTime));
+                //closeSession(false);
+            }
+
+            @WorkerThread
+            @Override
+            public void onError() {
+                closeSession(true);
+            }
+        });
+
         MiuraManager.getInstance().getBatteryStatus(new ApiBatteryStatusListener() {
             @WorkerThread
             @Override
@@ -160,22 +192,6 @@ public class DeviceApi {
                                             deviceData.setsREDStatus("None");
                                         }
 
-                                        MiuraManager.getInstance().getSystemClock(new ApiGetSystemClockListener() {
-
-                                            @WorkerThread
-                                            @Override
-                                            public void onSuccess(final Date dateTime) {
-                                                DateFormat dateFormatApp = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.ENGLISH);
-                                                deviceData.setDateTime(dateFormatApp.format(dateTime));
-                                                closeSession(false);
-                                            }
-
-                                            @WorkerThread
-                                            @Override
-                                            public void onError() {
-                                                closeSession(true);
-                                            }
-                                        });
                                     }
 
                                     @WorkerThread
