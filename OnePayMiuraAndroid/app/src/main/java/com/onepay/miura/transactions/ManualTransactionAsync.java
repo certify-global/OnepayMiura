@@ -1,5 +1,9 @@
 package com.onepay.miura.transactions;
 
+import android.util.Log;
+
+import androidx.annotation.UiThread;
+
 import com.miurasystems.mpi.MpiClient;
 import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
@@ -9,7 +13,11 @@ import com.miurasystems.mpi.enums.GetEncryptedPanError;
 
 import java.util.EnumSet;
 
+import static com.miurasystems.mpi.enums.InterfaceType.MPI;
+
 public class ManualTransactionAsync {
+    private static final String TAG = ManualTransactionAsync.class.getSimpleName();
+
     private final MiuraManager mMiuraManager;
     private final MpiClient mMpiClient;
     public Result<EncryptedPan, GetEncryptedPanError> result = null;
@@ -31,5 +39,13 @@ public class ManualTransactionAsync {
                 GetCommandsOptions.ShowStatusBar);
 
         result = mMpiClient.getSecureCardData(true, false, true, isCvv, true, options, 60);
+    }
+
+    @UiThread
+    public void abortManualTransaction() {
+        Log.d(TAG, "abortTransactionAsync");
+        mMpiClient.abort(MPI, false);
+        mMpiClient.abort(MPI, false);
+        mMpiClient.abort(MPI, false);
     }
 }

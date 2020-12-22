@@ -97,6 +97,7 @@ public class TransactionApi {
      * @param tOut      Timeout for the transaction
      */
     public void setTransactionParams(double amt, String desc, String btAddress, int tOut) {
+        isTransactionTimeOut = false;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
         if (description != null)
@@ -244,6 +245,7 @@ public class TransactionApi {
         } else {
             abortSwipeTransactionAsync(listener);
         }
+        clearData();
     }
 
     /**
@@ -607,6 +609,7 @@ public class TransactionApi {
      */
     private void clearData() {
         cancelTransactionTimer();
+        isTransactionTimeOut = false;
         this.pedDeviceId = "";
         this.amount = 0.0d;
         this.description = "";

@@ -54,6 +54,7 @@ public class ManualTransactionApi {
     private String entryMode = Constants.Manual;
     private boolean isTimerTimedOut = false;
     private boolean isCvv = false;
+    private boolean isTransactionTimeOut = false;
     private ManualTransactionAsync mManualTransactionAsync;
     private TransactionApiData transactionData = null;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
@@ -101,6 +102,7 @@ public class ManualTransactionApi {
      * @param listener callback listener for the transaction
      */
     public void performManualTransaction(ManualTransactionListener listener) {
+        isTransactionTimeOut = false;
         startTransactionTimer();
         this.manualTransactionListener = listener;
         if (bluetoothAddress.isEmpty() || amount == 0) {
@@ -171,18 +173,24 @@ public class ManualTransactionApi {
 
     public void cancelTransaction() {
         if (manualTransactionListener != null) {
-            returnReason = Constants.CancelReason;
-            returnStatus = Constants.CancelStatus;
+            if(isTransactionTimeOut) {
+                returnReason = Constants.TimeoutReason;
+                returnStatus = Constants.TimeoutStatus;
+            }
+            else{
+                returnReason = Constants.CancelReason;
+                returnStatus = Constants.CancelStatus;
+            }
             manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
         }
-
         clearData();
         deregisterEventHandlers();
 
-        if (!BluetoothModule.getInstance().isSessionOpen()) {
-            BluetoothModule.getInstance().closeSession();
-            return;
+        if (mManualTransactionAsync != null) {
+            mManualTransactionAsync.abortManualTransaction();
         }
+
+        clearData();
     }
 
     private void startPayment() {
@@ -342,11 +350,13 @@ public class ManualTransactionApi {
         mManualTransactionAsync.manualTransaction(isCvv);
 
         Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
-        data = result.asSuccess().getValue();
-        if (manualTransactionListener != null) {
-            returnReason = Constants.SuccessReason;
-            returnStatus = Constants.SuccessStatus;
-            manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+        if(data != null) {
+            data = result.asSuccess().getValue();
+            if (manualTransactionListener != null) {
+                returnReason = Constants.SuccessReason;
+                returnStatus = Constants.SuccessStatus;
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+            }
         }
 
         BluetoothModule.getInstance().closeSession();
@@ -410,6 +420,7 @@ public class ManualTransactionApi {
         mTimer = new Timer();
         mTimer.schedule(new TimerTask() {
             public void run() {
+                isTransactionTimeOut = true;
                 isTimerTimedOut = true;
                 cancelTransaction();
                 this.cancel();
@@ -444,5 +455,6 @@ public class ManualTransactionApi {
         this.data = null;
         this.returnReason = "";
         this.returnStatus = 0;
+        isTransactionTimeOut = false;
     }
 }

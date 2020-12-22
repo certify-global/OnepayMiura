@@ -95,8 +95,8 @@ public class ConfigApi {
                                 } catch (IOException e) {
                                     Log.e(TAG, "runOnAsyncThread: " + e.toString());
                                     if (listener != null) {
-                                        returnReason = Constants.NoDirectoryReason;
-                                        returnStatus = Constants.NoDirectoryStatus;
+                                        returnReason = Constants.ErrorReason;
+                                        returnStatus = Constants.ErrorStatus;
                                         listener.onConfigUpdateComplete(createConfigData());
                                     }
                                     mpiClient.closeSession();
@@ -187,8 +187,8 @@ public class ConfigApi {
             if (!ok) {
                 showBadFileUploadMessage(filename);
                 if (listener != null) {
-                    returnReason = Constants.BadFileUploadedReason;
-                    returnStatus = Constants.BadFileUploadedStatus;
+                    returnReason = Constants.ErrorReason;
+                    returnStatus = Constants.ErrorStatus;
                     listener.onConfigUpdateComplete(createConfigData());
                 }
                 Log.e(TAG, "Error Config-file");
