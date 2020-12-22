@@ -101,6 +101,23 @@ public class DeviceApi {
         deviceData = new DeviceApiData();
         deviceData.setAddress(btAddress);
         deviceData.setType("PED");
+
+        MiuraManager.getInstance().getSystemClock(new ApiGetSystemClockListener() {
+
+            @WorkerThread
+            @Override
+            public void onSuccess(final Date dateTime) {
+                DateFormat dateFormatApp = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.ENGLISH);
+                deviceData.setDateTime(dateFormatApp.format(dateTime));
+            }
+
+            @WorkerThread
+            @Override
+            public void onError() {
+                closeSession(true);
+            }
+        });
+
         MiuraManager.getInstance().getBatteryStatus(new ApiBatteryStatusListener() {
             @WorkerThread
             @Override
@@ -157,23 +174,6 @@ public class DeviceApi {
                                         } else {
                                             deviceData.setsREDStatus("None");
                                         }
-
-                                        MiuraManager.getInstance().getSystemClock(new ApiGetSystemClockListener() {
-
-                                            @WorkerThread
-                                            @Override
-                                            public void onSuccess(final Date dateTime) {
-                                                DateFormat dateFormatApp = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.ENGLISH);
-                                                deviceData.setDateTime(dateFormatApp.format(dateTime));
-                                                closeSession(false);
-                                            }
-
-                                            @WorkerThread
-                                            @Override
-                                            public void onError() {
-                                                closeSession(true);
-                                            }
-                                        });
                                     }
 
                                     @WorkerThread
