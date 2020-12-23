@@ -12,7 +12,7 @@ namespace Onepay.Miura.Api
 
         public void PerformConfig(string btAddress, int timeOut, string filePath)
         {
-            ConfigApi.Instance.OnConfigInfo(new ConfigListner());
+            ConfigApi.Instance.SetConfigListener(new ConfigListner());
             ConfigApi.Instance.PerformConfig(btAddress, timeOut, filePath);
         }
 
