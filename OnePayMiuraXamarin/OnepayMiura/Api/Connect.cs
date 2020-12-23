@@ -21,6 +21,7 @@ namespace Onepay.Miura.Api
 
         public void ConnectDevice(string btAddress, int timeOut)
         {
+            ConnectApi.Instance.SetConnectListener(new ConnectListener());
             ConnectApi.Instance.Connect(btAddress, timeOut);
         }
 

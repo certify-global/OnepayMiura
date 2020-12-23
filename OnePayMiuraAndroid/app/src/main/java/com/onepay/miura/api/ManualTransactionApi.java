@@ -350,11 +350,19 @@ public class ManualTransactionApi {
         mManualTransactionAsync.manualTransaction(isCvv);
 
         Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
-        if(data != null) {
+        try {
             data = result.asSuccess().getValue();
+            if (data != null) {
+                if (manualTransactionListener != null) {
+                    returnReason = Constants.SuccessReason;
+                    returnStatus = Constants.SuccessStatus;
+                    manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                }
+            }
+        } catch (Exception e){
             if (manualTransactionListener != null) {
-                returnReason = Constants.SuccessReason;
-                returnStatus = Constants.SuccessStatus;
+                returnReason = Constants.ErrorReason;
+                returnStatus = Constants.ErrorStatus;
                 manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
             }
         }
