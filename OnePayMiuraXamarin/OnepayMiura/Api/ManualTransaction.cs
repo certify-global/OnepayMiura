@@ -8,9 +8,9 @@ namespace Onepay.Miura.Api
     public class ManualTransaction
     {
         public static event EventHandler<TransactionData> ManualTransactionComplete;
-        public void PerformTransaction(double amt, String desc, String btAddress, int tOut, bool isCvv = false)
+        public void PerformTransaction(double amt, String desc, String btAddress, int tOut, bool isEbt, bool isCvv = false)
         {
-            ManualTransactionApi.Instance.SetManualTransactionParams(amt, desc, btAddress, tOut, isCvv);
+            ManualTransactionApi.Instance.SetManualTransactionParams(amt, desc, btAddress, tOut, isEbt, isCvv);
             ManualTransactionApi.Instance.PerformManualTransaction(new ManualTransactionListener());
         }
         public void CancelTransaction()
