@@ -17,6 +17,7 @@ import com.miurasystems.mpi.api.objects.EncryptedPan;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
 import com.miurasystems.mpi.enums.DeviceStatus;
 import com.miurasystems.mpi.enums.GetEncryptedPanError;
+import com.miurasystems.mpi.enums.GetNumericDataError;
 import com.miurasystems.mpi.enums.InterfaceType;
 import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SystemLogMode;
@@ -48,6 +49,8 @@ public class ManualTransactionApi {
     private String description = "";
     private String bluetoothAddress = "";
     private String pedDeviceId = "";
+    private String expireDate = null;
+    private boolean isEbt = false;
     private Timer mTimer;
     private int mTransactionTime = 60;
     private int returnStatus = 0;
@@ -82,7 +85,7 @@ public class ManualTransactionApi {
      * @param btAddress Miura bluetooth device address
      * @param tOut      Timeout for the transaction
      */
-    public void setManualTransactionParams(double amt, String desc, String btAddress, int tOut, boolean isCvvRequired) {
+    public void setManualTransactionParams(double amt, String desc, String btAddress, int tOut, boolean isEbt, boolean isCvvRequired) {
 
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
@@ -92,6 +95,7 @@ public class ManualTransactionApi {
             this.bluetoothAddress = btAddress;
         this.mTransactionTime = tOut;
         this.isCvv = isCvvRequired;
+        this.isEbt = isEbt;
 
         transactionData = new TransactionApiData();
     }
@@ -347,11 +351,13 @@ public class ManualTransactionApi {
 
     private void startManualTransaction() {
         mManualTransactionAsync = new ManualTransactionAsync(MiuraManager.getInstance());
-        mManualTransactionAsync.manualTransaction(isCvv);
+        mManualTransactionAsync.manualTransaction(isEbt, isCvv);
 
         Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
+
         try {
             data = result.asSuccess().getValue();
+            expireDate = mManualTransactionAsync.mExpireDate;
             if (data != null) {
                 if (manualTransactionListener != null) {
                     returnReason = Constants.SuccessReason;
@@ -379,6 +385,7 @@ public class ManualTransactionApi {
         transactionData.setReturnStatus(returnStatus);
         transactionData.setDeviceCode("41");
         if (data != null) {
+            transactionData.setExpiryDate(expireDate);
             transactionData.setEntryMode(entryMode);
             if (data.RedactedPan != null) {
                 transactionData.setCardNumber(data.RedactedPan);
