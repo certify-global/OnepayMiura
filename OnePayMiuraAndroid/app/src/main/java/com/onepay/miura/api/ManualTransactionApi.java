@@ -47,6 +47,7 @@ public class ManualTransactionApi {
     private String description = "";
     private String bluetoothAddress = "";
     private String pedDeviceId = "";
+    private String expireDate = "";
     private Timer mTimer;
     private int mTransactionTime = 60;
     private int returnStatus = 0;
@@ -54,10 +55,12 @@ public class ManualTransactionApi {
     private boolean isTimerTimedOut = false;
     private boolean isCvv = false;
     private ManualTransactionAsync mManualTransactionAsync;
-    TransactionApiData transactionData = null;
+    private TransactionApiData transactionData = null;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
-    EncryptedPan data = null;
+    private EncryptedPan data = null;
+    private boolean isEbt = false;
+
 
     public interface ManualTransactionListener {
         void onManualTransactionComplete(TransactionApiData data);
@@ -78,7 +81,7 @@ public class ManualTransactionApi {
      * @param btAddress Miura bluetooth device address
      * @param tOut      Timeout for the transaction
      */
-    public void setManualTransactionParams(double amt, String desc, String btAddress, int tOut, boolean isCvvRequired) {
+    public void setManualTransactionParams(double amt, String desc, String btAddress, int tOut, boolean isEbt, boolean isCvvRequired) {
         startTransactionTimer();
         clearData();
         this.amount = amt;
@@ -88,6 +91,7 @@ public class ManualTransactionApi {
             this.bluetoothAddress = btAddress;
         this.mTransactionTime = tOut;
         this.isCvv = isCvvRequired;
+        this.isEbt = isEbt;
 
         transactionData = new TransactionApiData();
     }
@@ -334,14 +338,23 @@ public class ManualTransactionApi {
 
     private void startManualTransaction() {
         mManualTransactionAsync = new ManualTransactionAsync(MiuraManager.getInstance());
-        mManualTransactionAsync.manualTransaction(isCvv);
+        mManualTransactionAsync.manualTransaction(isEbt, isCvv);
 
         Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
-        if (data != null) {
+        try {
             data = result.asSuccess().getValue();
+            expireDate = mManualTransactionAsync.mExpireDate;
+            if (data != null) {
+                if (manualTransactionListener != null) {
+                    returnReason = Constants.SuccessReason;
+                    returnStatus = Constants.SuccessStatus;
+                    manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                }
+            }
+        } catch (Exception e){
             if (manualTransactionListener != null) {
-                returnReason = Constants.SuccessReason;
-                returnStatus = Constants.SuccessStatus;
+                returnReason = Constants.ErrorReason;
+                returnStatus = Constants.ErrorStatus;
                 manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
             }
         }
@@ -370,6 +383,7 @@ public class ManualTransactionApi {
             }
             String ksn = bytesToHexString(data.P2peSredKsn);
             String cardEncytpedData = bytesToHexString(data.P2peSredData);
+            transactionData.setExpiryDate(expireDate);
             transactionData.setKSN(ksn.toUpperCase());
             transactionData.setEncryptedCardData(cardEncytpedData.toUpperCase());
         } else {

@@ -63,14 +63,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });*/
 
-     ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 15, new ConnectApi.ConnectListener(){
+        ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 15, new ConnectApi.ConnectListener() {
             @Override
             public void onConnectionComplete(ConnectApiData data) {
                 Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
                 Log.d("TAG", "Naga...... returnStatus : " + data.returnStatus());
             }
         });
-       }
+    }
 
     public void onTransaction(View view) {
         TransactionApi.getInstance().setTransactionParams(1.00, "", "0C:9A:42:89:2E:B9", 20);
@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onManualTransaction(View view) {
-        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60, false);
+        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60, true, false);
 
         ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 
@@ -132,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void onCancelManualTransaction(View view){
+    public void onCancelManualTransaction(View view) {
         /**
          * Method that initiate for canceling transaction
          */
@@ -141,21 +141,21 @@ public class MainActivity extends AppCompatActivity {
 
     public void setDeviceClock(View view) throws Exception {
 
-        String sDate1="12/21/2020 12:29:24";
+        String sDate1 = "12/21/2020 12:29:24";
         //Log.d("TAG", "Naga...........setDeviceClock: " + sDate1);
         SetClockApi.getInstance().setDeviceClock("0C:9A:42:89:2E:B9", 30, sDate1, new SetClockApi.SetClockListener() {
             @Override
             public void onConnectionComplete(SetClockApiData data) {
-                Log.d("TAG", "Naga............returnReason: " +data.returnReason());
-                Log.d("TAG", "Naga............returnStatus: " +data.returnStatus());
+                Log.d("TAG", "Naga............returnReason: " + data.returnReason());
+                Log.d("TAG", "Naga............returnStatus: " + data.returnStatus());
             }
         });
     }
 
     public Date convetDateTime() throws Exception {
-        String sDate1="12/21/2020 12:29:24";
-        Date date1=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(sDate1);
-        System.out.println(sDate1+"\t"+date1);
+        String sDate1 = "12/21/2020 12:29:24";
+        Date date1 = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(sDate1);
+        System.out.println(sDate1 + "\t" + date1);
         return date1;
     }
 

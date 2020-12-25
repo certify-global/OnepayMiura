@@ -49,6 +49,8 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static com.miurasystems.mpi.enums.InterfaceType.MPI;
+
 public class TransactionApi {
     private static final String TAG = TransactionApi.class.getSimpleName();
     private static TransactionApi instance = null;
@@ -277,6 +279,7 @@ public class TransactionApi {
     }
 
     private void startPayment() {
+        MiuraManager.getInstance().cardStatus(true);
         BluetoothModule.getInstance().setTimeoutEnable(true);
         BluetoothDevice device = BluetoothModule.getInstance().getSelectedBluetoothDevice();
 
@@ -343,7 +346,7 @@ public class TransactionApi {
                 }
                 Log.d(TAG, "Battery level check: Success");
 
-                boolean b = client.systemLog(InterfaceType.MPI, SystemLogMode.Remove);
+                boolean b = client.systemLog(MPI, SystemLogMode.Remove);
                 if (!b) {
                     Log.d(TAG, "Delete Log: Error");
                     BluetoothModule.getInstance().closeSession();
@@ -352,7 +355,7 @@ public class TransactionApi {
                 }
                 Log.d(TAG, "Delete Log: Success");
 
-                Date dateTime = client.systemClock(InterfaceType.MPI);
+                Date dateTime = client.systemClock(MPI);
                 if (dateTime == null) {
                     Log.e(TAG, "Get Time: Error");
                     BluetoothModule.getInstance().closeSession();
@@ -362,7 +365,7 @@ public class TransactionApi {
                 Log.d(TAG, "Get Time: Success");
 
                 SoftwareInfo softwareInfo = client.resetDevice(
-                        InterfaceType.MPI, ResetDeviceType.Soft_Reset);
+                        MPI, ResetDeviceType.Soft_Reset);
                 if (softwareInfo == null) {
                     Log.e(TAG, "Get Software Info: Error");
                     BluetoothModule.getInstance().closeSession();
@@ -394,6 +397,8 @@ public class TransactionApi {
 
         String deviceText = amount + "\n Swipe card";
 
+        MpiClient client = MiuraManager.getInstance().getMpiClient();
+        client.cardStatus(MPI, true, false,true,true,false,true );
         MiuraManager.getInstance().displayText(
                 deviceText,
                 new MiuraDefaultListener() {
@@ -407,9 +412,6 @@ public class TransactionApi {
                     public void onError() {
                     }
                 });
-        /*registerEventHandlers();
-        MiuraManager.getInstance().cardStatus(true);
-        startEmvTransaction(EmvTransactionType.Contactless);*/
     }
 
     private final MpiEventHandler<CardData> mCardEventHandler = new MpiEventHandler<CardData>() {
