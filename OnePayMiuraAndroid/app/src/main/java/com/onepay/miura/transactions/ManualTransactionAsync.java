@@ -17,6 +17,7 @@ import com.miurasystems.mpi.enums.GetNumericDataError;
 
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import static com.miurasystems.mpi.enums.InterfaceType.MPI;
 
@@ -28,6 +29,7 @@ public class ManualTransactionAsync {
     private final MpiClient mMpiClient;
     public Result<EncryptedPan, GetEncryptedPanError> result = null;
     public String mExpireDate = "";
+    private boolean isEbt = false;
 
     public ManualTransactionAsync(MiuraManager miuraManager) {
         MpiClient client = miuraManager.getMpiClient();
@@ -39,6 +41,7 @@ public class ManualTransactionAsync {
     }
 
     public void manualTransaction(boolean isEbt, boolean isCvv) {
+        this.isEbt = isEbt;
         EnumSet<GetCommandsOptions> options;
         options = GetCommandsOptions.makeOptionsSet(
                 GetCommandsOptions.BacklightOn,
@@ -76,11 +79,17 @@ public class ManualTransactionAsync {
     }
 
     @UiThread
-    public void abortManualTransaction() {
+    public void abortManualTransaction() throws InterruptedException {
         Log.d(TAG, "abortTransactionAsync");
 
         mMpiClient.abort(MPI, false);
+        TimeUnit.SECONDS.sleep((long) 1);
         mMpiClient.abort(MPI, false);
+        TimeUnit.SECONDS.sleep((long) 1);
         mMpiClient.abort(MPI, false);
+
+        if(isEbt){
+
+        }
     }
 }

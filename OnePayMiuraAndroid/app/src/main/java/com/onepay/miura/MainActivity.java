@@ -98,8 +98,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onUpdateConfig(View view) {
-        String path = Environment.getExternalStorageDirectory() + "/mpi_config/";
-        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 60, path, new ConfigApi.ConfigInfoListener() {
+        String path = getExternalFilesDir(null).getAbsolutePath() +  "/mpi_config/";
+        String path1 = "/storage/self/primary/mpi_config/";
+        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 60, path1, new ConfigApi.ConfigInfoListener() {
             @Override
             public void onConfigUpdateComplete(ConfigApiData data) {
                 Log.d("TAG", "Naga2........" + data.returnReason());
@@ -109,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onManualTransaction(View view) {
-        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60, true, false);
+        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60, false, false);
 
         ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 

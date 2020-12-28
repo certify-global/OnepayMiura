@@ -180,7 +180,15 @@ public class ManualTransactionApi {
 
 
         if (mManualTransactionAsync != null) {
-            mManualTransactionAsync.abortManualTransaction();
+            try {
+                mManualTransactionAsync.abortManualTransaction();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (!BluetoothModule.getInstance().isSessionOpen()) {
+            BluetoothModule.getInstance().closeSession();
         }
     }
 
