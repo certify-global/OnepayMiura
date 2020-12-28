@@ -17,7 +17,6 @@ import com.miurasystems.mpi.api.objects.EncryptedPan;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
 import com.miurasystems.mpi.enums.DeviceStatus;
 import com.miurasystems.mpi.enums.GetEncryptedPanError;
-import com.miurasystems.mpi.enums.GetNumericDataError;
 import com.miurasystems.mpi.enums.InterfaceType;
 import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SystemLogMode;
@@ -193,8 +192,6 @@ public class ManualTransactionApi {
         if (mManualTransactionAsync != null) {
             mManualTransactionAsync.abortManualTransaction();
         }
-
-        clearData();
     }
 
     private void startPayment() {

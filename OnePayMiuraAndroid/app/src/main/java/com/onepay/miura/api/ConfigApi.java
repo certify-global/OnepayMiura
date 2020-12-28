@@ -16,11 +16,15 @@ import com.miurasystems.mpi.enums.SelectFileMode;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
+import com.onepay.miura.core.Config;
 import com.onepay.miura.data.ConfigApiData;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -55,9 +59,9 @@ public class ConfigApi {
     /**
      * Method that sets the config parameters
      *
-     * @param btAddress   Miura bluetooth device address
-     * @param tOut        Timeout process
-     * @param filePath    Config file path
+     * @param btAddress Miura bluetooth device address
+     * @param tOut      Timeout process
+     * @param filePath  Config file path
      */
     public void performConfig(String btAddress, int tOut, String filePath) {
         bluetoothAddress = btAddress;
@@ -95,8 +99,8 @@ public class ConfigApi {
                                 } catch (IOException e) {
                                     Log.e(TAG, "runOnAsyncThread: " + e.toString());
                                     if (listener != null) {
-                                        returnReason = Constants.ErrorReason;
-                                        returnStatus = Constants.ErrorStatus;
+                                        returnReason = "Failure";
+                                        returnStatus = 2;
                                         listener.onConfigUpdateComplete(createConfigData());
                                     }
                                     mpiClient.closeSession();
@@ -121,8 +125,8 @@ public class ConfigApi {
                     return;
                 }
                 if (listener != null) {
-                    returnReason = Constants.BluetoothConnectionErrorReason;
-                    returnStatus = Constants.BluetoothConnectionErrorStatus;
+                    returnReason = "Failure";
+                    returnStatus = 2;
                     listener.onConfigUpdateComplete(createConfigData());
                 }
             }
@@ -152,55 +156,67 @@ public class ConfigApi {
 
         ArrayList<String> configArray = new ArrayList<String>();
 
-        configArray.add("AACDOL.CFG");
-        configArray.add("ARQCDOL.CFG");
-        configArray.add("contactless.cfg");
-        configArray.add("ctls-prompts.txt");
-        configArray.add("emv.cfg");
-        configArray.add("OPDOL.CFG");
-        configArray.add("P2PEDOL.CFG");
-        configArray.add("TCDOL.CFG");
-        configArray.add("TDOL.CFG");
-        configArray.add("TRMDOL.CFG");
-        configArray.add("MPI-Dynamic.cfg");
-
-        for (String filename : configArray) {
-            String path = this.filepath + filename;
-            FileInputStream inputStream = new FileInputStream(path);
-
-            Log.d(TAG, "Config file uploaded-: " + path);
-
-            int size = inputStream.available();
-            final byte[] buffer = new byte[size];
-            inputStream.read(buffer);
-            inputStream.close();
-
-            int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, filename);
-
-            //noinspection SimplifiableIfStatement
-            if (pedFileSize < 0) {
-                showBadFileUploadMessage(filename);
-                return;
+        HashMap<String, String> versionMap = mpiClient.getConfiguration();
+        for (Map.Entry entry : versionMap.entrySet()) {
+            String filePath = this.filepath + entry.getKey();
+            File file = new File(filePath);
+            if (file.exists()) {
+                configArray.add((String) entry.getKey());
             }
-            ok = client.streamBinary(
-                    interfaceType, buffer, 0, 0, buffer.length, 100);
-            if (!ok) {
-                showBadFileUploadMessage(filename);
-                if (listener != null) {
-                    returnReason = Constants.ErrorReason;
-                    returnStatus = Constants.ErrorStatus;
-                    listener.onConfigUpdateComplete(createConfigData());
+        }
+
+        if (!Config.isConfigVersionValid(versionMap)) {
+            for (String filename : configArray) {
+
+                String path = this.filepath + filename;
+                FileInputStream inputStream = new FileInputStream(path);
+
+                Log.d(TAG, "Config file uploaded-: " + path);
+
+                int size = inputStream.available();
+                final byte[] buffer = new byte[size];
+                inputStream.read(buffer);
+                inputStream.close();
+
+                int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, filename);
+
+                //noinspection SimplifiableIfStatement
+                if (pedFileSize < 0) {
+                    showBadFileUploadMessage(filename);
+                    return;
                 }
-                Log.e(TAG, "Error Config-file");
-                client.closeSession();
+                ok = client.streamBinary(
+                        interfaceType, buffer, 0, 0, buffer.length, 100);
+                if (!ok) {
+                    showBadFileUploadMessage(filename);
+                    if (listener != null) {
+                        returnReason = "Failure";
+                        returnStatus = 2;
+                        listener.onConfigUpdateComplete(createConfigData());
+                    }
+                    Log.e(TAG, "Error Config-file");
+                    client.closeSession();
+                }
+            }
+
+            if (listener != null) {
+                returnReason = "Config Success, Applied";
+                returnStatus = 1;
+                listener.onConfigUpdateComplete(createConfigData());
+            }
+        } else {
+            if (BluetoothModule.getInstance().isSessionOpen()) {
+                BluetoothModule.getInstance().closeSession();
+            }
+            Log.d(TAG, "Config file are upto date");
+
+            if (listener != null) {
+                returnReason = "Config Success, Not Applied";
+                returnStatus = 0;
+                listener.onConfigUpdateComplete(createConfigData());
             }
         }
 
-        if (listener != null) {
-            returnReason = Constants.SuccessReason;
-            returnStatus = Constants.SuccessStatus;
-            listener.onConfigUpdateComplete(createConfigData());
-        }
         client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
     }
 

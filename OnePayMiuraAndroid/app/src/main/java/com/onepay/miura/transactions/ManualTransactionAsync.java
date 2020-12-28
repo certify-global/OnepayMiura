@@ -42,7 +42,7 @@ public class ManualTransactionAsync {
                 GetCommandsOptions.KeyboardBacklightOn,
                 GetCommandsOptions.ShowStatusBar);
 
-        result = mMpiClient.getSecureCardData(true, false, true, isCvv, true, options, 60);
+        result = mMpiClient.getSecureCardData(true, false, false, isCvv, false, options, 60);
 
         if(!isEbt){
             Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
