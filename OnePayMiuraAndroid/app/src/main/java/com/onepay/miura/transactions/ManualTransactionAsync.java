@@ -15,6 +15,7 @@ import com.miurasystems.mpi.enums.GetEncryptedPanError;
 import com.miurasystems.mpi.enums.GetNumericDataError;
 
 import java.util.EnumSet;
+import java.util.concurrent.TimeUnit;
 
 import static com.miurasystems.mpi.enums.InterfaceType.MPI;
 
@@ -71,10 +72,16 @@ public class ManualTransactionAsync {
     }
 
     @UiThread
-    public void abortManualTransaction() {
+    public void abortManualTransaction() throws InterruptedException {
         Log.d(TAG, "abortTransactionAsync");
-        mMpiClient.abort(MPI, false);
-        mMpiClient.abort(MPI, false);
-        mMpiClient.abort(MPI, false);
+
+        try {
+            mMpiClient.abort(MPI, false);
+            TimeUnit.SECONDS.sleep((long) 1);
+            mMpiClient.abortTransaction(MPI);
+        }
+        catch (Exception e){
+            Log.e(TAG, "AbortManualTransaction: " + e);
+        }
     }
 }

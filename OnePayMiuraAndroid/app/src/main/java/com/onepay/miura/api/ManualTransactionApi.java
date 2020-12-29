@@ -63,7 +63,7 @@ public class ManualTransactionApi {
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
     private EncryptedPan data = null;
     private static DecimalFormat decimalFormat = new DecimalFormat("#.##");
-
+    private boolean isTransactionDataCheck = false;
 
     public interface ManualTransactionListener {
         void onManualTransactionComplete(TransactionApiData data);
@@ -96,6 +96,7 @@ public class ManualTransactionApi {
         this.isCvv = isCvvRequired;
         this.isEbt = isEbt;
 
+        isTransactionDataCheck = false;
         transactionData = new TransactionApiData();
     }
 
@@ -175,6 +176,7 @@ public class ManualTransactionApi {
     }
 
     public void cancelTransaction() {
+        isTransactionDataCheck = false;
         if (manualTransactionListener != null) {
             if(isTransactionTimeOut) {
                 returnReason = Constants.TimeoutReason;
@@ -356,18 +358,18 @@ public class ManualTransactionApi {
             data = result.asSuccess().getValue();
             expireDate = mManualTransactionAsync.mExpireDate;
             if (data != null) {
-                if (manualTransactionListener != null) {
+                if (manualTransactionListener != null && !isTransactionDataCheck) {
                     returnReason = Constants.SuccessReason;
                     returnStatus = Constants.SuccessStatus;
                     manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
                 }
             }
         } catch (Exception e){
-            if (manualTransactionListener != null) {
+           /* if (manualTransactionListener != null) {
                 returnReason = Constants.ErrorReason;
                 returnStatus = Constants.ErrorStatus;
                 manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
-            }
+            }*/
         }
 
         BluetoothModule.getInstance().closeSession();
@@ -376,14 +378,15 @@ public class ManualTransactionApi {
     }
 
     private TransactionApiData createTransactionData(EncryptedPan data) {
+        isTransactionDataCheck = true;
         transactionData.setDeviceId(pedDeviceId);
         transactionData.setAmount(this.amount);
         transactionData.setReturnReason(returnReason);
         transactionData.setReturnStatus(returnStatus);
         transactionData.setDeviceCode("41");
+        transactionData.setEntryMode(entryMode);
         if (data != null) {
             transactionData.setExpiryDate(expireDate);
-            transactionData.setEntryMode(entryMode);
             if (data.RedactedPan != null) {
                 transactionData.setCardNumber(data.RedactedPan);
                 String number = data.RedactedPan;

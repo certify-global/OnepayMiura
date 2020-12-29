@@ -15,8 +15,6 @@ import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SelectFileMode;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
-import com.onepay.miura.common.Constants;
-import com.onepay.miura.core.Config;
 import com.onepay.miura.data.ConfigApiData;
 
 import java.io.File;
@@ -217,7 +215,6 @@ public class ConfigApi {
             }
 
         }
-
     }
 
     private void showBadFileUploadMessage(final String filename) {
