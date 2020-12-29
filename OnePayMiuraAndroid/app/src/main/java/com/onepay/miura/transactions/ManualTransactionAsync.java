@@ -1,6 +1,5 @@
 package com.onepay.miura.transactions;
 
-import android.text.style.TtsSpan;
 import android.util.Log;
 
 import androidx.annotation.UiThread;
@@ -72,7 +71,7 @@ public class ManualTransactionAsync {
     }
 
     @UiThread
-    public void abortManualTransaction() throws InterruptedException {
+    public void abortManualTransaction()  {
         Log.d(TAG, "abortTransactionAsync");
 
         try {
