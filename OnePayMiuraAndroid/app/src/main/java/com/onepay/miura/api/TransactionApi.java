@@ -49,6 +49,8 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static com.miurasystems.mpi.enums.InterfaceType.MPI;
+
 public class TransactionApi {
     private static final String TAG = TransactionApi.class.getSimpleName();
     private static TransactionApi instance = null;
@@ -400,7 +402,11 @@ public class TransactionApi {
                     @Override
                     public void onSuccess() {
                         registerEventHandlers();
-                        MiuraManager.getInstance().cardStatus(true);
+                        MpiClient client = MiuraManager.getInstance().getMpiClient();
+                        if (client != null) {
+                            client.cardStatus(MPI, true, false, true, true, false, true);
+                        }
+                        // MiuraManager.getInstance().cardStatus(true);
                     }
 
                     @Override
@@ -553,7 +559,10 @@ public class TransactionApi {
             transactionData.setEntryMode(entryMode);
             transactionData.setCardHolderName(cardData.getCardholderName());
             if (cardData.getMaskedTrack2Data() != null) {
-                transactionData.setExpiryDate(cardData.getMaskedTrack2Data().getExpirationDate());
+                if (cardData.getMaskedTrack2Data().getExpirationDate() != null) {
+                    String expireDate = expireDate(cardData.getMaskedTrack2Data().getExpirationDate());
+                    transactionData.setExpiryDate(expireDate);
+                }
                 transactionData.setCardNumber(cardData.getMaskedTrack2Data().mPan);
                 String number = cardData.getMaskedTrack2Data().mPan;
 
@@ -568,6 +577,21 @@ public class TransactionApi {
         }
         cancelTransactionTimer();
         return transactionData;
+    }
+
+    private String expireDate(String expireNumber) {
+        int number = Integer.parseInt(expireNumber);
+        String firstTwo = Integer.toString(number / 100);
+        if (firstTwo.length() < 2) {
+            firstTwo = "0" + firstTwo;
+        }
+        String lastTwo = Integer.toString(number % 100);
+        if (lastTwo.length() < 2) {
+            lastTwo = "0" + lastTwo;
+        }
+
+        expireNumber = lastTwo + firstTwo;
+        return expireNumber;
     }
 
     /**
