@@ -30,6 +30,7 @@ public class ManualTransactionAsync {
     public Result<EncryptedPan, GetEncryptedPanError> result = null;
     public String mExpireDate = "";
     private boolean isEbt = false;
+    Result<String, GetNumericDataError> expireDate;
 
     public ManualTransactionAsync(MiuraManager miuraManager) {
         MpiClient client = miuraManager.getMpiClient();
@@ -52,7 +53,7 @@ public class ManualTransactionAsync {
 
         if (!isEbt) {
 
-            Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
+           expireDate = mMpiClient.getNumericData(
                     GetNumericDataRequest.GetBuilder(0, 154, 155, 4, 0)
                             .setOption(GetCommandsOptions.KeyboardBacklightOn, true)
                             .setTimeoutInSeconds(60)
@@ -82,14 +83,14 @@ public class ManualTransactionAsync {
     public void abortManualTransaction() throws InterruptedException {
         Log.d(TAG, "abortTransactionAsync");
 
-        mMpiClient.abort(MPI, false);
-        TimeUnit.SECONDS.sleep((long) 1);
-        mMpiClient.abort(MPI, false);
-        TimeUnit.SECONDS.sleep((long) 1);
-        mMpiClient.abort(MPI, false);
-
-        if(isEbt){
-
+        try {
+            mMpiClient.abort(MPI, false);
+            TimeUnit.SECONDS.sleep((long) 1);
+            mMpiClient.abortTransaction(MPI);
         }
+        catch (Exception e){
+            Log.d(TAG, "Naga......abortManualTransaction: " + e);
+        }
+
     }
 }

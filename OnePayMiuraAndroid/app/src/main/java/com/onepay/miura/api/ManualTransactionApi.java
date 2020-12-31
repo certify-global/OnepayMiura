@@ -11,6 +11,7 @@ import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.ApiGetDeviceInfoListener;
 import com.miurasystems.mpi.api.listener.ApiGetSoftwareInfoListener;
+import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.BatteryData;
 import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.objects.EncryptedPan;
@@ -60,6 +61,7 @@ public class ManualTransactionApi {
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
     private EncryptedPan data = null;
     private boolean isEbt = false;
+    private boolean isTransactionDataCheck = false;
 
 
     public interface ManualTransactionListener {
@@ -93,6 +95,7 @@ public class ManualTransactionApi {
         this.isCvv = isCvvRequired;
         this.isEbt = isEbt;
 
+        isTransactionDataCheck = false;
         transactionData = new TransactionApiData();
     }
 
@@ -170,6 +173,7 @@ public class ManualTransactionApi {
     }
 
     public void cancelTransaction() {
+        isTransactionDataCheck = false;
         if (manualTransactionListener != null) {
             returnReason = Constants.CancelReason;
             returnStatus = Constants.CancelStatus;
@@ -308,7 +312,23 @@ public class ManualTransactionApi {
     private void performTransaction() {
         Log.d(TAG, "Starting Transaction");
         registerEventHandlers();
-        MiuraManager.getInstance().cardStatus(true);
+
+
+        String deviceText = amount + "\n Enter Card Number";
+
+        MiuraManager.getInstance().displayText(
+                deviceText,
+                new MiuraDefaultListener() {
+                    @Override
+                    public void onSuccess() {
+                        registerEventHandlers();
+                        MiuraManager.getInstance().cardStatus(true);
+                    }
+
+                    @Override
+                    public void onError() {
+                    }
+                });
         startManualTransaction();
     }
 
@@ -353,18 +373,18 @@ public class ManualTransactionApi {
             data = result.asSuccess().getValue();
             expireDate = mManualTransactionAsync.mExpireDate;
             if (data != null) {
-                if (manualTransactionListener != null) {
+                if (manualTransactionListener != null && !isTransactionDataCheck) {
                     returnReason = Constants.SuccessReason;
                     returnStatus = Constants.SuccessStatus;
                     manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
                 }
             }
         } catch (Exception e){
-            if (manualTransactionListener != null) {
+            /*if (manualTransactionListener != null) {
                 returnReason = Constants.ErrorReason;
                 returnStatus = Constants.ErrorStatus;
                 manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
-            }
+            }*/
         }
 
         BluetoothModule.getInstance().closeSession();
@@ -373,13 +393,14 @@ public class ManualTransactionApi {
     }
 
     private TransactionApiData createTransactionData(EncryptedPan data) {
+        isTransactionDataCheck = true;
         transactionData.setDeviceId(pedDeviceId);
         transactionData.setAmount(this.amount);
         transactionData.setReturnReason(returnReason);
         transactionData.setReturnStatus(returnStatus);
         transactionData.setDeviceCode("41");
+        transactionData.setEntryMode(entryMode);
         if (data != null) {
-            transactionData.setEntryMode(entryMode);
             if (data.RedactedPan != null) {
                 transactionData.setCardNumber(data.RedactedPan);
                 String number = data.RedactedPan;

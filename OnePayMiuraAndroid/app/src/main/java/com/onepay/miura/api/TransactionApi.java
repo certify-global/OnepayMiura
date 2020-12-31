@@ -110,6 +110,7 @@ public class TransactionApi {
         transactionData = new TransactionApiData();
     }
 
+
     /**
      * Method that initiates the transaction
      *
@@ -195,11 +196,10 @@ public class TransactionApi {
             BluetoothModule.getInstance().closeSession();
 
             if (transactionListener != null) {
-                if(isTransactionTimeOut) {
+                if (isTransactionTimeOut) {
                     returnReason = Constants.TimeoutReason;
                     returnStatus = Constants.TimeoutStatus;
-                }
-                else{
+                } else {
                     returnReason = Constants.CancelReason;
                     returnStatus = Constants.CancelStatus;
                 }
@@ -397,15 +397,18 @@ public class TransactionApi {
 
         String deviceText = amount + "\n Swipe card";
 
-        MpiClient client = MiuraManager.getInstance().getMpiClient();
-        client.cardStatus(MPI, true, false,true,true,false,true );
+
         MiuraManager.getInstance().displayText(
                 deviceText,
                 new MiuraDefaultListener() {
                     @Override
                     public void onSuccess() {
                         registerEventHandlers();
-                        MiuraManager.getInstance().cardStatus(true);
+                        MpiClient client = MiuraManager.getInstance().getMpiClient();
+                        if (client != null) {
+                            client.cardStatus(MPI, true, false, true, true, false, true);
+                        }
+                        // MiuraManager.getInstance().cardStatus(true);
                     }
 
                     @Override
@@ -514,6 +517,7 @@ public class TransactionApi {
             return;
         }
 
+
         Result<MagSwipeSummary, MagSwipeError> result =
                 MagSwipeTransaction.canProcessMagSwipe(cardData);
         if (result.isError()) {
@@ -523,6 +527,7 @@ public class TransactionApi {
             Log.d(TAG, "SWIPE ERROR Please try again");
             return;
         }
+
 
         this.cardData = cardData;
         if (transactionListener != null) {
@@ -555,7 +560,12 @@ public class TransactionApi {
             transactionData.setEntryMode(entryMode);
             transactionData.setCardHolderName(cardData.getCardholderName());
             if (cardData.getMaskedTrack2Data() != null) {
-                transactionData.setExpiryDate(cardData.getMaskedTrack2Data().getExpirationDate());
+                if (cardData.getMaskedTrack2Data().getExpirationDate() != null) {
+                    String expireDate = expireDate(cardData.getMaskedTrack2Data().getExpirationDate());
+                    transactionData.setExpiryDate(expireDate);
+                }
+
+
                 transactionData.setCardNumber(cardData.getMaskedTrack2Data().mPan);
                 String number = cardData.getMaskedTrack2Data().mPan;
 
@@ -570,6 +580,21 @@ public class TransactionApi {
         }
         cancelTransactionTimer();
         return transactionData;
+    }
+
+    private String expireDate(String expireNumber) {
+        int number = Integer.parseInt(expireNumber);
+        String firstTwo = Integer.toString(number / 100);
+        if (firstTwo.length() < 2) {
+            firstTwo = "0" + firstTwo;
+        }
+        String lastTwo = Integer.toString(number % 100);
+        if (lastTwo.length() < 2) {
+            lastTwo = "0" + lastTwo;
+        }
+
+        expireNumber = lastTwo + firstTwo;
+        return expireNumber;
     }
 
     /**

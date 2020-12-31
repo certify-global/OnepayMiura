@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onTransaction(View view) {
-        TransactionApi.getInstance().setTransactionParams(1.00, "", "0C:9A:42:89:2E:B9", 20);
+        TransactionApi.getInstance().setTransactionParams(1.00, "", "0C:9A:42:89:2E:B9",180 );
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -98,9 +98,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onUpdateConfig(View view) {
-        String path = getExternalFilesDir(null).getAbsolutePath() +  "/mpi_config/";
+        String path = Environment.getExternalStorageDirectory() + "/miura/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
         String path1 = "/storage/self/primary/mpi_config/";
-        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 60, path1, new ConfigApi.ConfigInfoListener() {
+        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 200, path, new ConfigApi.ConfigInfoListener() {
             @Override
             public void onConfigUpdateComplete(ConfigApiData data) {
                 Log.d("TAG", "Naga2........" + data.returnReason());
@@ -121,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
                 Log.d("TAG", "Naga...... amount : " + data.amount());
                 Log.d("TAG", "Naga...... returnStatus : " + data.returnStatus());
+                Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
                 Log.d("TAG", "Naga...... cardHolderName : " + data.cardHolderName());
                 Log.d("TAG", "Naga...... cardNumber : " + data.cardNumber());
                 Log.d("TAG", "Naga...... ccFirstFour : " + data.accountFirstFour());

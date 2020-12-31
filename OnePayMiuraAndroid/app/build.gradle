@@ -29,6 +29,8 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    implementation 'org.slf4j:slf4j-api:1.7.30'
+    implementation 'org.aspectj:aspectjrt:1.9.5'
     implementation files('libs/JavaMpi-1-1.jar')
     implementation files('libs/Transactions-1-1.jar')
 }

@@ -156,24 +156,25 @@ public class ConfigApi {
         }
 
         ArrayList<String> configArray = new ArrayList<String>();
-
-       /* List<String> configNames = Arrays.asList("AACDOL.CFG", "ARQCDOL.CFG", "contactless.cfg",
-                "ctls-prompts.txt", "emv.cfg", "OPDOL.CFG", "P2PEDOL.CFG", "TCDOL.CFG", "TDOL.CFG",
-                "TRMDOL.CFG", "MPI-Dynamic.cfg");*/
+        HashMap<String, String> configMap = new HashMap<>();
 
         HashMap<String, String> versionMap = mpiClient.getConfiguration();
         for (Map.Entry entry : versionMap.entrySet()) {
-            String filePath = this.filepath + entry.getKey();
+            String name = (String) entry.getKey();
+            String filePath = this.filepath + name;
             File file = new File(filePath);
             if (file.exists()) {
                 configArray.add((String) entry.getKey());
+                configMap.put((String) entry.getKey(), (String) entry.getValue());
+
             }
         }
 
-        if (!Config.isConfigVersionValid(versionMap)) {
-            for (String filename : configArray) {
+        if(configMap.size() >0 ) {
+            for (Map.Entry entry : configMap.entrySet()) {
 
-                String path = this.filepath + filename;
+                String name = (String) entry.getKey();
+                String path = this.filepath + name;
                 FileInputStream inputStream = new FileInputStream(path);
 
                 Log.d(TAG, "Config file uploaded-: " + path);
@@ -183,56 +184,81 @@ public class ConfigApi {
                 inputStream.read(buffer);
                 inputStream.close();
 
-                int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, filename);
+                String version = getVersion(buffer);
 
-                //noinspection SimplifiableIfStatement
-                if (pedFileSize < 0) {
-                    showBadFileUploadMessage(filename);
-                    return;
-                }
-                ok = client.streamBinary(
-                        interfaceType, buffer, 0, 0, buffer.length, 100);
-                if (!ok) {
-                    showBadFileUploadMessage(filename);
+                if (!version.equals(entry.getValue())) {
+                    int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, (String) entry.getKey());
+
+                    if (pedFileSize < 0) {
+                        showBadFileUploadMessage((String) entry.getKey());
+                        return;
+                    }
+                    ok = client.streamBinary(
+                            interfaceType, buffer, 0, 0, buffer.length, 100);
+                    if (!ok) {
+                        showBadFileUploadMessage((String) entry.getKey());
+                        Log.e(TAG, "Error Config-file");
+                        client.closeSession();
+                        return;
+                    }
                     if (listener != null) {
-                        returnReason = "Failure";
-                        returnStatus = 2;
+                        returnReason = "Config Success, Applied";
+                        returnStatus = 1;
                         listener.onConfigUpdateComplete(createConfigData());
                     }
-                    Log.e(TAG, "Error Config-file");
-                    client.closeSession();
-                }
-            }
+                    client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
+                } else {
+                    if (BluetoothModule.getInstance().isSessionOpen()) {
+                        BluetoothModule.getInstance().closeSession();
+                    }
+                    Log.d(TAG, "Config file are upto date");
 
-            if (listener != null) {
-                returnReason = "Config Success, Applied";
-                returnStatus = 1;
-                listener.onConfigUpdateComplete(createConfigData());
+                    if (listener != null) {
+                        returnReason = "Config Success, Not Applied";
+                        returnStatus = 0;
+                        listener.onConfigUpdateComplete(createConfigData());
+                    }
+                }
+
             }
-        } else {
+        }else{
             if (BluetoothModule.getInstance().isSessionOpen()) {
                 BluetoothModule.getInstance().closeSession();
             }
             Log.d(TAG, "Config file are upto date");
 
             if (listener != null) {
-                returnReason = "Config Success, Not Applied";
-                returnStatus = 0;
+                returnReason = "No Directory/Files, Failure";
+                returnStatus = 2;
                 listener.onConfigUpdateComplete(createConfigData());
             }
         }
 
-        client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
     }
 
     private void showBadFileUploadMessage(final String filename) {
         if (listener != null) {
-            returnReason = Constants.ErrorReason;
-            returnStatus = Constants.ErrorStatus;
-            listener.onConfigUpdateComplete(configData);
+            returnReason = "Failure";
+            returnStatus = 2;
+            listener.onConfigUpdateComplete(createConfigData());
         }
         Log.d(TAG, filename + " uploaded Error");
         BluetoothModule.getInstance();
+    }
+
+    private String getVersion(byte[] buffer) {
+        String version = "";
+        String text = new String(buffer);
+        String lines[] = text.split("\\r?\\n");
+        for (int i = 0; i < lines.length; i++) {
+            if (lines[i].contains("$Revision:")) {
+                String[] part = lines[i].split(":");
+                String part2 = part[1].trim();
+                String[] split = part2.split(" ");
+                version = split[0].trim();
+            }
+        }
+        return version;
     }
 
     private ConfigApiData createConfigData() {
@@ -252,6 +278,11 @@ public class ConfigApi {
         mTimer.schedule(new TimerTask() {
             public void run() {
                 isTimerTimedOut = true;
+                if (listener != null) {
+                    returnReason = "Failure";
+                    returnStatus = 2;
+                    listener.onConfigUpdateComplete(createConfigData());
+                }
                 BluetoothModule.getInstance().closeSession();
                 this.cancel();
             }
