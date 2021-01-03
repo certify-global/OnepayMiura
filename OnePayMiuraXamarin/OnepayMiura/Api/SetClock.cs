@@ -13,7 +13,7 @@ namespace Onepay.Miura.Api
 
         public void SetDeviceClock(string btAddress, int timeOut, DateTime dateTime)
         {
-            string sDate = dateTime.ToString("MM/dd/yyyy HH:mm:ss");
+            string sDate = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
             SetClockApi.Instance.SetClockListener(new ClockListener());
             SetClockApi.Instance.SetDeviceClock(btAddress, timeOut, sDate);
         }
