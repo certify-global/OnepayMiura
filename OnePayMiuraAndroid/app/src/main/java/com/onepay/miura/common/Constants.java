@@ -20,6 +20,8 @@ public class Constants {
     public static int InvalidParametersStatus = 7;
     public static int NoDirectoryStatus = 8;
     public static int BadFileUploadedStatus = 9;
+    public static int Exception = 10;
+    public static int AbortException = 11;
 
 
     public static String Unknown = "00";
