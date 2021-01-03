@@ -99,6 +99,9 @@ public class TransactionApi {
      * @param tOut      Timeout for the transaction
      */
     public void setTransactionParams(double amt, String desc, String btAddress, int tOut) {
+        if (!BluetoothModule.getInstance().isSessionOpen()) {
+            BluetoothModule.getInstance().closeSession();
+        }
         isTransactionTimeOut = false;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;

@@ -1,5 +1,6 @@
 package com.onepay.miura.api;
 
+import android.annotation.SuppressLint;
 import android.util.Log;
 
 import com.miurasystems.mpi.api.executor.MiuraManager;
@@ -47,6 +48,10 @@ public class SetClockApi {
      * @param dateTime    DateTime
      */
     public void setDeviceClock(String btAddress, int tOut, String dateTime) throws Exception {
+        if (!BluetoothModule.getInstance().isSessionOpen()) {
+            BluetoothModule.getInstance().closeSession();
+        }
+
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
         this.date = convertDateTime(dateTime);;
@@ -125,7 +130,9 @@ public class SetClockApi {
     }
 
     private Date convertDateTime(String dateTime) throws Exception {
-        Date date=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(dateTime);
+        @SuppressLint("SimpleDateFormat")
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = sdf.parse(dateTime);
         return date;
     }
 

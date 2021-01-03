@@ -62,6 +62,9 @@ public class ConfigApi {
      * @param filePath  Config file path
      */
     public void performConfig(String btAddress, int tOut, String filePath) {
+        if (!BluetoothModule.getInstance().isSessionOpen()) {
+            BluetoothModule.getInstance().closeSession();
+        }
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
         this.filepath = filePath;

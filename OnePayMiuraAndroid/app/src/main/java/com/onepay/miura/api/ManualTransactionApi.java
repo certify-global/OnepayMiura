@@ -85,6 +85,9 @@ public class ManualTransactionApi {
      * @param tOut      Timeout for the transaction
      */
     public void setManualTransactionParams(double amt, String desc, String btAddress, int tOut, boolean isEbt, boolean isCvvRequired) {
+        if (!BluetoothModule.getInstance().isSessionOpen()) {
+            BluetoothModule.getInstance().closeSession();
+        }
 
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;

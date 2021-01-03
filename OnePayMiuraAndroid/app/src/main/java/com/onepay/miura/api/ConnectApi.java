@@ -49,7 +49,7 @@ public class ConnectApi {
         BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
 
-    public void setConnectListener(ConnectListener listener){
+    public void setConnectListener(ConnectListener listener) {
         this.listener = listener;
     }
 
@@ -61,6 +61,7 @@ public class ConnectApi {
         deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
+                BluetoothModule.getInstance().closeSession();
                 Log.d("TAG", "onConnectionSuccess: ");
                 if (listener != null) {
                     returnReason = Constants.SuccessReason;
@@ -68,7 +69,7 @@ public class ConnectApi {
                     listener.onConnectionComplete(createConnectData());
                 }
 
-                disconnectBtTimer();
+                //disconnectBtTimer();
             }
 
             @Override
@@ -134,17 +135,6 @@ public class ConnectApi {
             mTimer.cancel();
             mTimer = null;
         }
-    }
-
-    private void disconnectBtTimer(){
-        cancelDisconnectBtTimer();
-        mBtDisconnectTimer = new Timer();
-        mBtDisconnectTimer.schedule(new TimerTask() {
-            public void run() {
-                BluetoothModule.getInstance().closeSession();
-                this.cancel();
-            }
-        }, 2 * 1000);
     }
 
     private void cancelDisconnectBtTimer() {
