@@ -1,7 +1,11 @@
 package com.onepay.miura.api;
 
+import android.annotation.SuppressLint;
+import android.os.Build;
 import android.text.PrecomputedText;
 import android.util.Log;
+
+import androidx.annotation.RequiresApi;
 
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
@@ -10,8 +14,13 @@ import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
 import com.onepay.miura.data.SetClockApiData;
 
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -42,9 +51,13 @@ public class SetClockApi {
 
     /**
      * For connecting to the Miura device
+     *
      * @param btAddress Miura device bluetooth address
      */
     public void setDeviceClock(String btAddress, int tOut, String dateTime, SetClockListener listener) throws Exception {
+        if (!BluetoothModule.getInstance().isSessionOpen()) {
+            BluetoothModule.getInstance().closeSession();
+        }
         this.listener = listener;
 
         bluetoothAddress = btAddress;
@@ -99,12 +112,16 @@ public class SetClockApi {
     }
 
     public Date convertDateTime(String dateTime) throws Exception {
-        //String sDate1="12/21/2020 12:29:24";
-        Date date=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(dateTime);
+        @SuppressLint("SimpleDateFormat")
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = sdf.parse(dateTime);
+        System.out.println(date);
+        Log.d("TAG", "convertDateTime: " + date);
+
         return date;
     }
 
-    private int setDeviceClock(){
+    private int setDeviceClock() {
         MiuraManager.getInstance().setSystemClock(date, new MiuraDefaultListener() {
             @Override
             public void onSuccess() {
@@ -136,7 +153,7 @@ public class SetClockApi {
         return setClockData;
     }
 
-    private void endConnection(){
+    private void endConnection() {
         if (listener != null) {
             returnReason = Constants.TimeoutReason;
             returnStatus = Constants.TimeoutStatus;
@@ -167,7 +184,7 @@ public class SetClockApi {
         }
     }
 
-    private void disconnectBtTimer(){
+    private void disconnectBtTimer() {
         cancelDisconnectBtTimer();
         mBtDisconnectTimer = new Timer();
         mBtDisconnectTimer.schedule(new TimerTask() {

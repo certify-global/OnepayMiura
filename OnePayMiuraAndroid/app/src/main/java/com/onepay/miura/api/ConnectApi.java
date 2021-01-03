@@ -57,14 +57,13 @@ public class ConnectApi {
         deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
+                BluetoothModule.getInstance().closeSession();
                 Log.d("TAG", "onConnectionSuccess: ");
                 if (listener != null) {
                     returnReason = Constants.SuccessReason;
                     returnStatus = Constants.SuccessStatus;
                     listener.onConnectionComplete(createConnectData());
                 }
-
-                disconnectBtTimer();
             }
 
             @Override
@@ -132,7 +131,7 @@ public class ConnectApi {
         }
     }
 
-    private void disconnectBtTimer(){
+/*    private void disconnectBtTimer(){
         cancelDisconnectBtTimer();
         mBtDisconnectTimer = new Timer();
         mBtDisconnectTimer.schedule(new TimerTask() {
@@ -141,7 +140,7 @@ public class ConnectApi {
                 this.cancel();
             }
         }, 2 * 1000);
-    }
+    }*/
 
     private void cancelDisconnectBtTimer() {
         if (mTimer != null) {

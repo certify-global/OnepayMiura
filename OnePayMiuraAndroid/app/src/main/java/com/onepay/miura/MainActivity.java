@@ -13,11 +13,13 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.onepay.miura.api.ConfigApi;
 import com.onepay.miura.api.ConnectApi;
+import com.onepay.miura.api.DeviceApi;
 import com.onepay.miura.api.ManualTransactionApi;
 import com.onepay.miura.api.SetClockApi;
 import com.onepay.miura.api.TransactionApi;
 import com.onepay.miura.data.ConfigApiData;
 import com.onepay.miura.data.ConnectApiData;
+import com.onepay.miura.data.DeviceApiData;
 import com.onepay.miura.data.SetClockApiData;
 import com.onepay.miura.data.TransactionApiData;
 
@@ -56,20 +58,20 @@ public class MainActivity extends AppCompatActivity {
     //1.Event Handler 2. BroadCast Message
     public void deviceInfo(View view) {
 
-     /*   DeviceApi.getInstance().getDeviceInfo("0C:9A:42:89:2E:B9", new DeviceApi.DeviceInfoListener() {
+        DeviceApi.getInstance().getDeviceInfo("0C:9A:42:89:2E:B9", new DeviceApi.DeviceInfoListener() {
             @Override
             public void onGetDeviceInfoComplete(DeviceApiData data) {
                 Log.d("TAG", "Naga...... returnReason : " + data.dateTime());
             }
-        });*/
+        });
 
-        ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 15, new ConnectApi.ConnectListener() {
+    /*    ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 60, new ConnectApi.ConnectListener() {
             @Override
             public void onConnectionComplete(ConnectApiData data) {
                 Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
                 Log.d("TAG", "Naga...... returnStatus : " + data.returnStatus());
             }
-        });
+        });*/
     }
 
     public void onTransaction(View view) {
@@ -143,7 +145,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void setDeviceClock(View view) throws Exception {
 
-        String sDate1 = "12/21/2020 12:29:24";
+       // String sDate1 = "2020-09-25 12:29:24";
+        String sDate1 = "2021-01-03 05:18:37";
         //Log.d("TAG", "Naga...........setDeviceClock: " + sDate1);
         SetClockApi.getInstance().setDeviceClock("0C:9A:42:89:2E:B9", 30, sDate1, new SetClockApi.SetClockListener() {
             @Override
@@ -153,13 +156,5 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
-    public Date convetDateTime() throws Exception {
-        String sDate1 = "12/21/2020 12:29:24";
-        Date date1 = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").parse(sDate1);
-        System.out.println(sDate1 + "\t" + date1);
-        return date1;
-    }
-
 
 }
