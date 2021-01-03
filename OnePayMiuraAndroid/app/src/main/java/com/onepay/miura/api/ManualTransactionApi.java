@@ -88,7 +88,7 @@ public class ManualTransactionApi {
         if (!BluetoothModule.getInstance().isSessionOpen()) {
             BluetoothModule.getInstance().closeSession();
         }
-
+        clearData();
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
         if (description != null)
@@ -109,8 +109,8 @@ public class ManualTransactionApi {
      * @param listener callback listener for the transaction
      */
     public void performManualTransaction(ManualTransactionListener listener) {
-        isTransactionTimeOut = false;
         startTransactionTimer();
+        isTransactionTimeOut = false;
         this.manualTransactionListener = listener;
         if (bluetoothAddress.isEmpty() || amount == 0) {
             if (manualTransactionListener != null) {
@@ -409,7 +409,7 @@ public class ManualTransactionApi {
     private void startManualTransaction() {
         try {
             mManualTransactionAsync = new ManualTransactionAsync(MiuraManager.getInstance());
-            mManualTransactionAsync.manualTransaction(isEbt, isCvv);
+            mManualTransactionAsync.manualTransaction(isEbt, mTransactionTime, isCvv);
 
             Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
 
