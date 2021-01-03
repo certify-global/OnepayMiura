@@ -131,192 +131,231 @@ public class ManualTransactionApi {
 
 
     private void setDeviceReconnectListener() {
-        deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
-            @Override
-            public void onConnectionSuccess() {
-                Log.d("TAG", "onConnectionSuccess: ");
-                MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
-                    @WorkerThread
-                    @Override
-                    public void onSuccess(final ArrayList<Capability> capabilities) {
-                        startPayment();
+        try {
+            deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
+                @Override
+                public void onConnectionSuccess() {
+                    Log.d("TAG", "onConnectionSuccess: ");
+                    MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
+                        @WorkerThread
+                        @Override
+                        public void onSuccess(final ArrayList<Capability> capabilities) {
+                            startPayment();
+                        }
+
+                        @WorkerThread
+                        @Override
+                        public void onError() {
+                            BluetoothModule.getInstance().closeSession();
+                        }
+                    });
+                }
+
+                @Override
+                public void onConnectionError() {
+                    Log.d("TAG", "onConnectionError: ");
+                    if (!isTimerTimedOut) {
+                        reConnectDevice();
+                        return;
                     }
 
-                    @WorkerThread
-                    @Override
-                    public void onError() {
-                        BluetoothModule.getInstance().closeSession();
+                    if (manualTransactionListener != null) {
+                        returnReason = Constants.BluetoothConnectionErrorReason;
+                        returnStatus = Constants.BluetoothConnectionErrorStatus;
+                        manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
                     }
-                });
-            }
-
-            @Override
-            public void onConnectionError() {
-                Log.d("TAG", "onConnectionError: ");
-                if (!isTimerTimedOut) {
-                    reConnectDevice();
-                    return;
                 }
 
-                if (manualTransactionListener != null) {
-                    returnReason = Constants.BluetoothConnectionErrorReason;
-                    returnStatus = Constants.BluetoothConnectionErrorStatus;
-                    manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
-                }
-            }
+                @Override
+                public void onDeviceDisconnected() {
+                    Log.d("TAG", "onDeviceDisconnected: ");
 
-            @Override
-            public void onDeviceDisconnected() {
-                Log.d("TAG", "onDeviceDisconnected: ");
-
-                if (manualTransactionListener != null) {
-                    returnReason = Constants.BluetoothDisconnectedReason;
-                    returnStatus = Constants.BluetoothDisconnectedStatus;
-                    manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                    if (manualTransactionListener != null) {
+                        returnReason = Constants.BluetoothDisconnectedReason;
+                        returnStatus = Constants.BluetoothDisconnectedStatus;
+                        manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                    }
                 }
+            };
+        } catch (Exception e) {
+            if (manualTransactionListener != null) {
+                returnReason = e.toString();
+                returnStatus = Constants.Exception;
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
             }
-        };
+        }
     }
 
     public void cancelTransaction() {
-        isTransactionDataCheck = false;
-        if (manualTransactionListener != null) {
-            if(isTransactionTimeOut) {
-                returnReason = Constants.TimeoutReason;
-                returnStatus = Constants.TimeoutStatus;
+        try {
+            isTransactionDataCheck = false;
+            if (manualTransactionListener != null) {
+                if (isTransactionTimeOut) {
+                    returnReason = Constants.TimeoutReason;
+                    returnStatus = Constants.TimeoutStatus;
+                } else {
+                    returnReason = Constants.CancelReason;
+                    returnStatus = Constants.CancelStatus;
+                }
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
             }
-            else{
-                returnReason = Constants.CancelReason;
-                returnStatus = Constants.CancelStatus;
-            }
-            manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
-        }
-        clearData();
-        deregisterEventHandlers();
+            clearData();
+            deregisterEventHandlers();
 
-        if (mManualTransactionAsync != null) {
-            mManualTransactionAsync.abortManualTransaction();
+            if (mManualTransactionAsync != null) {
+                mManualTransactionAsync.abortManualTransaction();
+            }
+        } catch (Exception e) {
+            if (manualTransactionListener != null) {
+                returnReason = e.toString();
+                returnStatus = Constants.AbortException;
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+            }
         }
     }
 
     private void startPayment() {
-        BluetoothModule.getInstance().setTimeoutEnable(true);
-        BluetoothDevice device = BluetoothModule.getInstance().getSelectedBluetoothDevice();
+        try {
+            BluetoothModule.getInstance().setTimeoutEnable(true);
+            BluetoothDevice device = BluetoothModule.getInstance().getSelectedBluetoothDevice();
 
-        final boolean isPosDevice;
-        if (device != null) {
-            if (device.getName().toLowerCase().contains("pos")) {
-                MiuraManager.getInstance().setDeviceType(MiuraManager.DeviceType.POS);
-                isPosDevice = true;
-            } else {
-                MiuraManager.getInstance().setDeviceType(MiuraManager.DeviceType.PED);
-                isPosDevice = false;
+            final boolean isPosDevice;
+            if (device != null) {
+                if (device.getName().toLowerCase().contains("pos")) {
+                    MiuraManager.getInstance().setDeviceType(MiuraManager.DeviceType.POS);
+                    isPosDevice = true;
+                } else {
+                    MiuraManager.getInstance().setDeviceType(MiuraManager.DeviceType.PED);
+                    isPosDevice = false;
+                }
+                loadTransactionData(isPosDevice);
             }
-            loadTransactionData(isPosDevice);
+        } catch (Exception e) {
+            if (manualTransactionListener != null) {
+                returnReason = e.toString();
+                returnStatus = Constants.Exception;
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+            }
         }
     }
 
     private void loadTransactionData(final boolean isPosDevice) {
-        MiuraManager.getInstance().getSoftwareInfo(new ApiGetSoftwareInfoListener() {
+        try {
+            MiuraManager.getInstance().getSoftwareInfo(new ApiGetSoftwareInfoListener() {
 
-            @WorkerThread
-            @Override
-            public void onSuccess(SoftwareInfo softwareInfo) {
-                pedDeviceId = softwareInfo.getSerialNumber();
-            }
+                @WorkerThread
+                @Override
+                public void onSuccess(SoftwareInfo softwareInfo) {
+                    pedDeviceId = softwareInfo.getSerialNumber();
+                }
 
-            @WorkerThread
-            @Override
-            public void onError() {
-                //TODO check error
-            }
-        });
+                @WorkerThread
+                @Override
+                public void onError() {
+                    //TODO check error
+                }
+            });
 
-        MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
-            @Override
-            public void runOnAsyncThread(@NonNull MpiClient client) {
+            MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
+                @Override
+                public void runOnAsyncThread(@NonNull MpiClient client) {
 
-                if (isPosDevice) {
-                    ArrayList<String> peripheralTypes = client.peripheralStatusCommand();
-                    if (peripheralTypes == null) {
-                        Log.d(TAG, "Peripheral Error");
+                    if (isPosDevice) {
+                        ArrayList<String> peripheralTypes = client.peripheralStatusCommand();
+                        if (peripheralTypes == null) {
+                            Log.d(TAG, "Peripheral Error");
+                            BluetoothModule.getInstance().closeSession();
+
+                            return;
+                        } else if (!peripheralTypes.contains("PED")) {
+                            Log.d(TAG, "PED not attached to POS");
+                            BluetoothModule.getInstance().closeSession();
+                            return;
+                        }
+
+                        // bit weird to do this, but it's what the old code did and we want to ensure
+                        // calls still go when they are meant to go.
+                        // There's also a threading issue here. Nothing else should be using
+                        // MiuraManager at the same time as this is running, so it shouldn't be a
+                        // problem.
+                        MiuraManager.getInstance().setDeviceType(MiuraManager.DeviceType.PED);
+                    }
+
+                    BatteryData batteryData = client.getBatteryStatus();
+                    if (batteryData == null) {
+                        Log.e(TAG, "Battery level check: Error");
                         BluetoothModule.getInstance().closeSession();
 
                         return;
-                    } else if (!peripheralTypes.contains("PED")) {
-                        Log.d(TAG, "PED not attached to POS");
+                    }
+                    Log.d(TAG, "Battery level check: Success");
+
+                    boolean b = client.systemLog(InterfaceType.MPI, SystemLogMode.Remove);
+                    if (!b) {
+                        Log.d(TAG, "Delete Log: Error");
                         BluetoothModule.getInstance().closeSession();
+
+                        return;
+                    }
+                    Log.d(TAG, "Delete Log: Success");
+
+                    Date dateTime = client.systemClock(InterfaceType.MPI);
+                    if (dateTime == null) {
+                        Log.e(TAG, "Get Time: Error");
+                        BluetoothModule.getInstance().closeSession();
+
+                        return;
+                    }
+                    Log.d(TAG, "Get Time: Success");
+
+                    SoftwareInfo softwareInfo = client.resetDevice(
+                            InterfaceType.MPI, ResetDeviceType.Soft_Reset);
+                    if (softwareInfo == null) {
+                        Log.e(TAG, "Get Software Info: Error");
+                        BluetoothModule.getInstance().closeSession();
+
+                        return;
+                    }
+                    Log.e(TAG, "Get Software Info: Success");
+
+                    HashMap<String, String> versionMap = client.getConfiguration();
+                    if (versionMap == null) {
+                        Log.e(TAG, "Get PED config: Error");
+                        BluetoothModule.getInstance().closeSession();
+
                         return;
                     }
 
-                    // bit weird to do this, but it's what the old code did and we want to ensure
-                    // calls still go when they are meant to go.
-                    // There's also a threading issue here. Nothing else should be using
-                    // MiuraManager at the same time as this is running, so it shouldn't be a
-                    // problem.
-                    MiuraManager.getInstance().setDeviceType(MiuraManager.DeviceType.PED);
+                    if (!versionMap.containsValue(Config.getConfigVersion())) {
+                        Log.e(TAG, "Please update config files");
+                    } else {
+                        Log.d(TAG, "Get PED Config: Success");
+                    }
+                    performTransaction();
                 }
-
-                BatteryData batteryData = client.getBatteryStatus();
-                if (batteryData == null) {
-                    Log.e(TAG, "Battery level check: Error");
-                    BluetoothModule.getInstance().closeSession();
-
-                    return;
-                }
-                Log.d(TAG, "Battery level check: Success");
-
-                boolean b = client.systemLog(InterfaceType.MPI, SystemLogMode.Remove);
-                if (!b) {
-                    Log.d(TAG, "Delete Log: Error");
-                    BluetoothModule.getInstance().closeSession();
-
-                    return;
-                }
-                Log.d(TAG, "Delete Log: Success");
-
-                Date dateTime = client.systemClock(InterfaceType.MPI);
-                if (dateTime == null) {
-                    Log.e(TAG, "Get Time: Error");
-                    BluetoothModule.getInstance().closeSession();
-
-                    return;
-                }
-                Log.d(TAG, "Get Time: Success");
-
-                SoftwareInfo softwareInfo = client.resetDevice(
-                        InterfaceType.MPI, ResetDeviceType.Soft_Reset);
-                if (softwareInfo == null) {
-                    Log.e(TAG, "Get Software Info: Error");
-                    BluetoothModule.getInstance().closeSession();
-
-                    return;
-                }
-                Log.e(TAG, "Get Software Info: Success");
-
-                HashMap<String, String> versionMap = client.getConfiguration();
-                if (versionMap == null) {
-                    Log.e(TAG, "Get PED config: Error");
-                    BluetoothModule.getInstance().closeSession();
-
-                    return;
-                }
-
-                if (!versionMap.containsValue(Config.getConfigVersion())) {
-                    Log.e(TAG, "Please update config files");
-                } else {
-                    Log.d(TAG, "Get PED Config: Success");
-                }
-                performTransaction();
+            });
+        } catch (Exception e) {
+            if (manualTransactionListener != null) {
+                returnReason = e.toString();
+                returnStatus = Constants.Exception;
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
             }
-        });
+        }
     }
 
     private void performTransaction() {
-        Log.d(TAG, "Starting Transaction");
-        registerEventHandlers();
-        MiuraManager.getInstance().cardStatus(true);
-        startManualTransaction();
+        try {
+            Log.d(TAG, "Starting Transaction");
+            registerEventHandlers();
+            MiuraManager.getInstance().cardStatus(true);
+            startManualTransaction();
+        } catch (Exception e) {
+            if (manualTransactionListener != null) {
+                returnReason = e.toString();
+                returnStatus = Constants.Exception;
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+            }
+        }
     }
 
     private final MpiEventHandler<DeviceStatusChange> mDeviceStatusHandler =
@@ -332,8 +371,16 @@ public class ManualTransactionApi {
             };
 
     private void registerEventHandlers() {
-        MPI_EVENTS.CardStatusChanged.register(mCardEventHandler);
-        MPI_EVENTS.DeviceStatusChanged.register(mDeviceStatusHandler);
+        try {
+            MPI_EVENTS.CardStatusChanged.register(mCardEventHandler);
+            MPI_EVENTS.DeviceStatusChanged.register(mDeviceStatusHandler);
+        } catch (Exception e) {
+            if (manualTransactionListener != null) {
+                returnReason = e.toString();
+                returnStatus = Constants.Exception;
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+            }
+        }
     }
 
     private final MpiEventHandler<CardData> mCardEventHandler = new MpiEventHandler<CardData>() {
@@ -345,39 +392,55 @@ public class ManualTransactionApi {
     };
 
     protected void handleTransactionEvent() {
-        if (!BluetoothModule.getInstance().isSessionOpen()) {
-            return;
+        try {
+            if (!BluetoothModule.getInstance().isSessionOpen()) {
+                return;
+            }
+            startManualTransaction();
+        } catch (Exception e) {
+            if (manualTransactionListener != null) {
+                returnReason = e.toString();
+                returnStatus = Constants.Exception;
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+            }
         }
-        startManualTransaction();
     }
 
     private void startManualTransaction() {
-        mManualTransactionAsync = new ManualTransactionAsync(MiuraManager.getInstance());
-        mManualTransactionAsync.manualTransaction(isEbt, isCvv);
-
-        Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
-
         try {
-            data = result.asSuccess().getValue();
-            expireDate = mManualTransactionAsync.mExpireDate;
-            if (data != null) {
-                if (manualTransactionListener != null && !isTransactionDataCheck) {
-                    returnReason = Constants.SuccessReason;
-                    returnStatus = Constants.SuccessStatus;
-                    manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+            mManualTransactionAsync = new ManualTransactionAsync(MiuraManager.getInstance());
+            mManualTransactionAsync.manualTransaction(isEbt, isCvv);
+
+            Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
+
+            try {
+                data = result.asSuccess().getValue();
+                expireDate = mManualTransactionAsync.mExpireDate;
+                if (data != null) {
+                    if (manualTransactionListener != null && !isTransactionDataCheck) {
+                        returnReason = Constants.SuccessReason;
+                        returnStatus = Constants.SuccessStatus;
+                        manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                    }
                 }
-            }
-        } catch (Exception e){
+            } catch (Exception e) {
            /* if (manualTransactionListener != null) {
                 returnReason = Constants.ErrorReason;
                 returnStatus = Constants.ErrorStatus;
                 manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
             }*/
-        }
+            }
 
-        BluetoothModule.getInstance().closeSession();
-        clearTransactionData();
-        clearData();
+            BluetoothModule.getInstance().closeSession();
+            clearTransactionData();
+            clearData();
+        } catch (Exception e) {
+            if (manualTransactionListener != null) {
+                returnReason = e.toString();
+                returnStatus = Constants.Exception;
+                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+            }
+        }
     }
 
     private TransactionApiData createTransactionData(EncryptedPan data) {
