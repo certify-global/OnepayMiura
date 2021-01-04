@@ -48,7 +48,7 @@ public class ManualTransactionAsync {
             Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
                     GetNumericDataRequest.GetBuilder(0, 154, 155, 4, 0)
                             .setOption(GetCommandsOptions.KeyboardBacklightOn, true)
-                            .setTimeoutInSeconds(timeOut)
+                            .setTimeoutInSeconds(15)
                             .build());
 
             if (expireDate.isSuccess()) {
@@ -77,7 +77,6 @@ public class ManualTransactionAsync {
         try {
             mMpiClient.abort(MPI, false);
             TimeUnit.SECONDS.sleep((long) 1);
-            mMpiClient.abort(MPI, false);
             mMpiClient.abortTransaction(MPI);
         }
         catch (Exception e){

@@ -131,59 +131,51 @@ public class ManualTransactionApi {
 
 
     private void setDeviceReconnectListener() {
-        try {
-            deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
-                @Override
-                public void onConnectionSuccess() {
-                    Log.d("TAG", "onConnectionSuccess: ");
-                    MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
-                        @WorkerThread
-                        @Override
-                        public void onSuccess(final ArrayList<Capability> capabilities) {
-                            startPayment();
-                        }
-
-                        @WorkerThread
-                        @Override
-                        public void onError() {
-                            BluetoothModule.getInstance().closeSession();
-                        }
-                    });
-                }
-
-                @Override
-                public void onConnectionError() {
-                    Log.d("TAG", "onConnectionError: ");
-                    if (!isTimerTimedOut) {
-                        reConnectDevice();
-                        return;
+        deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
+            @Override
+            public void onConnectionSuccess() {
+                Log.d("TAG", "onConnectionSuccess: ");
+                MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
+                    @WorkerThread
+                    @Override
+                    public void onSuccess(final ArrayList<Capability> capabilities) {
+                        startPayment();
                     }
 
-                    if (manualTransactionListener != null) {
-                        returnReason = Constants.BluetoothConnectionErrorReason;
-                        returnStatus = Constants.BluetoothConnectionErrorStatus;
-                        manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                    @WorkerThread
+                    @Override
+                    public void onError() {
+                        BluetoothModule.getInstance().closeSession();
                     }
-                }
-
-                @Override
-                public void onDeviceDisconnected() {
-                    Log.d("TAG", "onDeviceDisconnected: ");
-
-                    if (manualTransactionListener != null) {
-                        returnReason = Constants.BluetoothDisconnectedReason;
-                        returnStatus = Constants.BluetoothDisconnectedStatus;
-                        manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
-                    }
-                }
-            };
-        } catch (Exception e) {
-            if (manualTransactionListener != null) {
-                returnReason = e.toString();
-                returnStatus = Constants.Exception;
-                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                });
             }
-        }
+
+            @Override
+            public void onConnectionError() {
+                Log.d("TAG", "onConnectionError: ");
+                if (!isTimerTimedOut) {
+                    reConnectDevice();
+                    return;
+                }
+
+                if (manualTransactionListener != null) {
+                    returnReason = Constants.BluetoothConnectionErrorReason;
+                    returnStatus = Constants.BluetoothConnectionErrorStatus;
+                    manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                }
+            }
+
+            @Override
+            public void onDeviceDisconnected() {
+                Log.d("TAG", "onDeviceDisconnected: ");
+
+                if (manualTransactionListener != null) {
+                    returnReason = Constants.BluetoothDisconnectedReason;
+                    returnStatus = Constants.BluetoothDisconnectedStatus;
+                    manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                }
+            }
+        };
     }
 
     public void cancelTransaction() {

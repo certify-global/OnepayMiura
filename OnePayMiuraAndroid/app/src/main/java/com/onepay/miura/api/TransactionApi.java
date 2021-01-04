@@ -139,60 +139,52 @@ public class TransactionApi {
     }
 
     private void setDeviceReconnectListener() {
-        try {
-            deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
-                @Override
-                public void onConnectionSuccess() {
-                    Log.d("TAG", "onConnectionSuccess: ");
-                    startTransactionTimer();
-                    MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
-                        @WorkerThread
-                        @Override
-                        public void onSuccess(final ArrayList<Capability> capabilities) {
-                            getDeviceCapabilities(capabilities);
-                        }
-
-                        @WorkerThread
-                        @Override
-                        public void onError() {
-                            BluetoothModule.getInstance().closeSession();
-
-                        }
-                    });
-                }
-
-                @Override
-                public void onConnectionError() {
-                    Log.d("TAG", "onConnectionError: ");
-                    if (!isTimerTimedOut) {
-                        reConnectDevice();
-                        return;
+        deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
+            @Override
+            public void onConnectionSuccess() {
+                Log.d("TAG", "onConnectionSuccess: ");
+                startTransactionTimer();
+                MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
+                    @WorkerThread
+                    @Override
+                    public void onSuccess(final ArrayList<Capability> capabilities) {
+                        getDeviceCapabilities(capabilities);
                     }
-                    if (transactionListener != null) {
-                        returnReason = Constants.BluetoothConnectionErrorReason;
-                        returnStatus = Constants.BluetoothConnectionErrorStatus;
-                        transactionListener.onTransactionComplete(createTransactionData(cardData));
-                    }
-                }
 
-                @Override
-                public void onDeviceDisconnected() {
-                    Log.d("TAG", "onDeviceDisconnected: ");
+                    @WorkerThread
+                    @Override
+                    public void onError() {
+                        BluetoothModule.getInstance().closeSession();
 
-                    if (transactionListener != null) {
-                        returnReason = Constants.BluetoothDisconnectedReason;
-                        returnStatus = Constants.BluetoothDisconnectedStatus;
-                        transactionListener.onTransactionComplete(createTransactionData(cardData));
                     }
-                }
-            };
-        } catch (Exception e) {
-            if (transactionListener != null) {
-                returnReason = e.toString();
-                returnStatus = Constants.Exception;
-                transactionListener.onTransactionComplete(createTransactionData(cardData));
+                });
             }
-        }
+
+            @Override
+            public void onConnectionError() {
+                Log.d("TAG", "onConnectionError: ");
+                if (!isTimerTimedOut) {
+                    reConnectDevice();
+                    return;
+                }
+                if (transactionListener != null) {
+                    returnReason = Constants.BluetoothConnectionErrorReason;
+                    returnStatus = Constants.BluetoothConnectionErrorStatus;
+                    transactionListener.onTransactionComplete(createTransactionData(cardData));
+                }
+            }
+
+            @Override
+            public void onDeviceDisconnected() {
+                Log.d("TAG", "onDeviceDisconnected: ");
+
+                if (transactionListener != null) {
+                    returnReason = Constants.BluetoothDisconnectedReason;
+                    returnStatus = Constants.BluetoothDisconnectedStatus;
+                    transactionListener.onTransactionComplete(createTransactionData(cardData));
+                }
+            }
+        };
     }
 
     /**
@@ -321,11 +313,7 @@ public class TransactionApi {
                 loadTransactionData(isPosDevice);
             }
         } catch (Exception e) {
-            if (transactionListener != null) {
-                returnReason = e.toString();
-                returnStatus = Constants.Exception;
-                transactionListener.onTransactionComplete(createTransactionData(cardData));
-            }
+            Log.d(TAG, "startPayment: ");
         }
     }
 
@@ -456,15 +444,8 @@ public class TransactionApi {
                         public void onError() {
                         }
                     });
-        /*registerEventHandlers();
-        MiuraManager.getInstance().cardStatus(true);
-        startEmvTransaction(EmvTransactionType.Contactless);*/
         } catch (Exception e) {
-            if (transactionListener != null) {
-                returnReason = e.toString();
-                returnStatus = Constants.Exception;
-                transactionListener.onTransactionComplete(createTransactionData(cardData));
-            }
+            Log.d(TAG, "performTransaction: ");
         }
     }
 
@@ -613,11 +594,7 @@ public class TransactionApi {
             clearTransactionData();
             clearData();
         } catch (Exception e) {
-            if (transactionListener != null) {
-                returnReason = e.toString();
-                returnStatus = Constants.Exception;
-                transactionListener.onTransactionComplete(createTransactionData(cardData));
-            }
+            Log.d(TAG, "handleTransactionEvent: ");
         }
     }
 
