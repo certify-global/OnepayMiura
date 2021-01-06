@@ -38,8 +38,8 @@ public class ConfigApi {
     private ConfigApiData configData = null;
     private Timer mTimer;
     private String returnReason = "";
-    private String filepath = "";
     private int returnStatus = 0;
+    private String filepath = "";
     private MpiClient mpiClient;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
 
@@ -62,17 +62,18 @@ public class ConfigApi {
      * @param filePath  Config file path
      */
     public void performConfig(String btAddress, int tOut, String filePath) {
-        if (!BluetoothModule.getInstance().isSessionOpen()) {
-            BluetoothModule.getInstance().closeSession();
-        }
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
         this.filepath = filePath;
         configData = new ConfigApiData();
         startTimer();
 
-        setDeviceReconnectListener();
-        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        if (BluetoothModule.getInstance().isSessionOpen()) {
+            getDeviceInfo();
+        }else {
+            setDeviceReconnectListener();
+            BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        }
     }
 
     public void setConfigListener(ConfigInfoListener listener) {
@@ -88,34 +89,7 @@ public class ConfigApi {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
-                MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
-                    @WorkerThread
-                    @Override
-                    public void onSuccess(final ArrayList<Capability> capabilities) {
-                        MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
-                            @Override
-                            public void runOnAsyncThread(MpiClient client) {
-                                try {
-                                    doFileUploads(client);
-                                } catch (IOException e) {
-                                    Log.e(TAG, "runOnAsyncThread: " + e.toString());
-                                    if (listener != null) {
-                                        returnReason = "Storage Permission, Failure";
-                                        returnStatus = 2;
-                                        listener.onConfigUpdateComplete(createConfigData());
-                                    }
-                                    mpiClient.closeSession();
-                                }
-                            }
-                        });
-                    }
-
-                    @WorkerThread
-                    @Override
-                    public void onError() {
-                        BluetoothModule.getInstance().closeSession();
-                    }
-                });
+                getDeviceInfo();
             }
 
             @Override
@@ -135,41 +109,66 @@ public class ConfigApi {
             @Override
             public void onDeviceDisconnected() {
                 Log.d("TAG", "onDeviceDisconnected: ");
-
-                /*if (listener != null) {
-                    returnReason = Constants.BluetoothDisconnectedReason;
-                    returnStatus = Constants.BluetoothDisconnectedStatus;
-                    listener.onConfigUpdateComplete(createConfigData());
-                }*/
             }
         };
+    }
+
+    private void getDeviceInfo(){
+        MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
+            @WorkerThread
+            @Override
+            public void onSuccess(final ArrayList<Capability> capabilities) {
+                MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
+                    @Override
+                    public void runOnAsyncThread(MpiClient client) {
+                        try {
+                            doFileUploads(client);
+                        } catch (IOException e) {
+                            Log.e(TAG, "runOnAsyncThread: " + e.toString());
+                            if (listener != null) {
+                                returnReason = "Storage Permission, Failure";
+                                returnStatus = 2;
+                                listener.onConfigUpdateComplete(createConfigData());
+                            }
+                            mpiClient.closeSession();
+                        }
+                    }
+                });
+            }
+
+            @WorkerThread
+            @Override
+            public void onError() {
+                BluetoothModule.getInstance().closeSession();
+            }
+        });
     }
 
     private void doFileUploads(@NonNull MpiClient client) throws IOException {
         InterfaceType interfaceType = InterfaceType.MPI;
 
         this.mpiClient = client;
-        boolean ok = client.displayText(MPI, DisplayTextUtils.getCenteredText("Updating....\nConfig files..."),
+        boolean result = client.displayText(MPI, DisplayTextUtils.getCenteredText("Updating....\nConfig files..."),
                 true, true, true);
-        if (!ok) {
+        if (!result) {
             Log.e(TAG, "Text failed");
         }
 
-        ArrayList<String> configArray = new ArrayList<String>();
         HashMap<String, String> configMap = new HashMap<>();
 
         HashMap<String, String> versionMap = mpiClient.getConfiguration();
+        if (versionMap == null) {
+            closeSession("No config files available in Miura Device , Failure", 2);
+            return;
+        }
         for (Map.Entry entry : versionMap.entrySet()) {
             String filePath = this.filepath + entry.getKey();
             File file = new File(filePath);
             if (file.exists()) {
-                configArray.add((String) entry.getKey());
                 configMap.put((String) entry.getKey(), (String) entry.getValue());
-
             }
         }
-        if(configMap.size() >0 ) {
-
+        if (configMap.size() > 0) {
             for (Map.Entry entry : configMap.entrySet()) {
 
                 String path = this.filepath + entry.getKey();
@@ -191,57 +190,42 @@ public class ConfigApi {
                         showBadFileUploadMessage((String) entry.getKey());
                         return;
                     }
-                    ok = client.streamBinary(
+                    result = client.streamBinary(
                             interfaceType, buffer, 0, 0, buffer.length, 100);
-                    if (!ok) {
+                    if (!result) {
                         showBadFileUploadMessage((String) entry.getKey());
                         Log.e(TAG, "Error Config-file");
-                        client.closeSession();
+                        //client.closeSession();
                         return;
                     }
-                    if (listener != null) {
-                        returnReason = "Config Success, Applied";
-                        returnStatus = 1;
-                        listener.onConfigUpdateComplete(createConfigData());
-                    }
+                    closeSession("Config Success, Applied", 1);
                     client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
                 } else {
-                    if (BluetoothModule.getInstance().isSessionOpen()) {
-                        BluetoothModule.getInstance().closeSession();
-                    }
-                    Log.d(TAG, "Config file are upto date");
-
-                    if (listener != null) {
-                        returnReason = "Config Success, Not Applied";
-                        returnStatus = 0;
-                        listener.onConfigUpdateComplete(createConfigData());
-                    }
+                    closeSession("Config Success, Not Applied", 0);
                 }
 
             }
-        }else{
-            if (BluetoothModule.getInstance().isSessionOpen()) {
-                BluetoothModule.getInstance().closeSession();
-            }
-            Log.d(TAG, "Not a valid directory");
-
-            if (listener != null) {
-                returnReason = "No Directory/Files, Failure";
-                returnStatus = 2;
-                listener.onConfigUpdateComplete(createConfigData());
-            }
+        } else {
+            closeSession("No Directory/Files, Failure", 2);
         }
 
     }
 
     private void showBadFileUploadMessage(final String filename) {
+        closeSession("Bad files uploaded, Failure, filename: " + filename, 2);
+        Log.d(TAG, filename + " uploaded Error");
+    }
+
+    private void closeSession(String reason, int status) {
+        if (BluetoothModule.getInstance().isSessionOpen()) {
+            BluetoothModule.getInstance().closeSession();
+        }
+
         if (listener != null) {
-            returnReason = "Bad files uploaded, Failure";
-            returnStatus = 2;
+            returnReason = reason;
+            returnStatus = status;
             listener.onConfigUpdateComplete(createConfigData());
         }
-        Log.d(TAG, filename + " uploaded Error");
-        BluetoothModule.getInstance();
     }
 
     private String getVersion(byte[] buffer) {
@@ -262,7 +246,7 @@ public class ConfigApi {
     private ConfigApiData createConfigData() {
         configData.setReturnReason(returnReason);
         configData.setReturnStatus(returnStatus);
-        cancelTimer();
+        clearData();
         return configData;
     }
 
@@ -292,5 +276,12 @@ public class ConfigApi {
             mTimer.cancel();
             mTimer = null;
         }
+    }
+
+    private void clearData() {
+        listener = null;
+        deviceConnectListener = null;
+        isTimerTimedOut = false;
+        cancelTimer();
     }
 }

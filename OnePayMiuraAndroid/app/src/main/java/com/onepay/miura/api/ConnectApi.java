@@ -12,6 +12,7 @@ import java.util.TimerTask;
 
 public class ConnectApi {
 
+    private static final String TAG = ConnectApi.class.getSimpleName();
     private ConnectListener listener;
     private static ConnectApi instance = null;
     private ConnectApiData connectData = null;
@@ -40,6 +41,7 @@ public class ConnectApi {
      * @param btAddress Miura device bluetooth address
      */
     public void connect(String btAddress, int tOut) {
+        Log.d(TAG, "###RB#### connect method to set the parameters");
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
         connectData = new ConnectApiData();
@@ -50,10 +52,12 @@ public class ConnectApi {
     }
 
     public void setConnectListener(ConnectListener listener) {
+        Log.d(TAG, "###RB#### setConnectListener method to set the listener");
         this.listener = listener;
     }
 
     private void reConnectDevice() {
+        Log.d(TAG, "###RB#### reconnecting the device");
         BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
     }
 
@@ -61,20 +65,18 @@ public class ConnectApi {
         deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
-                BluetoothModule.getInstance().closeSession();
-                Log.d("TAG", "onConnectionSuccess: ");
+                Log.d("TAG", "###RB#### connection success: ");
+                cancelTimer();
                 if (listener != null) {
                     returnReason = Constants.SuccessReason;
                     returnStatus = Constants.SuccessStatus;
                     listener.onConnectionComplete(createConnectData());
                 }
-
-                //disconnectBtTimer();
             }
 
             @Override
             public void onConnectionError() {
-                Log.d("TAG", "onConnectionError: ");
+                Log.d("TAG", "###RB#### connection error");
                 if (!isTimerTimedOut) {
                     reConnectDevice();
                     return;
@@ -88,8 +90,7 @@ public class ConnectApi {
 
             @Override
             public void onDeviceDisconnected() {
-                Log.d("TAG", "onDeviceDisconnected: ");
-
+                Log.d("TAG", "###RB#### device disconnected");
                 if (listener != null) {
                     returnReason = Constants.BluetoothDisconnectedReason;
                     returnStatus = Constants.BluetoothDisconnectedStatus;
@@ -102,7 +103,6 @@ public class ConnectApi {
     private ConnectApiData createConnectData() {
         connectData.setReturnReason(returnReason);
         connectData.setReturnStatus(returnStatus);
-        cancelTimer();
         return connectData;
     }
 
@@ -131,13 +131,6 @@ public class ConnectApi {
     }
 
     private void cancelTimer() {
-        if (mTimer != null) {
-            mTimer.cancel();
-            mTimer = null;
-        }
-    }
-
-    private void cancelDisconnectBtTimer() {
         if (mTimer != null) {
             mTimer.cancel();
             mTimer = null;

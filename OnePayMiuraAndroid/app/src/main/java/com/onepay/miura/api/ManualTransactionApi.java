@@ -85,9 +85,8 @@ public class ManualTransactionApi {
      * @param tOut      Timeout for the transaction
      */
     public void setManualTransactionParams(double amt, String desc, String btAddress, int tOut, boolean isEbt, boolean isCvvRequired) {
-        if (!BluetoothModule.getInstance().isSessionOpen()) {
-            BluetoothModule.getInstance().closeSession();
-        }
+        Log.d(TAG, "###RB#### setManualTransactionParams: ");
+
         clearData();
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
@@ -109,6 +108,7 @@ public class ManualTransactionApi {
      * @param listener callback listener for the transaction
      */
     public void performManualTransaction(ManualTransactionListener listener) {
+        Log.d(TAG, "###RB#### performManualTransaction: ");
         startTransactionTimer();
         isTransactionTimeOut = false;
         this.manualTransactionListener = listener;
@@ -121,8 +121,13 @@ public class ManualTransactionApi {
             return;
         }
 
-        setDeviceReconnectListener();
-        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        if (BluetoothModule.getInstance().isSessionOpen()) {
+            startPayment();
+        }
+        else {
+            setDeviceReconnectListener();
+            BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        }
     }
 
     private void reConnectDevice() {
@@ -134,6 +139,7 @@ public class ManualTransactionApi {
         deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
+                Log.d(TAG, "###RB#### onConnectionSuccess: ");
                 Log.d("TAG", "onConnectionSuccess: ");
                 MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
                     @WorkerThread
@@ -152,6 +158,7 @@ public class ManualTransactionApi {
 
             @Override
             public void onConnectionError() {
+                Log.d(TAG, "###RB#### onConnectionError: ");
                 Log.d("TAG", "onConnectionError: ");
                 if (!isTimerTimedOut) {
                     reConnectDevice();
@@ -167,6 +174,7 @@ public class ManualTransactionApi {
 
             @Override
             public void onDeviceDisconnected() {
+                Log.d(TAG, "###RB#### onDeviceDisconnected: ");
                 Log.d("TAG", "onDeviceDisconnected: ");
 
                 if (manualTransactionListener != null) {
@@ -179,6 +187,7 @@ public class ManualTransactionApi {
     }
 
     public void cancelTransaction() {
+        Log.d(TAG, "###RB#### cancelTransaction: ");
         try {
             isTransactionDataCheck = false;
             if (manualTransactionListener != null) {
@@ -207,6 +216,7 @@ public class ManualTransactionApi {
     }
 
     private void startPayment() {
+        Log.d(TAG, "###RB#### startPayment: ");
         try {
             BluetoothModule.getInstance().setTimeoutEnable(true);
             BluetoothDevice device = BluetoothModule.getInstance().getSelectedBluetoothDevice();
@@ -232,6 +242,7 @@ public class ManualTransactionApi {
     }
 
     private void loadTransactionData(final boolean isPosDevice) {
+        Log.d(TAG, "###RB#### loadTransactionData: ");
         try {
             MiuraManager.getInstance().getSoftwareInfo(new ApiGetSoftwareInfoListener() {
 
@@ -317,12 +328,6 @@ public class ManualTransactionApi {
 
                         return;
                     }
-
-                    if (!versionMap.containsValue(Config.getConfigVersion())) {
-                        Log.e(TAG, "Please update config files");
-                    } else {
-                        Log.d(TAG, "Get PED Config: Success");
-                    }
                     performTransaction();
                 }
             });
@@ -336,6 +341,7 @@ public class ManualTransactionApi {
     }
 
     private void performTransaction() {
+        Log.d(TAG, "###RB#### performTransaction: ");
         try {
             Log.d(TAG, "Starting Transaction");
             registerEventHandlers();
@@ -363,6 +369,7 @@ public class ManualTransactionApi {
             };
 
     private void registerEventHandlers() {
+        Log.d(TAG, "###RB#### registerEventHandlers: ");
         try {
             MPI_EVENTS.CardStatusChanged.register(mCardEventHandler);
             MPI_EVENTS.DeviceStatusChanged.register(mDeviceStatusHandler);
@@ -378,12 +385,14 @@ public class ManualTransactionApi {
     private final MpiEventHandler<CardData> mCardEventHandler = new MpiEventHandler<CardData>() {
         @Override
         public void handle(@NonNull CardData cardData) {
+            Log.d(TAG, "###RB#### Mpi event handler: ");
             Log.d(TAG, "cardData " + cardData);
             handleTransactionEvent();
         }
     };
 
     protected void handleTransactionEvent() {
+        Log.d(TAG, "###RB#### handleTransactionEvent: ");
         try {
             if (!BluetoothModule.getInstance().isSessionOpen()) {
                 return;
@@ -399,6 +408,7 @@ public class ManualTransactionApi {
     }
 
     private void startManualTransaction() {
+        Log.d(TAG, "###RB#### startManualTransaction: ");
         try {
             mManualTransactionAsync = new ManualTransactionAsync(MiuraManager.getInstance());
             mManualTransactionAsync.manualTransaction(isEbt, mTransactionTime, isCvv);
@@ -436,6 +446,7 @@ public class ManualTransactionApi {
     }
 
     private TransactionApiData createTransactionData(EncryptedPan data) {
+        Log.d(TAG, "###RB#### createTransactionData: ");
         isTransactionDataCheck = true;
         transactionData.setDeviceId(pedDeviceId);
         transactionData.setAmount(this.amount);
@@ -466,6 +477,7 @@ public class ManualTransactionApi {
     }
 
     private static String bytesToHexString(byte[] src) {
+        Log.d(TAG, "###RB#### bytesToHexString: ");
         StringBuilder stringBuilder = new StringBuilder("");
         if (src == null || src.length <= 0) {
             return null;
@@ -480,6 +492,7 @@ public class ManualTransactionApi {
     }
 
     private void deregisterEventHandlers() {
+        Log.d(TAG, "###RB#### deregisterEventHandlers: ");
         MPI_EVENTS.CardStatusChanged.deregister(mCardEventHandler);
         MPI_EVENTS.DeviceStatusChanged.deregister(mDeviceStatusHandler);
     }
@@ -488,6 +501,7 @@ public class ManualTransactionApi {
      * Transaction Timer
      */
     private void startTransactionTimer() {
+        Log.d(TAG, "###RB#### startTransactionTimer: ");
         isTimerTimedOut = false;
         cancelTransactionTimer();
         mTimer = new Timer();
