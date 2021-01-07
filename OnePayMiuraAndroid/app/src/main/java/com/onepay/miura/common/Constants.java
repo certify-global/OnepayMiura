@@ -10,6 +10,7 @@ public class Constants {
     public static String InvalidParametersReason = "Invalid Parameters";
     public static String NoDirectoryReason = "No Such file or Directory";
     public static String BadFileUploadedReason = "BadFileUploaded";
+    public static String InvalidExpireDateReason = "InvalidExpireDate";
 
     public static int SuccessStatus = 1;
     public static int ErrorStatus = 2;
@@ -22,6 +23,7 @@ public class Constants {
     public static int BadFileUploadedStatus = 9;
     public static int Exception = 10;
     public static int AbortException = 11;
+    public static int InvalidExpireDateStatus = 14;
 
     public static String Unknown = "00";
     public static String Manual = "01";

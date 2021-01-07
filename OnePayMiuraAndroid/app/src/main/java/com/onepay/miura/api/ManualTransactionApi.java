@@ -418,7 +418,14 @@ public class ManualTransactionApi {
             try {
                 data = result.asSuccess().getValue();
                 expireDate = mManualTransactionAsync.mExpireDate;
-                if (data != null) {
+                int date = Integer.parseInt(checkExpireDate(expireDate));
+                if (date > 12) {
+                    if (manualTransactionListener != null && !isTransactionDataCheck) {
+                        returnReason = Constants.InvalidExpireDateReason;
+                        returnStatus = Constants.InvalidExpireDateStatus;
+                        manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                    }
+                } else if (data != null) {
                     if (manualTransactionListener != null && !isTransactionDataCheck) {
                         returnReason = Constants.SuccessReason;
                         returnStatus = Constants.SuccessStatus;
@@ -426,11 +433,11 @@ public class ManualTransactionApi {
                     }
                 }
             } catch (Exception e) {
-           /* if (manualTransactionListener != null) {
-                returnReason = Constants.ErrorReason;
-                returnStatus = Constants.ErrorStatus;
-                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
-            }*/
+                if (manualTransactionListener != null) {
+                    returnReason = Constants.ErrorReason;
+                    returnStatus = Constants.ErrorStatus;
+                    manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                }
             }
 
             BluetoothModule.getInstance().closeSession();
@@ -489,6 +496,13 @@ public class ManualTransactionApi {
             stringBuilder.append(buffer);
         }
         return stringBuilder.toString();
+    }
+
+    private static String checkExpireDate(String expireDate) {
+        if (expireDate.length() > 2) {
+            expireDate = expireDate.substring(0, 2);
+        }
+        return expireDate;
     }
 
     private void deregisterEventHandlers() {
