@@ -17,6 +17,7 @@ import com.onepay.miura.api.DeviceApi;
 import com.onepay.miura.api.ManualTransactionApi;
 import com.onepay.miura.api.SetClockApi;
 import com.onepay.miura.api.TransactionApi;
+import com.onepay.miura.core.Config;
 import com.onepay.miura.data.ConfigApiData;
 import com.onepay.miura.data.ConnectApiData;
 import com.onepay.miura.data.DeviceApiData;
@@ -102,13 +103,14 @@ public class MainActivity extends AppCompatActivity {
     public void onUpdateConfig(View view) {
         String path1 = Environment.getExternalStorageDirectory() + "/miura/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
         String path = "/storage/self/primary/mpi_config/";
-        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 200, path, new ConfigApi.ConfigInfoListener() {
+        ConfigApi.getInstance().setConfigListener(new ConfigApi.ConfigInfoListener() {
             @Override
             public void onConfigUpdateComplete(ConfigApiData data) {
                 Log.d("TAG", "Naga2........" + data.returnReason());
                 Log.d("TAG", "Naga2........" + data.returnStatus());
             }
         });
+        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 200, path);
     }
 
     public void onManualTransaction(View view) {

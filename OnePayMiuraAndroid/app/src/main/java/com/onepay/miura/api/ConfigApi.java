@@ -8,28 +8,20 @@ import androidx.annotation.WorkerThread;
 import com.miurasystems.mpi.MpiClient;
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.ApiGetDeviceInfoListener;
-import com.miurasystems.mpi.api.objects.BatteryData;
 import com.miurasystems.mpi.api.objects.Capability;
-import com.miurasystems.mpi.api.objects.SoftwareInfo;
 import com.miurasystems.mpi.api.utils.DisplayTextUtils;
 import com.miurasystems.mpi.enums.InterfaceType;
 import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SelectFileMode;
-import com.miurasystems.mpi.enums.SystemLogMode;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
-import com.onepay.miura.common.Constants;
-import com.onepay.miura.core.Config;
 import com.onepay.miura.data.ConfigApiData;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -46,8 +38,8 @@ public class ConfigApi {
     private ConfigApiData configData = null;
     private Timer mTimer;
     private String returnReason = "";
-    private String filepath = "";
     private int returnStatus = 0;
+    private String filepath = "";
     private MpiClient mpiClient;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
 
@@ -62,9 +54,14 @@ public class ConfigApi {
         return instance;
     }
 
-    public void performConfig(String btAddress, int tOut, String filePath, ConfigInfoListener listener) {
-
-        this.listener = listener;
+    /**
+     * Method that sets the config parameters
+     *
+     * @param btAddress Miura bluetooth device address
+     * @param tOut      Timeout process
+     * @param filePath  Config file path
+     */
+    public void performConfig(String btAddress, int tOut, String filePath) {
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
         this.filepath = filePath;
@@ -73,13 +70,13 @@ public class ConfigApi {
 
         if (BluetoothModule.getInstance().isSessionOpen()) {
             getDeviceInfo();
-        }else {
+        } else {
             setDeviceReconnectListener();
             BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
         }
     }
 
-    public void onConfigInfo(ConfigInfoListener listener) {
+    public void setConfigListener(ConfigInfoListener listener) {
         this.listener = listener;
     }
 
@@ -92,19 +89,7 @@ public class ConfigApi {
             @Override
             public void onConnectionSuccess() {
                 Log.d("TAG", "onConnectionSuccess: ");
-                MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
-                    @WorkerThread
-                    @Override
-                    public void onSuccess(final ArrayList<Capability> capabilities) {
-                        getDeviceInfo();
-                    }
-
-                    @WorkerThread
-                    @Override
-                    public void onError() {
-                        BluetoothModule.getInstance().closeSession();
-                    }
-                });
+                getDeviceInfo();
             }
 
             @Override
@@ -115,7 +100,7 @@ public class ConfigApi {
                     return;
                 }
                 if (listener != null) {
-                    returnReason = "Failure";
+                    returnReason = "Bluetooth connection, Failure";
                     returnStatus = 2;
                     listener.onConfigUpdateComplete(createConfigData());
                 }
@@ -124,17 +109,11 @@ public class ConfigApi {
             @Override
             public void onDeviceDisconnected() {
                 Log.d("TAG", "onDeviceDisconnected: ");
-
-                /*if (listener != null) {
-                    returnReason = Constants.BluetoothDisconnectedReason;
-                    returnStatus = Constants.BluetoothDisconnectedStatus;
-                    listener.onConfigUpdateComplete(createConfigData());
-                }*/
             }
         };
     }
 
-    private void getDeviceInfo(){
+    private void getDeviceInfo() {
         MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
             @WorkerThread
             @Override
@@ -176,7 +155,6 @@ public class ConfigApi {
                 Log.e(TAG, "Text failed");
             }
 
-            ArrayList<String> configArray = new ArrayList<String>();
             HashMap<String, String> configMap = new HashMap<>();
 
             HashMap<String, String> versionMap = mpiClient.getConfiguration();
@@ -185,7 +163,6 @@ public class ConfigApi {
                 String filePath = this.filepath + name;
                 File file = new File(filePath);
                 if (file.exists()) {
-                    configArray.add((String) entry.getKey());
                     configMap.put((String) entry.getKey(), (String) entry.getValue());
 
                 }
@@ -205,9 +182,10 @@ public class ConfigApi {
                     inputStream.read(buffer);
                     inputStream.close();
 
-                    String version = getVersion(buffer);
+                    double deviceVersion = Double.parseDouble(getDeviceVersion((String) entry.getValue()));
+                    double version = Double.parseDouble(getVersion(buffer));
 
-                    if (!version.equals(entry.getValue())) {
+                    if (version > deviceVersion) {
                         int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, (String) entry.getKey());
 
                         if (pedFileSize < 0) {
@@ -254,8 +232,8 @@ public class ConfigApi {
                     listener.onConfigUpdateComplete(createConfigData());
                 }
             }
-        }catch (Exception e){
-            Log.d(TAG, "doFileUploads: " +e.toString());
+        } catch (Exception e) {
+            Log.d(TAG, "doFileUploads: " + e.toString());
         }
 
     }
@@ -279,16 +257,24 @@ public class ConfigApi {
                 String[] part = lines[i].split(":");
                 String part2 = part[1].trim();
                 String[] split = part2.split(" ");
-                version = split[0].trim();
+                String part3 = split[1].trim();
+                String[] part4 = part3.split("V");
+                version = part4[1].trim();
             }
         }
+        return version;
+    }
+
+    private String getDeviceVersion(String version) {
+        String[] part = version.split("V");
+        version = part[1].trim();
         return version;
     }
 
     private ConfigApiData createConfigData() {
         configData.setReturnReason(returnReason);
         configData.setReturnStatus(returnStatus);
-        cancelTimer();
+        clearData();
         return configData;
     }
 
@@ -303,7 +289,7 @@ public class ConfigApi {
             public void run() {
                 isTimerTimedOut = true;
                 if (listener != null) {
-                    returnReason = "Failure";
+                    returnReason = "Timeout, Failure";
                     returnStatus = 2;
                     listener.onConfigUpdateComplete(createConfigData());
                 }
@@ -318,5 +304,12 @@ public class ConfigApi {
             mTimer.cancel();
             mTimer = null;
         }
+    }
+
+    private void clearData() {
+        listener = null;
+        deviceConnectListener = null;
+        isTimerTimedOut = false;
+        cancelTimer();
     }
 }
