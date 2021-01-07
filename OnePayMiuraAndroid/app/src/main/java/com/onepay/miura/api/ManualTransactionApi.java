@@ -27,7 +27,6 @@ import com.miurasystems.mpi.tlv.CardData;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
-import com.onepay.miura.core.Config;
 import com.onepay.miura.data.TransactionApiData;
 import com.onepay.miura.transactions.ManualTransactionAsync;
 
@@ -123,8 +122,7 @@ public class ManualTransactionApi {
 
         if (BluetoothModule.getInstance().isSessionOpen()) {
             startPayment();
-        }
-        else {
+        } else {
             setDeviceReconnectListener();
             BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
         }
@@ -190,6 +188,13 @@ public class ManualTransactionApi {
         Log.d(TAG, "###RB#### cancelTransaction: ");
         try {
             isTransactionDataCheck = false;
+
+
+            deregisterEventHandlers();
+
+            if (mManualTransactionAsync != null) {
+                mManualTransactionAsync.abortManualTransaction();
+            }
             if (manualTransactionListener != null) {
                 if (isTransactionTimeOut) {
                     returnReason = Constants.TimeoutReason;
@@ -201,11 +206,6 @@ public class ManualTransactionApi {
                 manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
             }
             clearData();
-            deregisterEventHandlers();
-
-            if (mManualTransactionAsync != null) {
-                mManualTransactionAsync.abortManualTransaction();
-            }
         } catch (Exception e) {
             if (manualTransactionListener != null) {
                 returnReason = e.toString();

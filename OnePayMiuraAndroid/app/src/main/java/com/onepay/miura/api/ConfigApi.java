@@ -70,7 +70,7 @@ public class ConfigApi {
 
         if (BluetoothModule.getInstance().isSessionOpen()) {
             getDeviceInfo();
-        }else {
+        } else {
             setDeviceReconnectListener();
             BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
         }
@@ -113,7 +113,7 @@ public class ConfigApi {
         };
     }
 
-    private void getDeviceInfo(){
+    private void getDeviceInfo() {
         MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
             @WorkerThread
             @Override
@@ -145,87 +145,107 @@ public class ConfigApi {
     }
 
     private void doFileUploads(@NonNull MpiClient client) throws IOException {
-        InterfaceType interfaceType = InterfaceType.MPI;
+        try {
+            InterfaceType interfaceType = InterfaceType.MPI;
 
-        this.mpiClient = client;
-        boolean result = client.displayText(MPI, DisplayTextUtils.getCenteredText("Updating....\nConfig files..."),
-                true, true, true);
-        if (!result) {
-            Log.e(TAG, "Text failed");
-        }
-
-        HashMap<String, String> configMap = new HashMap<>();
-
-        HashMap<String, String> versionMap = mpiClient.getConfiguration();
-        if (versionMap == null) {
-            closeSession("No config files available in Miura Device , Failure", 2);
-            return;
-        }
-        for (Map.Entry entry : versionMap.entrySet()) {
-            String filePath = this.filepath + entry.getKey();
-            File file = new File(filePath);
-            if (file.exists()) {
-                configMap.put((String) entry.getKey(), (String) entry.getValue());
+            this.mpiClient = client;
+            boolean ok = client.displayText(MPI, DisplayTextUtils.getCenteredText("Updating....\nConfig files..."),
+                    true, true, true);
+            if (!ok) {
+                Log.e(TAG, "Text failed");
             }
-        }
-        if (configMap.size() > 0) {
-            for (Map.Entry entry : configMap.entrySet()) {
 
-                String path = this.filepath + entry.getKey();
-                FileInputStream inputStream = new FileInputStream(path);
+            HashMap<String, String> configMap = new HashMap<>();
 
-                Log.d(TAG, "Config file uploaded-: " + path);
+            HashMap<String, String> versionMap = mpiClient.getConfiguration();
+            for (Map.Entry entry : versionMap.entrySet()) {
+                String name = (String) entry.getKey();
+                String filePath = this.filepath + name;
+                File file = new File(filePath);
+                if (file.exists()) {
+                    configMap.put((String) entry.getKey(), (String) entry.getValue());
 
-                int size = inputStream.available();
-                final byte[] buffer = new byte[size];
-                inputStream.read(buffer);
-                inputStream.close();
-
-                String version = getVersion(buffer);
-
-                if (!version.equals(entry.getValue())) {
-                    int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, (String) entry.getKey());
-
-                    if (pedFileSize < 0) {
-                        showBadFileUploadMessage((String) entry.getKey());
-                        return;
-                    }
-                    result = client.streamBinary(
-                            interfaceType, buffer, 0, 0, buffer.length, 100);
-                    if (!result) {
-                        showBadFileUploadMessage((String) entry.getKey());
-                        Log.e(TAG, "Error Config-file");
-                        //client.closeSession();
-                        return;
-                    }
-                    closeSession("Config Success, Applied", 1);
-                    client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
-                } else {
-                    closeSession("Config Success, Not Applied", 0);
                 }
-
             }
-        } else {
-            closeSession("No Directory/Files, Failure", 2);
+
+            if (configMap.size() > 0) {
+                for (Map.Entry entry : configMap.entrySet()) {
+
+                    String name = (String) entry.getKey();
+                    String path = this.filepath + name;
+                    FileInputStream inputStream = new FileInputStream(path);
+
+                    Log.d(TAG, "Config file uploaded-: " + path);
+
+                    int size = inputStream.available();
+                    final byte[] buffer = new byte[size];
+                    inputStream.read(buffer);
+                    inputStream.close();
+
+                    double deviceVersion = Double.parseDouble(getDeviceVersion((String) entry.getValue()));
+                    double version = Double.parseDouble(getVersion(buffer));
+
+                    if (version > deviceVersion) {
+                        int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, (String) entry.getKey());
+
+                        if (pedFileSize < 0) {
+                            showBadFileUploadMessage((String) entry.getKey());
+                            return;
+                        }
+                        ok = client.streamBinary(
+                                interfaceType, buffer, 0, 0, buffer.length, 100);
+                        if (!ok) {
+                            showBadFileUploadMessage((String) entry.getKey());
+                            Log.e(TAG, "Error Config-file");
+                            client.closeSession();
+                            return;
+                        }
+                        if (listener != null) {
+                            returnReason = "Config Success, Applied";
+                            returnStatus = 1;
+                            listener.onConfigUpdateComplete(createConfigData());
+                        }
+                        client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
+                    } else {
+                        if (BluetoothModule.getInstance().isSessionOpen()) {
+                            BluetoothModule.getInstance().closeSession();
+                        }
+                        Log.d(TAG, "Config file are upto date");
+
+                        if (listener != null) {
+                            returnReason = "Config Success, Not Applied";
+                            returnStatus = 0;
+                            listener.onConfigUpdateComplete(createConfigData());
+                        }
+                    }
+
+                }
+            } else {
+                if (BluetoothModule.getInstance().isSessionOpen()) {
+                    BluetoothModule.getInstance().closeSession();
+                }
+                Log.d(TAG, "Config file are upto date");
+
+                if (listener != null) {
+                    returnReason = "No Directory/Files, Failure";
+                    returnStatus = 2;
+                    listener.onConfigUpdateComplete(createConfigData());
+                }
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "doFileUploads: " + e.toString());
         }
 
     }
 
     private void showBadFileUploadMessage(final String filename) {
-        closeSession("Bad files uploaded, Failure, filename: " + filename, 2);
-        Log.d(TAG, filename + " uploaded Error");
-    }
-
-    private void closeSession(String reason, int status) {
-        if (BluetoothModule.getInstance().isSessionOpen()) {
-            BluetoothModule.getInstance().closeSession();
-        }
-
         if (listener != null) {
-            returnReason = reason;
-            returnStatus = status;
+            returnReason = "Failure";
+            returnStatus = 2;
             listener.onConfigUpdateComplete(createConfigData());
         }
+        Log.d(TAG, filename + " uploaded Error");
+        BluetoothModule.getInstance();
     }
 
     private String getVersion(byte[] buffer) {
@@ -237,9 +257,17 @@ public class ConfigApi {
                 String[] part = lines[i].split(":");
                 String part2 = part[1].trim();
                 String[] split = part2.split(" ");
-                version = split[0].trim();
+                String part3 = split[1].trim();
+                String[] part4 = part3.split("V");
+                version = part4[1].trim();
             }
         }
+        return version;
+    }
+
+    private String getDeviceVersion(String version) {
+        String[] part = version.split("V");
+        version = part[1].trim();
         return version;
     }
 

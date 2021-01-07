@@ -19,12 +19,15 @@ import java.util.concurrent.TimeUnit;
 import static com.miurasystems.mpi.enums.InterfaceType.MPI;
 
 public class ManualTransactionAsync {
+
     private static final String TAG = ManualTransactionAsync.class.getSimpleName();
 
     private final MiuraManager mMiuraManager;
     private final MpiClient mMpiClient;
     public Result<EncryptedPan, GetEncryptedPanError> result = null;
     public String mExpireDate = "";
+    private boolean isExpireDate = false;
+    Result<String, GetNumericDataError> expireDate;
 
     public ManualTransactionAsync(MiuraManager miuraManager) {
         MpiClient client = miuraManager.getMpiClient();
@@ -44,42 +47,31 @@ public class ManualTransactionAsync {
 
         result = mMpiClient.getSecureCardData(true, false, false, isCvv, false, options, timeOut);
 
-        if(!isEbt){
+        if (!isEbt) {
+            isExpireDate = true;
             Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
                     GetNumericDataRequest.GetBuilder(0, 154, 155, 4, 0)
                             .setOption(GetCommandsOptions.KeyboardBacklightOn, true)
-                            .setTimeoutInSeconds(15)
+                            .setTimeoutInSeconds(30)
                             .build());
 
             if (expireDate.isSuccess()) {
                 mExpireDate = expireDate.asSuccess().getValue();
             }
-
-            if (result.isError()) {
-                switch (result.asError().getError()) {
-                    case UserCancelled:
-                        //Handle user cancelled on device
-                    case Timeout:
-                        //Handle timeout
-                        return;
-                    default:
-                        //Other error.
-                        return;
-                }
-            }
         }
     }
 
     @UiThread
-    public void abortManualTransaction()  {
+    public void abortManualTransaction() {
         Log.d(TAG, "abortTransactionAsync");
 
         try {
-            mMpiClient.abort(MPI, false);
+            if (!isExpireDate) {
+                mMpiClient.abort(MPI, false);
+            }
             TimeUnit.SECONDS.sleep((long) 1);
             mMpiClient.abortTransaction(MPI);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             Log.e(TAG, "AbortManualTransaction: " + e);
         }
     }
