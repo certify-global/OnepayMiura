@@ -58,20 +58,20 @@ public class MainActivity extends AppCompatActivity {
     //1.Event Handler 2. BroadCast Message
     public void deviceInfo(View view) {
 
-        DeviceApi.getInstance().getDeviceInfo("0C:9A:42:89:2E:B9", new DeviceApi.DeviceInfoListener() {
+        /*DeviceApi.getInstance().getDeviceInfo("0C:9A:42:89:2E:B9", new DeviceApi.DeviceInfoListener() {
             @Override
             public void onGetDeviceInfoComplete(DeviceApiData data) {
                 Log.d("TAG", "Naga...... returnReason : " + data.dateTime());
             }
-        });
+        });*/
 
-    /*    ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 60, new ConnectApi.ConnectListener() {
+        ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 60, new ConnectApi.ConnectListener() {
             @Override
             public void onConnectionComplete(ConnectApiData data) {
                 Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
                 Log.d("TAG", "Naga...... returnStatus : " + data.returnStatus());
             }
-        });*/
+        });
     }
 
     public void onTransaction(View view) {
@@ -100,8 +100,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onUpdateConfig(View view) {
-        String path = Environment.getExternalStorageDirectory() + "/miura/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
-        String path1 = "/storage/self/primary/mpi_config/";
+        String path1 = Environment.getExternalStorageDirectory() + "/miura/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
+        String path = "/storage/self/primary/mpi_config/";
         ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 200, path, new ConfigApi.ConfigInfoListener() {
             @Override
             public void onConfigUpdateComplete(ConfigApiData data) {

@@ -41,29 +41,28 @@ public class ManualTransactionAsync {
         mMpiClient = client;
     }
 
-    public void manualTransaction(boolean isEbt, boolean isCvv) {
-        this.isEbt = isEbt;
+    public void manualTransaction(boolean isEbt, int timeOut, boolean isCvv) {
         EnumSet<GetCommandsOptions> options;
         options = GetCommandsOptions.makeOptionsSet(
                 GetCommandsOptions.BacklightOn,
                 GetCommandsOptions.KeyboardBacklightOn,
                 GetCommandsOptions.ShowStatusBar);
 
-        result = mMpiClient.getSecureCardData(true, false, false, isCvv, false, options, 30);
+        result = mMpiClient.getSecureCardData(true, false, false, isCvv, false, options, timeOut);
 
-        if (!isEbt) {
-
-           expireDate = mMpiClient.getNumericData(
+        if(!isEbt){
+            Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
                     GetNumericDataRequest.GetBuilder(0, 154, 155, 4, 0)
                             .setOption(GetCommandsOptions.KeyboardBacklightOn, true)
-                            .setTimeoutInSeconds(60)
+                            .setTimeoutInSeconds(30)
                             .build());
 
             if (expireDate.isSuccess()) {
                 mExpireDate = expireDate.asSuccess().getValue();
             }
-            if (expireDate.isError()) {
-                switch (expireDate.asError().getError()) {
+
+            if (result.isError()) {
+                switch (result.asError().getError()) {
                     case UserCancelled:
                         //Handle user cancelled on device
                     case Timeout:
@@ -75,12 +74,10 @@ public class ManualTransactionAsync {
                 }
             }
         }
-
-
     }
 
     @UiThread
-    public void abortManualTransaction() throws InterruptedException {
+    public void abortManualTransaction()  {
         Log.d(TAG, "abortTransactionAsync");
 
         try {
@@ -89,8 +86,7 @@ public class ManualTransactionAsync {
             mMpiClient.abortTransaction(MPI);
         }
         catch (Exception e){
-            Log.d(TAG, "Naga......abortManualTransaction: " + e);
+            Log.e(TAG, "AbortManualTransaction: " + e);
         }
-
     }
 }

@@ -71,8 +71,12 @@ public class ConfigApi {
         configData = new ConfigApiData();
         startTimer();
 
-        setDeviceReconnectListener();
-        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        if (BluetoothModule.getInstance().isSessionOpen()) {
+            getDeviceInfo();
+        }else {
+            setDeviceReconnectListener();
+            BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        }
     }
 
     public void onConfigInfo(ConfigInfoListener listener) {
@@ -92,22 +96,7 @@ public class ConfigApi {
                     @WorkerThread
                     @Override
                     public void onSuccess(final ArrayList<Capability> capabilities) {
-                        MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
-                            @Override
-                            public void runOnAsyncThread(MpiClient client) {
-                                try {
-                                    doFileUploads(client);
-                                } catch (IOException e) {
-                                    Log.e(TAG, "runOnAsyncThread: " + e.toString());
-                                    if (listener != null) {
-                                        returnReason = "Failure";
-                                        returnStatus = 2;
-                                        listener.onConfigUpdateComplete(createConfigData());
-                                    }
-                                    mpiClient.closeSession();
-                                }
-                            }
-                        });
+                        getDeviceInfo();
                     }
 
                     @WorkerThread
@@ -145,93 +134,128 @@ public class ConfigApi {
         };
     }
 
-    private void doFileUploads(@NonNull MpiClient client) throws IOException {
-        InterfaceType interfaceType = InterfaceType.MPI;
-
-        this.mpiClient = client;
-        boolean ok = client.displayText(MPI, DisplayTextUtils.getCenteredText("Updating....\nConfig files..."),
-                true, true, true);
-        if (!ok) {
-            Log.e(TAG, "Text failed");
-        }
-
-        ArrayList<String> configArray = new ArrayList<String>();
-        HashMap<String, String> configMap = new HashMap<>();
-
-        HashMap<String, String> versionMap = mpiClient.getConfiguration();
-        for (Map.Entry entry : versionMap.entrySet()) {
-            String name = (String) entry.getKey();
-            String filePath = this.filepath + name;
-            File file = new File(filePath);
-            if (file.exists()) {
-                configArray.add((String) entry.getKey());
-                configMap.put((String) entry.getKey(), (String) entry.getValue());
-
+    private void getDeviceInfo(){
+        MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
+            @WorkerThread
+            @Override
+            public void onSuccess(final ArrayList<Capability> capabilities) {
+                MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
+                    @Override
+                    public void runOnAsyncThread(MpiClient client) {
+                        try {
+                            doFileUploads(client);
+                        } catch (IOException e) {
+                            Log.e(TAG, "runOnAsyncThread: " + e.toString());
+                            if (listener != null) {
+                                returnReason = "Storage Permission, Failure";
+                                returnStatus = 2;
+                                listener.onConfigUpdateComplete(createConfigData());
+                            }
+                            mpiClient.closeSession();
+                        }
+                    }
+                });
             }
-        }
 
-        if(configMap.size() >0 ) {
-            for (Map.Entry entry : configMap.entrySet()) {
-
-                String name = (String) entry.getKey();
-                String path = this.filepath + name;
-                FileInputStream inputStream = new FileInputStream(path);
-
-                Log.d(TAG, "Config file uploaded-: " + path);
-
-                int size = inputStream.available();
-                final byte[] buffer = new byte[size];
-                inputStream.read(buffer);
-                inputStream.close();
-
-                String version = getVersion(buffer);
-
-                if (!version.equals(entry.getValue())) {
-                    int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, (String) entry.getKey());
-
-                    if (pedFileSize < 0) {
-                        showBadFileUploadMessage((String) entry.getKey());
-                        return;
-                    }
-                    ok = client.streamBinary(
-                            interfaceType, buffer, 0, 0, buffer.length, 100);
-                    if (!ok) {
-                        showBadFileUploadMessage((String) entry.getKey());
-                        Log.e(TAG, "Error Config-file");
-                        client.closeSession();
-                        return;
-                    }
-                    if (listener != null) {
-                        returnReason = "Config Success, Applied";
-                        returnStatus = 1;
-                        listener.onConfigUpdateComplete(createConfigData());
-                    }
-                    client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
-                } else {
-                    if (BluetoothModule.getInstance().isSessionOpen()) {
-                        BluetoothModule.getInstance().closeSession();
-                    }
-                    Log.d(TAG, "Config file are upto date");
-
-                    if (listener != null) {
-                        returnReason = "Config Success, Not Applied";
-                        returnStatus = 0;
-                        listener.onConfigUpdateComplete(createConfigData());
-                    }
-                }
-
-            }
-        }else{
-            if (BluetoothModule.getInstance().isSessionOpen()) {
+            @WorkerThread
+            @Override
+            public void onError() {
                 BluetoothModule.getInstance().closeSession();
             }
-            Log.d(TAG, "Config file are upto date");
+        });
+    }
 
-            if (listener != null) {
-                returnReason = "No Directory/Files, Failure";
-                returnStatus = 2;
-                listener.onConfigUpdateComplete(createConfigData());
+    private void doFileUploads(@NonNull MpiClient client) throws IOException {
+        try {
+            InterfaceType interfaceType = InterfaceType.MPI;
+
+            this.mpiClient = client;
+            boolean ok = client.displayText(MPI, DisplayTextUtils.getCenteredText("Updating....\nConfig files..."),
+                    true, true, true);
+            if (!ok) {
+                Log.e(TAG, "Text failed");
             }
+
+            ArrayList<String> configArray = new ArrayList<String>();
+            HashMap<String, String> configMap = new HashMap<>();
+
+            HashMap<String, String> versionMap = mpiClient.getConfiguration();
+            for (Map.Entry entry : versionMap.entrySet()) {
+                String name = (String) entry.getKey();
+                String filePath = this.filepath + name;
+                File file = new File(filePath);
+                if (file.exists()) {
+                    configArray.add((String) entry.getKey());
+                    configMap.put((String) entry.getKey(), (String) entry.getValue());
+
+                }
+            }
+
+            if (configMap.size() > 0) {
+                for (Map.Entry entry : configMap.entrySet()) {
+
+                    String name = (String) entry.getKey();
+                    String path = this.filepath + name;
+                    FileInputStream inputStream = new FileInputStream(path);
+
+                    Log.d(TAG, "Config file uploaded-: " + path);
+
+                    int size = inputStream.available();
+                    final byte[] buffer = new byte[size];
+                    inputStream.read(buffer);
+                    inputStream.close();
+
+                    String version = getVersion(buffer);
+
+                    if (!version.equals(entry.getValue())) {
+                        int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, (String) entry.getKey());
+
+                        if (pedFileSize < 0) {
+                            showBadFileUploadMessage((String) entry.getKey());
+                            return;
+                        }
+                        ok = client.streamBinary(
+                                interfaceType, buffer, 0, 0, buffer.length, 100);
+                        if (!ok) {
+                            showBadFileUploadMessage((String) entry.getKey());
+                            Log.e(TAG, "Error Config-file");
+                            client.closeSession();
+                            return;
+                        }
+                        if (listener != null) {
+                            returnReason = "Config Success, Applied";
+                            returnStatus = 1;
+                            listener.onConfigUpdateComplete(createConfigData());
+                        }
+                        client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
+                    } else {
+                        if (BluetoothModule.getInstance().isSessionOpen()) {
+                            BluetoothModule.getInstance().closeSession();
+                        }
+                        Log.d(TAG, "Config file are upto date");
+
+                        if (listener != null) {
+                            returnReason = "Config Success, Not Applied";
+                            returnStatus = 0;
+                            listener.onConfigUpdateComplete(createConfigData());
+                        }
+                    }
+
+                }
+            } else {
+                if (BluetoothModule.getInstance().isSessionOpen()) {
+                    BluetoothModule.getInstance().closeSession();
+                }
+                Log.d(TAG, "Config file are upto date");
+
+                if (listener != null) {
+                    returnReason = "No Directory/Files, Failure";
+                    returnStatus = 2;
+                    listener.onConfigUpdateComplete(createConfigData());
+                }
+            }
+        }catch (Exception e){
+            Log.d(TAG, "doFileUploads: " +e.toString());
         }
 
     }

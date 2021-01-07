@@ -226,14 +226,6 @@ public class BluetoothModule {
             }
             AndroidBluetoothClientConnector connector = new AndroidBluetoothClientConnector(device);
 
-//            InetAddress addr;
-//            try {
-//                addr = InetAddress.getByName("192.168.0.96");
-//            } catch (UnknownHostException e) {
-//                throw new AssertionError(e);
-//            }
-//            LOGGER.info("BluetoothModule", "Connecting to" + addr);
-//            connector = new ClientSocketConnector(addr, 6543);
 
             MiuraManager.getInstance().setConnector(connector);
             Log.d(TAG, String.format("calling openSession for '%s'", device));
