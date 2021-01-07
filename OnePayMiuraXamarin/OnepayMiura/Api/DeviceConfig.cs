@@ -12,8 +12,17 @@ namespace Onepay.Miura.Api
 
         public void PerformConfig(string btAddress, int timeOut, string filePath)
         {
+            try { 
             ConfigApi.Instance.SetConfigListener(new ConfigListner());
             ConfigApi.Instance.PerformConfig(btAddress, timeOut, filePath);
+            }
+            catch (Exception exception)
+            {
+                ConfigApiData configData = new ConfigApiData();
+                configData.SetReturnStatus((int)ConnectionStatus.ExceptionWhileTransactionInXamarin);
+                configData.SetReturnReason(exception.ToString());
+                new ConfigListner().OnConfigUpdateComplete(configData);
+            }
         }
 
         public class ConfigListner : Java.Lang.Object, ConfigApi.IConfigInfoListener

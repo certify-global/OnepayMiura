@@ -10,12 +10,30 @@ namespace Onepay.Miura.Api
         public static event EventHandler<TransactionData> ManualTransactionComplete;
         public void PerformTransaction(double amt, String desc, String btAddress, int tOut, bool isEbt, bool isCvv = false)
         {
+            try { 
             ManualTransactionApi.Instance.SetManualTransactionParams(amt, desc, btAddress, tOut, isEbt, isCvv);
             ManualTransactionApi.Instance.PerformManualTransaction(new ManualTransactionListener());
+            }
+            catch (Exception exception)
+            {
+                TransactionApiData transactionData = new TransactionApiData();
+                transactionData.SetReturnStatus((int)ConnectionStatus.ExceptionWhileTransactionInXamarin);
+                transactionData.SetReturnReason(exception.ToString());
+                new ManualTransactionListener().OnManualTransactionComplete(transactionData);
+            }
         }
         public void CancelTransaction()
         {
+            try { 
             ManualTransactionApi.Instance.CancelTransaction();
+            }
+            catch (Exception exception)
+            {
+                TransactionApiData transactionData = new TransactionApiData();
+                transactionData.SetReturnStatus((int)ConnectionStatus.ExceptionWhileAbortInXamarin);
+                transactionData.SetReturnReason(exception.ToString());
+                new ManualTransactionListener().OnManualTransactionComplete(transactionData);
+            }
         }
 
         public class ManualTransactionListener : Java.Lang.Object, ManualTransactionApi.IManualTransactionListener

@@ -53,6 +53,7 @@
     <Compile Include="Api\ManualTransaction.cs" />
     <Compile Include="Api\SetClock.cs" />
     <Compile Include="Api\Transaction.cs" />
+    <Compile Include="Common\ConnectionStatus.cs" />
     <Compile Include="Data\ConfigDeviceData.cs" />
     <Compile Include="Data\ConnectData.cs" />
     <Compile Include="Data\DeviceData.cs" />

@@ -12,8 +12,18 @@ namespace Onepay.Miura.Api
 
         public void ConnectDevice(string btAddress, int timeOut)
         {
-            ConnectApi.Instance.SetConnectListener(new ConnectListener());
-            ConnectApi.Instance.Connect(btAddress, timeOut);
+            try
+            {
+                ConnectApi.Instance.SetConnectListener(new ConnectListener());
+                ConnectApi.Instance.Connect(btAddress, timeOut);
+            }
+            catch (Exception exception)
+            {
+                ConnectApiData connectData = new ConnectApiData();
+                connectData.SetReturnStatus((int)ConnectionStatus.ExceptionWhileTransactionInXamarin);
+                connectData.SetReturnReason(exception.ToString());
+                new ConnectListener().OnConnectionComplete(connectData);
+            }
         }
 
         public class ConnectListener : Java.Lang.Object, ConnectApi.IConnectListener

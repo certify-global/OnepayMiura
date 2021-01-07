@@ -11,20 +11,38 @@ namespace Onepay.Miura.Api
         public static event EventHandler<TransactionData> TransactionComplete;
         public void PerformTransaction(double amt, String desc, String btAddress, int tOut)
         {
-            TransactionApi.Instance.SetTransactionParams(amt, desc, btAddress, tOut);
-            TransactionApi.Instance.PerformTransaction(new Transaction.TransactionListener());
+            try
+            {
+                TransactionApi.Instance.SetTransactionParams(amt, desc, btAddress, tOut);
+                TransactionApi.Instance.PerformTransaction(new Transaction.TransactionListener());
+            }
+            catch (Exception exception)
+            {
+                TransactionApiData transactionData = new TransactionApiData();
+                transactionData.SetReturnStatus((int)ConnectionStatus.ExceptionWhileTransactionInXamarin);
+                transactionData.SetReturnReason(exception.ToString());
+                new TransactionListener().OnTransactionComplete(transactionData);
+            }
         }
         public void CancelTransaction()
         {
-            TransactionApi.Instance.CancelTransaction();
-
+            try
+            {
+                TransactionApi.Instance.CancelTransaction();
+            }
+            catch (Exception exception)
+            {
+                TransactionApiData transactionData = new TransactionApiData();
+                transactionData.SetReturnStatus((int)ConnectionStatus.ExceptionWhileAbortInXamarin);
+                transactionData.SetReturnReason(exception.ToString());
+                new TransactionListener().OnTransactionComplete(transactionData);
+            }
         }
 
         public class TransactionListener : Java.Lang.Object, TransactionApi.ITransactionListener
         {
             TransactionData transactionData = new TransactionData();
-
-            public void OnTransactionComplete(TransactionApiData transactionApiData )
+            public void OnTransactionComplete(TransactionApiData transactionApiData)
             {
                 transactionData.DeviceCode = transactionApiData.DeviceCode();
                 transactionData.EntryMode = transactionApiData.EntryMode();
@@ -47,5 +65,5 @@ namespace Onepay.Miura.Api
 
     }
 
-    
+
 }

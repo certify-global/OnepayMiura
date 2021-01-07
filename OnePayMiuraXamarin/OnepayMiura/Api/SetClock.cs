@@ -13,9 +13,19 @@ namespace Onepay.Miura.Api
 
         public void SetDeviceClock(string btAddress, int timeOut, DateTime dateTime)
         {
-            string sDate = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
-            SetClockApi.Instance.SetClockListener(new ClockListener());
-            SetClockApi.Instance.SetDeviceClock(btAddress, timeOut, sDate);
+            try
+            {
+                string sDate = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+                SetClockApi.Instance.SetClockListener(new ClockListener());
+                SetClockApi.Instance.SetDeviceClock(btAddress, timeOut, sDate);
+            }
+            catch (Exception exception)
+            {
+                SetClockApiData setClockData = new SetClockApiData();
+                setClockData.SetReturnStatus((int)ConnectionStatus.ExceptionWhileTransactionInXamarin);
+                setClockData.SetReturnReason(exception.ToString());
+                new ClockListener().OnConnectionComplete(setClockData);
+            }
         }
 
         public class ClockListener : Java.Lang.Object, SetClockApi.ISetClockListener
