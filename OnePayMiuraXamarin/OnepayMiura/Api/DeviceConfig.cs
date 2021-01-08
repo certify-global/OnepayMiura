@@ -19,8 +19,8 @@ namespace Onepay.Miura.Api
             catch (Exception exception)
             {
                 ConfigApiData configData = new ConfigApiData();
-                configData.SetReturnStatus((int)ConnectionStatus.ExceptionWhileTransactionInXamarin);
-                configData.SetReturnReason(exception.ToString());
+                configData.SetReturnStatus(2);
+                configData.SetReturnReason("Failure" +exception.ToString());
                 new ConfigListner().OnConfigUpdateComplete(configData);
             }
         }
