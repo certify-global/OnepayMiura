@@ -2,18 +2,22 @@ package com.onepay.miura.transactions;
 
 import android.util.Log;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
 import com.miurasystems.mpi.MpiClient;
 import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
+import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.EncryptedPan;
 import com.miurasystems.mpi.api.objects.GetNumericDataRequest;
 import com.miurasystems.mpi.enums.GetCommandsOptions;
 import com.miurasystems.mpi.enums.GetEncryptedPanError;
 import com.miurasystems.mpi.enums.GetNumericDataError;
+import com.onepay.miura.common.Constants;
 
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static com.miurasystems.mpi.enums.InterfaceType.MPI;
@@ -26,7 +30,10 @@ public class ManualTransactionAsync {
     private final MpiClient mMpiClient;
     public Result<EncryptedPan, GetEncryptedPanError> result = null;
     public String mExpireDate = "";
-    private boolean isExpireDate = false;
+    public int mReturnStatus = 0;
+    public String mReturnReason = "";
+    public boolean isUserCanceled = false;
+    private boolean isExpireDate= false;
     Result<String, GetNumericDataError> expireDate;
 
     public ManualTransactionAsync(MiuraManager miuraManager) {
@@ -47,7 +54,28 @@ public class ManualTransactionAsync {
 
         result = mMpiClient.getSecureCardData(true, false, false, isCvv, false, options, timeOut);
 
-        if (!isEbt) {
+        if (result.isError()) {
+            isUserCanceled = true;
+            switch (result.asError().getError()) {
+                case UserCancelled:
+                    mReturnReason = Constants.CanceledThroughPEDReason;
+                    mReturnStatus = Constants.CanceledThroughPEDStatus;
+                    Log.d(TAG, "ManualTransaction: UserCancelled");
+                    return;
+                case Timeout:
+                    mReturnReason = Constants.TimeoutReason;
+                    mReturnStatus = Constants.TimeoutStatus;
+                    Log.d(TAG, "ManualTransaction: TimeOUt");
+                    return;
+                default:
+                    mReturnReason = Constants.CanceledThroughPEDReason;
+                    mReturnStatus = Constants.CanceledThroughPEDStatus;
+                    Log.d(TAG, "ManualTransaction: default");
+                    return;
+            }
+        }
+
+        if(!isEbt ){
             isExpireDate = true;
             Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
                     GetNumericDataRequest.GetBuilder(0, 154, 155, 4, 0)
@@ -58,20 +86,42 @@ public class ManualTransactionAsync {
             if (expireDate.isSuccess()) {
                 mExpireDate = expireDate.asSuccess().getValue();
             }
+
+            if (expireDate.isError()) {
+                isUserCanceled = true;
+                switch (expireDate.asError().getError()) {
+                    case UserCancelled:
+                        mReturnReason = Constants.CanceledThroughPEDReason;
+                        mReturnStatus = Constants.CanceledThroughPEDStatus;
+                        Log.d(TAG, "Naga........manualTransaction: UserCancelled");
+                        return;
+                    case Timeout:
+                        mReturnReason = Constants.TimeoutReason;
+                        mReturnStatus = Constants.TimeoutStatus;
+                        Log.d(TAG, "Naga.... manualTransaction: TimeOUt");
+                        return;
+                    default:
+                        mReturnReason = Constants.CanceledThroughPEDReason;
+                        mReturnStatus = Constants.CanceledThroughPEDStatus;
+                        Log.d(TAG, "Naga.... manualTransaction: default");
+                        return;
+                }
+            }
         }
     }
 
     @UiThread
-    public void abortManualTransaction() {
+    public void abortManualTransaction()  {
         Log.d(TAG, "abortTransactionAsync");
 
         try {
-            if (!isExpireDate) {
+            if(!isExpireDate) {
                 mMpiClient.abort(MPI, false);
             }
             TimeUnit.SECONDS.sleep((long) 1);
             mMpiClient.abortTransaction(MPI);
-        } catch (Exception e) {
+        }
+        catch (Exception e){
             Log.e(TAG, "AbortManualTransaction: " + e);
         }
     }
