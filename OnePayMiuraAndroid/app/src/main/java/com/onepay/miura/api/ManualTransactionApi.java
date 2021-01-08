@@ -415,13 +415,29 @@ public class ManualTransactionApi {
             mManualTransactionAsync = new ManualTransactionAsync(MiuraManager.getInstance());
             mManualTransactionAsync.manualTransaction(isEbt, mTransactionTime, isCvv);
 
+            if (mManualTransactionAsync.isUserCanceled) {
+                if (manualTransactionListener != null && !isTransactionDataCheck) {
+                    returnReason = mManualTransactionAsync.mReturnReason;
+                    returnStatus = mManualTransactionAsync.mReturnStatus;
+                    manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+                }
+                BluetoothModule.getInstance().closeSession();
+                clearTransactionData();
+                clearData();
+                return;
+            }
+
             Result<EncryptedPan, GetEncryptedPanError> result = mManualTransactionAsync.result;
 
             try {
                 data = result.asSuccess().getValue();
                 expireDate = mManualTransactionAsync.mExpireDate;
-                int date = Integer.parseInt(checkExpireDate(expireDate));
-                if (date > 12) {
+                int date = 0;
+                if (!checkExpireDate(expireDate).isEmpty() ) {
+                    date = Integer.parseInt(checkExpireDate(expireDate));
+                }
+
+                if (date > 12 && !isEbt) {
                     if (manualTransactionListener != null && !isTransactionDataCheck) {
                         returnReason = Constants.InvalidExpireDateReason;
                         returnStatus = Constants.InvalidExpireDateStatus;

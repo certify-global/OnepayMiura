@@ -11,6 +11,7 @@ public class Constants {
     public static String NoDirectoryReason = "No Such file or Directory";
     public static String BadFileUploadedReason = "BadFileUploaded";
     public static String InvalidExpireDateReason = "InvalidExpireDate";
+    public static String CanceledThroughPEDReason = "User canceled Transaction through PED";
 
     public static int SuccessStatus = 1 ;
     public static int ErrorStatus = 2;
@@ -24,6 +25,8 @@ public class Constants {
     public static int Exception = 10;
     public static int AbortException = 11;
     public static int InvalidExpireDateStatus = 14;
+    public static int CanceledThroughPEDStatus = 15;
+
 
 
     public static String Unknown = "00";

@@ -35,6 +35,7 @@ public class ConfigApi {
     private String bluetoothAddress = "";
     private int mTimeOut = 60;
     private boolean isTimerTimedOut = false;
+    private boolean isTimeOut = false;
     private ConfigApiData configData = null;
     private Timer mTimer;
     private String returnReason = "";
@@ -121,16 +122,21 @@ public class ConfigApi {
                 MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
                     @Override
                     public void runOnAsyncThread(MpiClient client) {
-                        try {
-                            doFileUploads(client);
-                        } catch (IOException e) {
-                            Log.e(TAG, "runOnAsyncThread: " + e.toString());
-                            if (listener != null) {
-                                returnReason = "Storage Permission, Failure";
-                                returnStatus = 2;
-                                listener.onConfigUpdateComplete(createConfigData());
+                        if (!isTimeOut) {
+                            try {
+                                doFileUploads(client);
+                            } catch (IOException e) {
+                                Log.e(TAG, "runOnAsyncThread: " + e.toString());
+                                if (listener != null) {
+                                    returnReason = "Storage Permission, Failure";
+                                    returnStatus = 2;
+                                    listener.onConfigUpdateComplete(createConfigData());
+                                }
+                                mpiClient.closeSession();
                             }
-                            mpiClient.closeSession();
+                        }
+                        if (BluetoothModule.getInstance().isSessionOpen()) {
+                            BluetoothModule.getInstance().closeSession();
                         }
                     }
                 });
@@ -283,17 +289,18 @@ public class ConfigApi {
      */
     private void startTimer() {
         isTimerTimedOut = false;
+        isTimeOut = false;
         cancelTimer();
         mTimer = new Timer();
         mTimer.schedule(new TimerTask() {
             public void run() {
+                isTimeOut = true;
                 isTimerTimedOut = true;
                 if (listener != null) {
                     returnReason = "Timeout, Failure";
                     returnStatus = 2;
                     listener.onConfigUpdateComplete(createConfigData());
                 }
-                BluetoothModule.getInstance().closeSession();
                 this.cancel();
             }
         }, mTimeOut * 1000);

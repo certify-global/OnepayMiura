@@ -1,26 +1,18 @@
 package com.onepay.miura.api;
 
 import android.annotation.SuppressLint;
-import android.os.Build;
-import android.text.PrecomputedText;
 import android.util.Log;
-
-import androidx.annotation.RequiresApi;
 
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
+import com.miurasystems.mpi.events.MpiEvents;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
 import com.onepay.miura.data.SetClockApiData;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -37,6 +29,8 @@ public class SetClockApi {
     private Timer mTimer, mBtDisconnectTimer;
     private Date date;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
+    private boolean isSetClockDataCheck = false;
+    private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
 
     public interface SetClockListener {
         void onConnectionComplete(SetClockApiData data);
@@ -50,25 +44,31 @@ public class SetClockApi {
     }
 
     /**
-     * For connecting to the Miura device
+     * This method for device clock
      *
      * @param btAddress Miura device bluetooth address
+     * @param tOut      Timeout for the setDeviceClock
+     * @param dateTime  DateTime
      */
-    public void setDeviceClock(String btAddress, int tOut, String dateTime, SetClockListener listener) throws Exception {
-        if (!BluetoothModule.getInstance().isSessionOpen()) {
-            BluetoothModule.getInstance().closeSession();
-        }
-        this.listener = listener;
-
+    public void setDeviceClock(String btAddress, int tOut, String dateTime) throws Exception {
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
         this.date = convertDateTime(dateTime);
         setClockData = new SetClockApiData();
         startTimer();
-
-        setDeviceReconnectListener();
-        BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        isSetClockDataCheck = false;
+        if (BluetoothModule.getInstance().isSessionOpen()) {
+            setDeviceClock();
+        } else {
+            setDeviceReconnectListener();
+            BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        }
     }
+
+    public void setClockListener(SetClockListener listener) {
+        this.listener = listener;
+    }
+
 
     private void reConnectDevice() {
         BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
@@ -81,7 +81,6 @@ public class SetClockApi {
                 Log.d("TAG", "onConnectionSuccess: ");
 
                 setDeviceClock();
-                disconnectBtTimer();
             }
 
             @Override
@@ -91,7 +90,7 @@ public class SetClockApi {
                     reConnectDevice();
                     return;
                 }
-                if (listener != null) {
+                if (listener != null && !isSetClockDataCheck) {
                     returnReason = Constants.BluetoothConnectionErrorReason;
                     returnStatus = Constants.BluetoothConnectionErrorStatus;
                     listener.onConnectionComplete(createSetClockData());
@@ -102,7 +101,7 @@ public class SetClockApi {
             public void onDeviceDisconnected() {
                 Log.d("TAG", "onDeviceDisconnected: ");
 
-                if (listener != null) {
+                if (listener != null && !isSetClockDataCheck) {
                     returnReason = Constants.BluetoothDisconnectedReason;
                     returnStatus = Constants.BluetoothDisconnectedStatus;
                     listener.onConnectionComplete(createSetClockData());
@@ -111,42 +110,39 @@ public class SetClockApi {
         };
     }
 
-    public Date convertDateTime(String dateTime) throws Exception {
-        @SuppressLint("SimpleDateFormat")
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        Date date = sdf.parse(dateTime);
-        System.out.println(date);
-        Log.d("TAG", "convertDateTime: " + date);
-
-        return date;
-    }
-
-    private int setDeviceClock() {
+    private void setDeviceClock() {
         MiuraManager.getInstance().setSystemClock(date, new MiuraDefaultListener() {
             @Override
             public void onSuccess() {
-                if (listener != null) {
+                if (listener != null && !isSetClockDataCheck) {
                     returnReason = Constants.SuccessReason;
                     returnStatus = Constants.SuccessStatus;
                     listener.onConnectionComplete(createSetClockData());
                 }
+                disconnectBtTimer();
             }
 
             @Override
             public void onError() {
-                if (listener != null) {
+                if (listener != null && !isSetClockDataCheck) {
                     returnReason = Constants.ErrorReason;
                     returnStatus = Constants.ErrorStatus;
                     listener.onConnectionComplete(createSetClockData());
                 }
+                disconnectBtTimer();
             }
         });
+    }
 
-        return 1;
+    private Date convertDateTime(String dateTime) throws Exception {
+        @SuppressLint("SimpleDateFormat")
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = sdf.parse(dateTime);
+        return date;
     }
 
     private SetClockApiData createSetClockData() {
-        setClockData.setDateTime(date);
+        isSetClockDataCheck = true;
         setClockData.setReturnReason(returnReason);
         setClockData.setReturnStatus(returnStatus);
         cancelTimer();
@@ -154,7 +150,7 @@ public class SetClockApi {
     }
 
     private void endConnection() {
-        if (listener != null) {
+        if (listener != null && !isSetClockDataCheck) {
             returnReason = Constants.TimeoutReason;
             returnStatus = Constants.TimeoutStatus;
             listener.onConnectionComplete(createSetClockData());
@@ -170,6 +166,7 @@ public class SetClockApi {
         mTimer = new Timer();
         mTimer.schedule(new TimerTask() {
             public void run() {
+                isSetClockDataCheck = false;
                 isTimerTimedOut = true;
                 endConnection();
                 this.cancel();
