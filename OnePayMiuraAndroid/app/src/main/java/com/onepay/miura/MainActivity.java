@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onUpdateConfig(View view) {
-        String path1 = Environment.getExternalStorageDirectory() + "/miura/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
+        String path1 = Environment.getExternalStorageDirectory() + "/mpi_config/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
         String path = "/storage/self/primary/mpi_config/";
         ConfigApi.getInstance().setConfigListener(new ConfigApi.ConfigInfoListener() {
             @Override
@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga2........" + data.returnStatus());
             }
         });
-        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 20, path);
+        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 180, path);
     }
 
     public void onManualTransaction(View view) {

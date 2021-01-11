@@ -43,6 +43,7 @@ public class ConfigApi {
     private String filepath = "";
     private MpiClient mpiClient;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
+    private double deviceVersion= 0.0, fileVersion = 0.0;
 
     public interface ConfigInfoListener {
         void onConfigUpdateComplete(ConfigApiData data);
@@ -170,7 +171,6 @@ public class ConfigApi {
                 File file = new File(filePath);
                 if (file.exists()) {
                     configMap.put((String) entry.getKey(), (String) entry.getValue());
-
                 }
             }
 
@@ -188,10 +188,12 @@ public class ConfigApi {
                     inputStream.read(buffer);
                     inputStream.close();
 
-                    double deviceVersion = Double.parseDouble(getDeviceVersion((String) entry.getValue()));
-                    double version = Double.parseDouble(getVersion(buffer));
+                    if(getDeviceVersion((String) entry.getValue()).contains("OnePay")) {
+                        deviceVersion = Double.parseDouble(getDeviceVersion((String) entry.getValue()));
+                    }
+                    fileVersion = Double.parseDouble(getVersion(buffer));
 
-                    if (version > deviceVersion) {
+                    if (fileVersion > deviceVersion) {
                         int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, (String) entry.getKey());
 
                         if (pedFileSize < 0) {
