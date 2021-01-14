@@ -9,10 +9,20 @@ namespace Onepay.Miura.Api
     {
         public static event EventHandler<DeviceData> DeviceInformationComplete;
 
-        public void GetDeviceInfo(string btAddress)
+        public void GetDeviceInfo(string btAddress, int timeOut)
         {
-            DeviceApi.Instance.OnDeviceInfo(new DeviceListener());
-            DeviceApi.Instance.GetDeviceInfo(btAddress);
+            try
+            {
+                DeviceApi.Instance.OnDeviceInfo(new DeviceListener());
+                DeviceApi.Instance.GetDeviceInfo(btAddress, timeOut);
+            }
+            catch (Exception exception)
+            {
+                DeviceApiData deviceData = new DeviceApiData();
+                deviceData.SetReturnStatus((int)ConnectionStatus.ExceptionWhileTransactionInXamarin);
+                deviceData.SetReturnReason(exception.ToString());
+                new DeviceListener().OnGetDeviceInfoComplete(deviceData);
+            }
         }
 
         public class DeviceListener : Java.Lang.Object, DeviceApi.IDeviceInfoListener
