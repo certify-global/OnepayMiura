@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onManualTransaction(View view) {
-        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60, true, false);
+        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60, false, false);
 
         ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 
@@ -150,14 +150,33 @@ public class MainActivity extends AppCompatActivity {
        // String sDate1 = "2020-09-25 12:29:24";
         String sDate1 = "2021-01-03 05:18:37";
         //Log.d("TAG", "Naga...........setDeviceClock: " + sDate1);
-        SetClockApi.getInstance().setClockListener(new SetClockApi.SetClockListener() {
+      /*  DeviceApi.getInstance().onDeviceInfo(new SetClockApi.SetClockListener() {
             @Override
             public void onConnectionComplete(SetClockApiData data) {
                 Log.d("TAG", "Naga............returnReason: " + data.returnReason());
                 Log.d("TAG", "Naga............returnStatus: " + data.returnStatus());
             }
+        });*/
+
+        DeviceApi.getInstance().onDeviceInfo(new DeviceApi.DeviceInfoListener(){
+            @Override
+            public void onGetDeviceInfoComplete(DeviceApiData data) {
+                Log.d("TAG", "Naga............returnReason: " + data.returnReason());
+                Log.d("TAG", "Naga............returnStatus: " + data.returnStatus());
+                Log.d("TAG", "Naga............Address: " + data.address());
+                Log.d("TAG", "Naga............type: " + data.type());
+                Log.d("TAG", "Naga............SerialNumber: " + data.serialNumber());
+                Log.d("TAG", "Naga............OsType: " + data.osType());
+                Log.d("TAG", "Naga............osVersion: " + data.osVersion());
+                Log.d("TAG", "Naga............mpiType: " + data.mpiType());
+                Log.d("TAG", "Naga............mpiVersion: " + data.mpiVersion());
+                Log.d("TAG", "Naga............Charging Status : " + data.chargingStatus());
+                Log.d("TAG", "Naga............batteryLevel : " + data.batteryLevel());
+                Log.d("TAG", "Naga............pinKeyStatus: " + data.pinKeyStatus());
+                Log.d("TAG", "Naga............SRedStatus: " + data.sREDStatus());
+            }
         });
-        SetClockApi.getInstance().setDeviceClock("0C:9A:42:89:2E:B9", 20, sDate1);
+        DeviceApi.getInstance().getDeviceInfo("0C:9A:42:89:2E:B9", 180);
     }
 
 }
