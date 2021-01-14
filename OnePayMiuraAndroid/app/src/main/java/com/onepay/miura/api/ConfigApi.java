@@ -46,6 +46,7 @@ public class ConfigApi {
     private double deviceVersion = 0.0, fileVersion = 0.0;
     private Boolean isFileExtension = false;
     private Boolean isCygnusCfgExits = false;
+    private Boolean isRebootRequired = false;
 
     public interface ConfigInfoListener {
         void onConfigUpdateComplete(ConfigApiData data);
@@ -157,6 +158,7 @@ public class ConfigApi {
         try {
             InterfaceType interfaceType = InterfaceType.MPI;
 
+            System.out.println();
             this.mpiClient = client;
             boolean ok = client.displayText(MPI, DisplayTextUtils.getCenteredText("Updating....\nConfig files..."),
                     true, true, true);
@@ -189,7 +191,7 @@ public class ConfigApi {
                 int lastIndexOf = file.lastIndexOf(".");
                 String fileExtension = file.substring(lastIndexOf);
 
-                if (!file.equalsIgnoreCase("cygnus.cfg") && !isCygnusCfgExits) {
+                if (file.equalsIgnoreCase("cygnus.cfg") && !isCygnusCfgExits) {
                     configMap.put(file, "1.0");
                 }
                 if ((fileExtension.equalsIgnoreCase(".sig") || fileExtension.equalsIgnoreCase(".png")
@@ -248,6 +250,7 @@ public class ConfigApi {
                     }
 
                     if (fileVersion > deviceVersion || isFileExtension) {
+                        isRebootRequired = true;
                         int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, (String) entry.getKey());
 
                         if (pedFileSize < 0) {
@@ -262,12 +265,6 @@ public class ConfigApi {
                             client.closeSession();
                             return;
                         }
-                        if (listener != null) {
-                            returnReason = "Config Success, Applied";
-                            returnStatus = 1;
-                            listener.onConfigUpdateComplete(createConfigData());
-                        }
-                        client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
                     } else {
                         if (BluetoothModule.getInstance().isSessionOpen()) {
                             BluetoothModule.getInstance().closeSession();
@@ -280,8 +277,19 @@ public class ConfigApi {
                             listener.onConfigUpdateComplete(createConfigData());
                         }
                     }
-
                 }
+
+                if(isRebootRequired) {
+                    if (listener != null) {
+                        returnReason = "Config Success, Applied";
+                        returnStatus = 1;
+                        listener.onConfigUpdateComplete(createConfigData());
+                    }
+                    isFileExtension = false;
+                    client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
+                }
+
+
             } else {
                 if (BluetoothModule.getInstance().isSessionOpen()) {
                     BluetoothModule.getInstance().closeSession();
