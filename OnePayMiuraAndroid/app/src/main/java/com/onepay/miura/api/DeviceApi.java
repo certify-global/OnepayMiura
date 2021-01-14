@@ -7,24 +7,24 @@ import androidx.annotation.WorkerThread;
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.ApiBatteryStatusListener;
 import com.miurasystems.mpi.api.listener.ApiGetConfigListener;
-import com.miurasystems.mpi.api.listener.ApiGetDeviceInfoListener;
 import com.miurasystems.mpi.api.listener.ApiGetSoftwareInfoListener;
 import com.miurasystems.mpi.api.listener.ApiGetSystemClockListener;
 import com.miurasystems.mpi.api.listener.ApiP2PEStatusListener;
-import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.objects.P2PEStatus;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
+import com.onepay.miura.common.Constants;
 import com.onepay.miura.core.Config;
 import com.onepay.miura.data.DeviceApiData;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class DeviceApi {
     private static final String TAG = DeviceApi.class.getSimpleName();
@@ -32,6 +32,24 @@ public class DeviceApi {
     private DeviceInfoListener listener;
     private DeviceApiData deviceData = null;
     private String btAddress = "";
+    private int mTimeOut = 60;
+    private Timer mTimer;
+    private boolean isTimerTimedOut = false;
+    private boolean isDeviceInfoDataCheck = false;
+    private String returnReason = "";
+    private int returnStatus = 0;
+    private String deviceSerialNumber = "";
+    private String deviceOsType = "";
+    private String deviceOsVersion = "";
+    private String deviceMpiType = "";
+    private String deviceMpiVersion = "";
+    private String deviceChargingStatus = "";
+    private String deviceBatteryLevel = "";
+    private String devicePinKeyStatus = "";
+    private String deviceSREDStatus = "";
+    private String deviceDateTime = "";
+
+    private BluetoothConnect.DeviceConnectListener deviceConnectListener;
 
     public interface DeviceInfoListener {
         void onGetDeviceInfoComplete(DeviceApiData data);
@@ -47,61 +65,66 @@ public class DeviceApi {
     /**
      * @param btAddress Miura device bluetooth address
      */
-    public void getDeviceInfo(String btAddress) {
+    public void getDeviceInfo(String btAddress, int tOut) {
 
         this.btAddress = btAddress;
-        BluetoothConnect.getInstance().connect(btAddress, new BluetoothConnect.DeviceConnectListener() {
-            @Override
-            public void onConnectionSuccess() {
-                Log.d("TAG", "onConnectionSuccess: ");
-                MiuraManager.getInstance().getDeviceInfo(new ApiGetDeviceInfoListener() {
-                    @WorkerThread
-                    @Override
-                    public void onSuccess(final ArrayList<Capability> capabilities) {
-                        BluetoothModule.getInstance().setTimeoutEnable(false);
-                        loadDataPED();
-                    }
-
-                    @WorkerThread
-                    @Override
-                    public void onError() {
-                        BluetoothModule.getInstance().closeSession();
-
-                    }
-                });
-            }
-
-            @Override
-            public void onConnectionError() {
-                Log.d("TAG", "onConnectionError: ");
-                if (listener != null) {
-                    deviceData.setReturnStatus(2);
-                    deviceData.setReturnReason("onConnectionError: ");
-                    listener.onGetDeviceInfoComplete(deviceData);
-                }
-            }
-
-            @Override
-            public void onDeviceDisconnected() {
-                Log.d("TAG", "onDeviceDisconnected: ");
-                if (listener != null) {
-                    deviceData.setReturnStatus(2);
-                    deviceData.setReturnReason("onDeviceDisconnected: ");
-                    listener.onGetDeviceInfoComplete(deviceData);
-                }
-            }
-        });
+        this.mTimeOut = tOut;
+        startTimer();
+        deviceData = new DeviceApiData();
+        isDeviceInfoDataCheck = false;
+        if (BluetoothModule.getInstance().isSessionOpen()) {
+            loadDataPED();
+        } else {
+            setDeviceReconnectListener();
+            BluetoothConnect.getInstance().connect(this.btAddress, deviceConnectListener);
+        }
     }
 
     public void onDeviceInfo(DeviceInfoListener listener) {
         this.listener = listener;
     }
 
-    private void loadDataPED() {
-        deviceData = new DeviceApiData();
-        deviceData.setAddress(btAddress);
-        deviceData.setType("PED");
+    private void reConnectDevice() {
+        BluetoothConnect.getInstance().connect(this.btAddress, deviceConnectListener);
+    }
 
+    private void setDeviceReconnectListener() {
+        deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
+            @Override
+            public void onConnectionSuccess() {
+                Log.d("TAG", "onConnectionSuccess: ");
+
+                loadDataPED();
+            }
+
+            @Override
+            public void onConnectionError() {
+                Log.d("TAG", "onConnectionError: ");
+                if (!isTimerTimedOut) {
+                    reConnectDevice();
+                    return;
+                }
+                if (listener != null && !isDeviceInfoDataCheck) {
+                    returnReason = Constants.BluetoothConnectionErrorReason;
+                    returnStatus = Constants.BluetoothConnectionErrorStatus;
+                    listener.onGetDeviceInfoComplete(createDeviceApiData());
+                }
+            }
+
+            @Override
+            public void onDeviceDisconnected() {
+                Log.d("TAG", "onDeviceDisconnected: ");
+
+                if (listener != null && !isDeviceInfoDataCheck) {
+                    returnReason = Constants.BluetoothDisconnectedReason;
+                    returnStatus = Constants.BluetoothDisconnectedStatus;
+                    listener.onGetDeviceInfoComplete(createDeviceApiData());
+                }
+            }
+        };
+    }
+
+    private void loadDataPED() {
         MiuraManager.getInstance().getSystemClock(new ApiGetSystemClockListener() {
 
             @WorkerThread
@@ -114,7 +137,7 @@ public class DeviceApi {
             @WorkerThread
             @Override
             public void onError() {
-                closeSession(true);
+                closeSession();
             }
         });
 
@@ -124,17 +147,17 @@ public class DeviceApi {
             public void onSuccess(final int chargingStatus, int batteryLevel) {
 
                 if (chargingStatus == 0) {
-                    deviceData.setChargingStatus("OnBattery");
+                    deviceChargingStatus = "OnBattery";
                 } else if (chargingStatus == 1) {
-                    deviceData.setChargingStatus("Charging");
+                    deviceChargingStatus = "Charging";
                 } else if (chargingStatus == 2) {
-                    deviceData.setChargingStatus("Charged");
+                    deviceChargingStatus = "OnBattery";
                 }
 
                 if (!Config.isBatteryValid(batteryLevel)) {
-                    deviceData.setBatteryLevel("Please plug in charger");
+                    deviceBatteryLevel = "Please plug in charger";
                 } else {
-                    deviceData.setBatteryLevel(batteryLevel + "%");
+                    deviceBatteryLevel = batteryLevel + "%";
                 }
 
                 MiuraManager.getInstance().getSoftwareInfo(new ApiGetSoftwareInfoListener() {
@@ -142,18 +165,13 @@ public class DeviceApi {
                     @WorkerThread
                     @Override
                     public void onSuccess(SoftwareInfo softwareInfo) {
-                        deviceData.setSerialNumber(softwareInfo.getSerialNumber());
-                        deviceData.setOsType(softwareInfo.getOsType());
-                        deviceData.setOsVersion(softwareInfo.getOsVersion());
-                        deviceData.setMpiType(softwareInfo.getMpiType());
-                        deviceData.setMpiVersion(softwareInfo.getMpiVersion());
-                        deviceData.setReturnStatus(1);
-                        deviceData.setReturnReason("Success");
-
-                        if (listener != null) {
-                            listener.onGetDeviceInfoComplete(deviceData);
-                        }
-
+                        deviceSerialNumber = softwareInfo.getSerialNumber();
+                        deviceOsType = softwareInfo.getOsType();
+                        deviceOsVersion = softwareInfo.getOsVersion();
+                        deviceMpiType = softwareInfo.getMpiType();
+                        deviceMpiVersion = softwareInfo.getMpiVersion();
+                        returnReason = Constants.SuccessReason;
+                        returnStatus = Constants.SuccessStatus;
                         MiuraManager.getInstance().getPEDConfig(new ApiGetConfigListener() {
                             @WorkerThread
                             @Override
@@ -165,14 +183,18 @@ public class DeviceApi {
                                     @Override
                                     public void onSuccess(P2PEStatus P2PEStatus) {
                                         if (P2PEStatus.isPINReady) {
-                                            deviceData.setPinKeyStatus("Installed");
+                                            devicePinKeyStatus = "Installed";
                                         } else {
-                                            deviceData.setPinKeyStatus("None");
+                                            devicePinKeyStatus = "None";
                                         }
                                         if (P2PEStatus.isSREDReady) {
-                                            deviceData.setsREDStatus("Installed");
+                                            deviceSREDStatus = "Installed";
                                         } else {
-                                            deviceData.setsREDStatus("None");
+                                            deviceSREDStatus = "None";
+                                        }
+
+                                        if (listener != null && !isDeviceInfoDataCheck) {
+                                            listener.onGetDeviceInfoComplete(createDeviceApiData());
                                         }
                                     }
 
@@ -197,9 +219,12 @@ public class DeviceApi {
                     @WorkerThread
                     @Override
                     public void onError() {
-                        deviceData.setReturnStatus(2);
-                        deviceData.setReturnReason("Error! Couldn't find the MIURA device");
-                        closeSession(true);
+                        if (listener != null && !isDeviceInfoDataCheck) {
+                            returnReason = Constants.ErrorReason;
+                            returnStatus = Constants.ErrorStatus;
+                            listener.onGetDeviceInfoComplete(createDeviceApiData());
+                        }
+                        closeSession();
                     }
                 });
             }
@@ -207,14 +232,59 @@ public class DeviceApi {
             @WorkerThread
             @Override
             public void onError() {
-                closeSession(true);
+                closeSession();
             }
         });
     }
 
-    public void closeSession(final boolean interrupted) {
+    private DeviceApiData createDeviceApiData() {
+        isDeviceInfoDataCheck = true;
+        deviceData.setReturnReason(returnReason);
+        deviceData.setReturnStatus(returnStatus);
+        deviceData.setAddress(this.btAddress);
+        deviceData.setType("PED");
+        deviceData.setSerialNumber(deviceSerialNumber);
+        deviceData.setOsType(deviceOsType);
+        deviceData.setOsVersion(deviceOsVersion);
+        deviceData.setMpiType(deviceMpiType);
+        deviceData.setMpiVersion(deviceMpiVersion);
+        deviceData.setChargingStatus(deviceChargingStatus);
+        deviceData.setBatteryLevel(deviceBatteryLevel);
+        deviceData.setPinKeyStatus(devicePinKeyStatus);
+        deviceData.setsREDStatus(deviceSREDStatus);
+        deviceData.setDateTime(deviceDateTime);
+
+        cancelTimer();
+        closeSession();
+        return deviceData;
+    }
+
+    public void closeSession() {
         BluetoothModule.getInstance().closeSession();
         Log.d("TAG", "bluetooth interrupted");
     }
 
+    /**
+     * Timer
+     */
+    private void startTimer() {
+        isTimerTimedOut = false;
+        cancelTimer();
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            public void run() {
+                isDeviceInfoDataCheck = false;
+                isTimerTimedOut = true;
+                closeSession();
+                this.cancel();
+            }
+        }, mTimeOut * 1000);
+    }
+
+    private void cancelTimer() {
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
+    }
 }
