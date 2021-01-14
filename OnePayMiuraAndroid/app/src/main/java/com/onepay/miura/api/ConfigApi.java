@@ -43,7 +43,9 @@ public class ConfigApi {
     private String filepath = "";
     private MpiClient mpiClient;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
-    private double deviceVersion= 0.0, fileVersion = 0.0;
+    private double deviceVersion = 0.0, fileVersion = 0.0;
+    private Boolean isFileExtension = false;
+    private Boolean isCygnusCfgExits = false;
 
     public interface ConfigInfoListener {
         void onConfigUpdateComplete(ConfigApiData data);
@@ -171,8 +173,32 @@ public class ConfigApi {
                 File file = new File(filePath);
                 if (file.exists()) {
                     configMap.put((String) entry.getKey(), (String) entry.getValue());
-
                 }
+                if (name.equalsIgnoreCase("cygnus.cfg")) {
+                    isCygnusCfgExits = true;
+                }
+            }
+            File[] filesList = getListOfFiles();
+            for (int i = 0; i < filesList.length; i++) {
+                String filepath = filesList[i].toString();
+                int lastIndexOfFilePath = filepath.lastIndexOf('/');
+                String fileName = filepath.substring(lastIndexOfFilePath);
+                String[] part = fileName.split("/");
+                String file = part[1].trim();
+
+                int lastIndexOf = file.lastIndexOf(".");
+                String fileExtension = file.substring(lastIndexOf);
+
+                if (!file.equalsIgnoreCase("cygnus.cfg") && !isCygnusCfgExits) {
+                    configMap.put(file, "1.0");
+                }
+                if ((fileExtension.equalsIgnoreCase(".sig") || fileExtension.equalsIgnoreCase(".png")
+                        || fileExtension.equalsIgnoreCase(".bmp") || fileExtension.equalsIgnoreCase(".txt"))&& !isCygnusCfgExits) {
+
+                    isFileExtension = true;
+                    configMap.put(file, "1.0");
+                }
+
             }
 
             if (configMap.size() > 0) {
@@ -189,12 +215,39 @@ public class ConfigApi {
                     inputStream.read(buffer);
                     inputStream.close();
 
-                    if(getDeviceVersion((String) entry.getValue()).contains("OnePay")) {
-                        deviceVersion = Double.parseDouble(getDeviceVersion((String) entry.getValue()));
+                    if (getVersion(buffer) == null) {
+                        fileVersion = Double.parseDouble(getVersion(buffer));
                     }
-                    fileVersion = Double.parseDouble(getVersion(buffer));
 
-                    if (fileVersion > deviceVersion) {
+                    if (entry.getValue().toString().contains("OnePay")) {
+                        try {
+                            deviceVersion = Double.parseDouble(getDeviceVersion((String) entry.getValue()));
+                        } catch (Exception e) {
+                            int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, (String) entry.getKey());
+
+                            if (pedFileSize < 0) {
+                                showBadFileUploadMessage((String) entry.getKey());
+                                return;
+                            }
+                            ok = client.streamBinary(
+                                    interfaceType, buffer, 0, 0, buffer.length, 100);
+                            if (!ok) {
+                                showBadFileUploadMessage((String) entry.getKey());
+                                Log.e(TAG, "Error Config-file");
+                                client.closeSession();
+                                return;
+                            }
+                            if (listener != null) {
+                                returnReason = "Config Success, Applied";
+                                returnStatus = 1;
+                                listener.onConfigUpdateComplete(createConfigData());
+                            }
+                            client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
+                            return;
+                        }
+                    }
+
+                    if (fileVersion > deviceVersion || isFileExtension) {
                         int pedFileSize = client.selectFile(interfaceType, SelectFileMode.Truncate, (String) entry.getKey());
 
                         if (pedFileSize < 0) {
@@ -242,25 +295,21 @@ public class ConfigApi {
                 }
             }
         } catch (Exception e) {
-            Log.d(TAG, "doFileUploads: " + e.toString());
-            if (listener != null) {
-                returnReason = "Exception, Failure" + e.toString();
-                returnStatus = 2;
-                listener.onConfigUpdateComplete(createConfigData());
-            }
+            Log.d(TAG, "DoFileUploads: " + e.toString());
         }
 
     }
 
     private void showBadFileUploadMessage(final String filename) {
         if (listener != null) {
-            returnReason = "Bad file upload, Failure";
+            returnReason = "Failure";
             returnStatus = 2;
             listener.onConfigUpdateComplete(createConfigData());
         }
         Log.d(TAG, filename + " uploaded Error");
         BluetoothModule.getInstance();
     }
+
 
     private String getVersion(byte[] buffer) {
         String version = "";
@@ -283,6 +332,22 @@ public class ConfigApi {
         String[] part = version.split("V");
         version = part[1].trim();
         return version;
+    }
+
+    private File[] getListOfFiles() {
+        try {
+            Log.d("Files", "Path: " + this.filepath);
+            File directory = new File(this.filepath);
+            File[] files = directory.listFiles();
+            Log.d("Files", "Size: " + files.length);
+            for (int i = 0; i < files.length; i++) {
+                Log.d("Files", "FileName:" + files[i].getName());
+            }
+            return files;
+        } catch (Exception e) {
+            Log.e(TAG, "getListOfFiles: " + e.getMessage());
+            return null;
+        }
     }
 
     private ConfigApiData createConfigData() {

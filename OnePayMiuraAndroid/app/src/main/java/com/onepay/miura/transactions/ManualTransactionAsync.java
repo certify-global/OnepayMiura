@@ -1,5 +1,7 @@
 package com.onepay.miura.transactions;
 
+import android.content.Intent;
+import android.os.Message;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -19,6 +21,8 @@ import com.onepay.miura.common.Constants;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 
 import static com.miurasystems.mpi.enums.InterfaceType.MPI;
 
@@ -33,8 +37,10 @@ public class ManualTransactionAsync {
     public int mReturnStatus = 0;
     public String mReturnReason = "";
     public boolean isUserCanceled = false;
-    private boolean isExpireDate= false;
+    private boolean isExpireDate = false;
     Result<String, GetNumericDataError> expireDate;
+    android.os.Handler handler;
+    private int ABORT_MANUAL_TRANSACTION = 1;
 
     public ManualTransactionAsync(MiuraManager miuraManager) {
         MpiClient client = miuraManager.getMpiClient();
@@ -75,7 +81,7 @@ public class ManualTransactionAsync {
             }
         }
 
-        if(!isEbt ){
+        if (!isEbt) {
             isExpireDate = true;
             Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
                     GetNumericDataRequest.GetBuilder(0, 154, 155, 4, 0)
@@ -93,17 +99,17 @@ public class ManualTransactionAsync {
                     case UserCancelled:
                         mReturnReason = Constants.CanceledThroughPEDReason;
                         mReturnStatus = Constants.CanceledThroughPEDStatus;
-                        Log.d(TAG, "Naga........manualTransaction: UserCancelled");
+                        Log.d(TAG, "ManualTransaction: UserCancelled");
                         return;
                     case Timeout:
                         mReturnReason = Constants.TimeoutReason;
                         mReturnStatus = Constants.TimeoutStatus;
-                        Log.d(TAG, "Naga.... manualTransaction: TimeOUt");
+                        Log.d(TAG, "ManualTransaction: TimeOUt");
                         return;
                     default:
                         mReturnReason = Constants.CanceledThroughPEDReason;
                         mReturnStatus = Constants.CanceledThroughPEDStatus;
-                        Log.d(TAG, "Naga.... manualTransaction: default");
+                        Log.d(TAG, "ManualTransaction: default");
                         return;
                 }
             }
@@ -111,18 +117,37 @@ public class ManualTransactionAsync {
     }
 
     @UiThread
-    public void abortManualTransaction()  {
-        Log.d(TAG, "abortTransactionAsync");
+    public void abortManualTransaction() {
+        Log.d(TAG, "AbortTransactionAsync");
 
         try {
-            if(!isExpireDate) {
-                mMpiClient.abort(MPI, false);
-            }
-            TimeUnit.SECONDS.sleep((long) 1);
-            mMpiClient.abortTransaction(MPI);
-        }
-        catch (Exception e){
+            createHandler();
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    if (!isExpireDate) {
+                        mMpiClient.abort(MPI, false);
+                    }
+                    if (handler != null) {
+                        handler.obtainMessage(ABORT_MANUAL_TRANSACTION).sendToTarget();
+                    }
+                }
+            }).start();
+
+
+        } catch (Exception e) {
             Log.e(TAG, "AbortManualTransaction: " + e);
         }
+    }
+
+    private void createHandler() {
+        handler = new android.os.Handler(new android.os.Handler.Callback() {
+            @Override
+            public boolean handleMessage(Message message) {
+                if (message.what == ABORT_MANUAL_TRANSACTION)
+                    mMpiClient.abortTransaction(MPI);
+                return false;
+            }
+        });
     }
 }
