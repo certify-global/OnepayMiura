@@ -172,9 +172,15 @@ public class ConfigApi {
             for (Map.Entry entry : versionMap.entrySet()) {
                 String name = (String) entry.getKey();
                 String filePath = this.filepath + name;
+
                 File file = new File(filePath);
                 if (file.exists()) {
                     configMap.put((String) entry.getKey(), (String) entry.getValue());
+                }
+                String sigFilePath = this.filepath + name + ".sig";
+                File sigFile = new File(sigFilePath);
+                if (sigFile.exists()) {
+                    configMap.put((String) entry.getKey() + ".sig", (String) entry.getValue());
                 }
                 if (name.equalsIgnoreCase("cygnus.cfg")) {
                     isCygnusCfgExits = true;
@@ -194,8 +200,8 @@ public class ConfigApi {
                 if (file.equalsIgnoreCase("cygnus.cfg") && !isCygnusCfgExits) {
                     configMap.put(file, "1.0");
                 }
-                if ((fileExtension.equalsIgnoreCase(".sig") || fileExtension.equalsIgnoreCase(".png")
-                        || fileExtension.equalsIgnoreCase(".bmp") || fileExtension.equalsIgnoreCase(".txt"))&& !isCygnusCfgExits) {
+                if ((fileExtension.equalsIgnoreCase(".png")
+                        || fileExtension.equalsIgnoreCase(".bmp")) && !isCygnusCfgExits) {
 
                     isFileExtension = true;
                     configMap.put(file, "1.0");
@@ -207,17 +213,31 @@ public class ConfigApi {
                 for (Map.Entry entry : configMap.entrySet()) {
 
                     String name = (String) entry.getKey();
-                    String path = this.filepath + name;
-                    FileInputStream inputStream = new FileInputStream(path);
+                    if (name.contains(".sig")) {
+                        String sigName = name.replace(".sig", "");
+                        String path = this.filepath + sigName;
+                        FileInputStream inputStream = new FileInputStream(path);
 
-                    Log.d(TAG, "Config file uploaded-: " + path);
+                        int size = inputStream.available();
+                        final byte[] buffer = new byte[size];
+                        inputStream.read(buffer);
+                        inputStream.close();
+
+                        if (!getVersion(buffer).isEmpty() && getVersion(buffer) != null) {
+                            fileVersion = Double.parseDouble(getVersion(buffer));
+                        }
+
+                    }
+                    String path = this.filepath + name;
+
+                    FileInputStream inputStream = new FileInputStream(path);
 
                     int size = inputStream.available();
                     final byte[] buffer = new byte[size];
                     inputStream.read(buffer);
                     inputStream.close();
 
-                    if (getVersion(buffer) == null) {
+                    if (!getVersion(buffer).isEmpty() && getVersion(buffer) != null) {
                         fileVersion = Double.parseDouble(getVersion(buffer));
                     }
 
@@ -265,21 +285,10 @@ public class ConfigApi {
                             client.closeSession();
                             return;
                         }
-                    } else {
-                        if (BluetoothModule.getInstance().isSessionOpen()) {
-                            BluetoothModule.getInstance().closeSession();
-                        }
-                        Log.d(TAG, "Config file are upto date");
-
-                        if (listener != null) {
-                            returnReason = "Config Success, Not Applied";
-                            returnStatus = 0;
-                            listener.onConfigUpdateComplete(createConfigData());
-                        }
                     }
                 }
 
-                if(isRebootRequired) {
+                if (isRebootRequired) {
                     if (listener != null) {
                         returnReason = "Config Success, Applied";
                         returnStatus = 1;
@@ -287,6 +296,17 @@ public class ConfigApi {
                     }
                     isFileExtension = false;
                     client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
+                } else {
+                    if (BluetoothModule.getInstance().isSessionOpen()) {
+                        BluetoothModule.getInstance().closeSession();
+                    }
+                    Log.d(TAG, "Config file are upto date");
+
+                    if (listener != null) {
+                        returnReason = "Config Success, Not Applied";
+                        returnStatus = 0;
+                        listener.onConfigUpdateComplete(createConfigData());
+                    }
                 }
 
 
@@ -329,6 +349,11 @@ public class ConfigApi {
                 String part2 = part[1].trim();
                 String[] split = part2.split(" ");
                 String part3 = split[1].trim();
+                if (part3.contains("$")) {
+                    String[] removeSign = part3.split("\\$");
+                    part3 = removeSign[0].trim();
+                    //part3 = part3.replaceAll("\\$", "");
+                }
                 String[] part4 = part3.split("V");
                 version = part4[1].trim();
             }

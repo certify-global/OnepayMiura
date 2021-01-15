@@ -40,7 +40,7 @@ task makeJar(type: Copy) {
     from('build/outputs/aar/')
     into('release/')
     include('app-debug.aar')
-    rename ('app-debug.aar', 'OnepayMiura-1.17.aar')
+    rename ('app-debug.aar', 'OnepayMiura-1.18.aar')
 }
 
 makeJar.dependsOn(clearJar, build)
