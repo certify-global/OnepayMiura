@@ -114,22 +114,22 @@ public class SetClockApi {
         MiuraManager.getInstance().setSystemClock(date, new MiuraDefaultListener() {
             @Override
             public void onSuccess() {
+                BluetoothModule.getInstance().closeSession();
                 if (listener != null && !isSetClockDataCheck) {
                     returnReason = Constants.SuccessReason;
                     returnStatus = Constants.SuccessStatus;
                     listener.onConnectionComplete(createSetClockData());
                 }
-                disconnectBtTimer();
             }
 
             @Override
             public void onError() {
+                BluetoothModule.getInstance().closeSession();
                 if (listener != null && !isSetClockDataCheck) {
                     returnReason = Constants.ErrorReason;
                     returnStatus = Constants.ErrorStatus;
                     listener.onConnectionComplete(createSetClockData());
                 }
-                disconnectBtTimer();
             }
         });
     }
@@ -175,24 +175,6 @@ public class SetClockApi {
     }
 
     private void cancelTimer() {
-        if (mTimer != null) {
-            mTimer.cancel();
-            mTimer = null;
-        }
-    }
-
-    private void disconnectBtTimer() {
-        cancelDisconnectBtTimer();
-        mBtDisconnectTimer = new Timer();
-        mBtDisconnectTimer.schedule(new TimerTask() {
-            public void run() {
-                BluetoothModule.getInstance().closeSession();
-                this.cancel();
-            }
-        }, 2 * 1000);
-    }
-
-    private void cancelDisconnectBtTimer() {
         if (mTimer != null) {
             mTimer.cancel();
             mTimer = null;

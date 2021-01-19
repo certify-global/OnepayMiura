@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });*/
 
-        ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 60, new ConnectApi.ConnectListener() {
+        ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 10, new ConnectApi.ConnectListener() {
             @Override
             public void onConnectionComplete(ConnectApiData data) {
                 Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onTransaction(View view) {
-        TransactionApi.getInstance().setTransactionParams(1.00, "", "0C:9A:42:89:2E:B9",180 );
+        TransactionApi.getInstance().setTransactionParams(1.00, "", "0C:9A:42:89:2E:B9", 180);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga2........" + data.returnStatus());
             }
         });
-        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 180, path);
+        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 380, path);
     }
 
     public void onManualTransaction(View view) {
@@ -147,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void setDeviceClock(View view) throws Exception {
 
-       // String sDate1 = "2020-09-25 12:29:24";
+        // String sDate1 = "2020-09-25 12:29:24";
         String sDate1 = "2021-01-03 05:18:37";
         //Log.d("TAG", "Naga...........setDeviceClock: " + sDate1);
       /*  DeviceApi.getInstance().onDeviceInfo(new SetClockApi.SetClockListener() {
@@ -158,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });*/
 
-        DeviceApi.getInstance().onDeviceInfo(new DeviceApi.DeviceInfoListener(){
+        DeviceApi.getInstance().onDeviceInfo(new DeviceApi.DeviceInfoListener() {
             @Override
             public void onGetDeviceInfoComplete(DeviceApiData data) {
                 Log.d("TAG", "Naga............returnReason: " + data.returnReason());
@@ -176,7 +176,22 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga............SRedStatus: " + data.sREDStatus());
             }
         });
-        DeviceApi.getInstance().getDeviceInfo("0C:9A:42:89:2E:B9", 180);
+        DeviceApi.getInstance().getDeviceInfo("0C:9A:42:89:2E:B9", 380);
+    }
+
+    public void setDeviceInfomation(View view) throws Exception {
+        String sDate1 = "2021-01-03 05:18:37";
+
+        Log.d("TAG", "Naga...........setDeviceClock: " + sDate1);
+        SetClockApi.getInstance().setClockListener(new SetClockApi.SetClockListener() {
+            @Override
+            public void onConnectionComplete(SetClockApiData data) {
+                Log.d("TAG", "Naga............returnReason: " + data.returnReason());
+                Log.d("TAG", "Naga............returnStatus: " + data.returnStatus());
+            }
+        });
+
+        SetClockApi.getInstance().setDeviceClock("0C:9A:42:89:2E:B9", 30, sDate1);
     }
 
 }

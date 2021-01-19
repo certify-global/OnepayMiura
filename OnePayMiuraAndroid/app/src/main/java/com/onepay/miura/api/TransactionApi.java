@@ -420,7 +420,7 @@ public class TransactionApi {
             });
         } catch (Exception e) {
             if (transactionListener != null) {
-                returnReason = e.toString();
+                returnReason = e.getMessage();
                 returnStatus = Constants.Exception;
                 transactionListener.onTransactionComplete(createTransactionData(cardData));
             }
@@ -452,7 +452,7 @@ public class TransactionApi {
                         }
                     });
         } catch (Exception e) {
-            Log.d(TAG, "performTransaction: " + e.toString());
+            Log.d(TAG, "performTransaction: " + e.getMessage());
         }
     }
 
