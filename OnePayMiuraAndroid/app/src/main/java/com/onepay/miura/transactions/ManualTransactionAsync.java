@@ -41,6 +41,7 @@ public class ManualTransactionAsync {
     Result<String, GetNumericDataError> expireDate;
     android.os.Handler handler;
     private int ABORT_MANUAL_TRANSACTION = 1;
+    private boolean isAbortTransaction = false;
 
     public ManualTransactionAsync(MiuraManager miuraManager) {
         MpiClient client = miuraManager.getMpiClient();
@@ -116,27 +117,29 @@ public class ManualTransactionAsync {
         }
     }
 
-    @UiThread
     public void abortManualTransaction() {
         Log.d(TAG, "AbortTransactionAsync");
 
-        try {
-            createHandler();
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    if (!isExpireDate) {
-                        mMpiClient.abort(MPI, false);
+        if (!isAbortTransaction) {
+            isAbortTransaction = true;
+            try {
+                createHandler();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isExpireDate) {
+                            mMpiClient.abort(MPI, false);
+                        }
+                        if (handler != null) {
+                            handler.obtainMessage(ABORT_MANUAL_TRANSACTION).sendToTarget();
+                        }
                     }
-                    if (handler != null) {
-                        handler.obtainMessage(ABORT_MANUAL_TRANSACTION).sendToTarget();
-                    }
-                }
-            }).start();
+                }).start();
 
 
-        } catch (Exception e) {
-            Log.e(TAG, "AbortManualTransaction: " + e);
+            } catch (Exception e) {
+                Log.e(TAG, "AbortManualTransaction: " + e);
+            }
         }
     }
 
