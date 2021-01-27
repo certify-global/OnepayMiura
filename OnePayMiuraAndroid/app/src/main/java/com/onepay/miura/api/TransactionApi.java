@@ -410,17 +410,12 @@ public class TransactionApi {
                         return;
                     }
 
-                    if (!versionMap.containsValue(Config.getConfigVersion())) {
-                        Log.e(TAG, "Please update config files");
-                    } else {
-                        Log.d(TAG, "Get PED Config: Success");
-                    }
                     performTransaction();
                 }
             });
         } catch (Exception e) {
             if (transactionListener != null) {
-                returnReason = e.getMessage();
+                returnReason = e.toString();
                 returnStatus = Constants.Exception;
                 transactionListener.onTransactionComplete(createTransactionData(cardData));
             }
@@ -452,7 +447,7 @@ public class TransactionApi {
                         }
                     });
         } catch (Exception e) {
-            Log.d(TAG, "performTransaction: " + e.getMessage());
+            Log.d(TAG, "performTransaction: " + e.toString());
         }
     }
 
@@ -601,7 +596,7 @@ public class TransactionApi {
                 }
             }
             transactionData.setMaskedTrack2Data(cardData.getMaskedTrack2Data().toString());
-            transactionData.setKSN(cardData.getSredKSN().toUpperCase());
+            //transactionData.setKSN(cardData.getSredKSN().toUpperCase());
             transactionData.setEncryptedCardData(cardData.getSredData().toUpperCase());
         }
         cancelTransactionTimer();

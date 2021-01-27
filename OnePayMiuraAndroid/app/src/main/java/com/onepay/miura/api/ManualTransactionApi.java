@@ -188,25 +188,10 @@ public class ManualTransactionApi {
     public void cancelTransaction() {
         Log.d(TAG, "###RB#### cancelTransaction: ");
         try {
-            isTransactionDataCheck = false;
-
-
-            deregisterEventHandlers();
-
             if (mManualTransactionAsync != null) {
                 mManualTransactionAsync.abortManualTransaction();
             }
-            if (manualTransactionListener != null) {
-                if (isTransactionTimeOut) {
-                    returnReason = Constants.TimeoutReason;
-                    returnStatus = Constants.TimeoutStatus;
-                } else {
-                    returnReason = Constants.CancelReason;
-                    returnStatus = Constants.CancelStatus;
-                }
-                manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
-            }
-            clearData();
+
         } catch (Exception e) {
             if (manualTransactionListener != null) {
                 returnReason = e.toString();
@@ -214,6 +199,22 @@ public class ManualTransactionApi {
                 manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
             }
         }
+    }
+
+    public void updateManualTransactionStatus(){
+        deregisterEventHandlers();
+        isTransactionDataCheck = false;
+        if (manualTransactionListener != null) {
+            if (isTransactionTimeOut) {
+                returnReason = Constants.TimeoutReason;
+                returnStatus = Constants.TimeoutStatus;
+            } else {
+                returnReason = Constants.CancelReason;
+                returnStatus = Constants.CancelStatus;
+            }
+            manualTransactionListener.onManualTransactionComplete(createTransactionData(data));
+        }
+        clearData();
     }
 
     private void startPayment() {

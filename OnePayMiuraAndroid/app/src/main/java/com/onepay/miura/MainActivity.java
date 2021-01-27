@@ -17,20 +17,19 @@ import com.onepay.miura.api.DeviceApi;
 import com.onepay.miura.api.ManualTransactionApi;
 import com.onepay.miura.api.SetClockApi;
 import com.onepay.miura.api.TransactionApi;
-import com.onepay.miura.core.Config;
 import com.onepay.miura.data.ConfigApiData;
 import com.onepay.miura.data.ConnectApiData;
 import com.onepay.miura.data.DeviceApiData;
 import com.onepay.miura.data.SetClockApiData;
 import com.onepay.miura.data.TransactionApiData;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 
 public class MainActivity extends AppCompatActivity {
 
     Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
+    String btAddress  = "0C:9A:42:89:2E:B9";
+    //String btAddress  = "0C:9A:42:89:2E:CB";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });*/
 
-        ConnectApi.getInstance().connect("0C:9A:42:89:2E:B9", 10, new ConnectApi.ConnectListener() {
+        ConnectApi.getInstance().connect(btAddress, 10, new ConnectApi.ConnectListener() {
             @Override
             public void onConnectionComplete(ConnectApiData data) {
                 Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
@@ -76,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onTransaction(View view) {
-        TransactionApi.getInstance().setTransactionParams(1.00, "", "0C:9A:42:89:2E:B9", 180);
+        TransactionApi.getInstance().setTransactionParams(1.00, "", btAddress, 180);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -110,11 +109,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga2........" + data.returnStatus());
             }
         });
-        ConfigApi.getInstance().performConfig("0C:9A:42:89:2E:B9", 380, path);
+        ConfigApi.getInstance().performConfig(btAddress, 380, path);
     }
 
     public void onManualTransaction(View view) {
-        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", "0C:9A:42:89:2E:B9", 60, false, false);
+        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", btAddress, 180, false, false);
 
         ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 
@@ -176,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga............SRedStatus: " + data.sREDStatus());
             }
         });
-        DeviceApi.getInstance().getDeviceInfo("0C:9A:42:89:2E:B9", 380);
+        DeviceApi.getInstance().getDeviceInfo(btAddress, 380);
     }
 
     public void setDeviceInfomation(View view) throws Exception {
@@ -191,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        SetClockApi.getInstance().setDeviceClock("0C:9A:42:89:2E:B9", 30, sDate1);
+        SetClockApi.getInstance().setDeviceClock(btAddress, 30, sDate1);
     }
 
 }

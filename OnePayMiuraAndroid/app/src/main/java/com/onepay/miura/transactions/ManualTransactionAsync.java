@@ -16,6 +16,7 @@ import com.miurasystems.mpi.api.objects.GetNumericDataRequest;
 import com.miurasystems.mpi.enums.GetCommandsOptions;
 import com.miurasystems.mpi.enums.GetEncryptedPanError;
 import com.miurasystems.mpi.enums.GetNumericDataError;
+import com.onepay.miura.api.ManualTransactionApi;
 import com.onepay.miura.common.Constants;
 
 import java.util.EnumSet;
@@ -38,9 +39,9 @@ public class ManualTransactionAsync {
     public String mReturnReason = "";
     public boolean isUserCanceled = false;
     private boolean isExpireDate = false;
-    Result<String, GetNumericDataError> expireDate;
     android.os.Handler handler;
     private int ABORT_MANUAL_TRANSACTION = 1;
+    private boolean isAbortTransaction = false;
 
     public ManualTransactionAsync(MiuraManager miuraManager) {
         MpiClient client = miuraManager.getMpiClient();
@@ -116,27 +117,29 @@ public class ManualTransactionAsync {
         }
     }
 
-    @UiThread
     public void abortManualTransaction() {
         Log.d(TAG, "abortTransactionAsync");
 
-        try {
-            createHandler();
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    if (!isExpireDate) {
-                        mMpiClient.abort(MPI, false);
+        if(!isAbortTransaction) {
+            isAbortTransaction = true;
+            try {
+                createHandler();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isExpireDate) {
+                            mMpiClient.abort(MPI, false);
+                        }
+                        if (handler != null) {
+                            handler.obtainMessage(ABORT_MANUAL_TRANSACTION).sendToTarget();
+                        }
                     }
-                    if (handler != null) {
-                        handler.obtainMessage(ABORT_MANUAL_TRANSACTION).sendToTarget();
-                    }
-                }
-            }).start();
+                }).start();
 
 
-        } catch (Exception e) {
-            Log.e(TAG, "AbortManualTransaction: " + e);
+            } catch (Exception e) {
+                Log.e(TAG, "AbortManualTransaction: " + e);
+            }
         }
     }
 
@@ -144,8 +147,10 @@ public class ManualTransactionAsync {
         handler = new android.os.Handler(new android.os.Handler.Callback() {
             @Override
             public boolean handleMessage(Message message) {
-                if (message.what == ABORT_MANUAL_TRANSACTION)
+                if (message.what == ABORT_MANUAL_TRANSACTION) {
                     mMpiClient.abortTransaction(MPI);
+                    ManualTransactionApi.getInstance().updateManualTransactionStatus();
+                }
                 return false;
             }
         });
