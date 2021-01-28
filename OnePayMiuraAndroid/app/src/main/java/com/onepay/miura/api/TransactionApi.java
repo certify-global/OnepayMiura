@@ -439,7 +439,6 @@ public class TransactionApi {
                             if (client != null) {
                                 client.cardStatus(MPI, true, false, true, true, false, true);
                             }
-                            //MiuraManager.getInstance().cardStatus(true);
                         }
 
                         @Override

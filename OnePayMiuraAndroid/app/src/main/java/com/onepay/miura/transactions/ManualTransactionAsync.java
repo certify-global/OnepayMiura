@@ -1,16 +1,11 @@
 package com.onepay.miura.transactions;
 
-import android.content.Intent;
 import android.os.Message;
 import android.util.Log;
-
-import androidx.annotation.Nullable;
-import androidx.annotation.UiThread;
 
 import com.miurasystems.mpi.MpiClient;
 import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
-import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.EncryptedPan;
 import com.miurasystems.mpi.api.objects.GetNumericDataRequest;
 import com.miurasystems.mpi.enums.GetCommandsOptions;
@@ -20,10 +15,6 @@ import com.onepay.miura.api.ManualTransactionApi;
 import com.onepay.miura.common.Constants;
 
 import java.util.EnumSet;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 
 import static com.miurasystems.mpi.enums.InterfaceType.MPI;
 
@@ -31,7 +22,6 @@ public class ManualTransactionAsync {
 
     private static final String TAG = ManualTransactionAsync.class.getSimpleName();
 
-    private final MiuraManager mMiuraManager;
     private final MpiClient mMpiClient;
     public Result<EncryptedPan, GetEncryptedPanError> result = null;
     public String mExpireDate = "";
@@ -48,7 +38,6 @@ public class ManualTransactionAsync {
         if (client == null) {
             throw new IllegalArgumentException("MiuraManager has a null client?");
         }
-        mMiuraManager = miuraManager;
         mMpiClient = client;
     }
 

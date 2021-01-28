@@ -27,8 +27,9 @@ import com.onepay.miura.data.TransactionApiData;
 public class MainActivity extends AppCompatActivity {
 
     Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
-    String btAddress  = "0C:9A:42:89:2E:B9";
+    //String btAddress = "0C:9A:42:89:2E:B9";
     //String btAddress  = "0C:9A:42:89:2E:CB";
+    String btAddress = "80:5E:4F:93:F6:AC";
 
 
     @Override
@@ -47,12 +48,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        deviceInfo = findViewById(R.id.deviceInfoButton);
+        //deviceInfo = findViewById(R.id.deviceInfoButton);
         transaction = findViewById(R.id.transactionButton);
         cancelTransaction = findViewById(R.id.cancelTransactionButton);
         manualTransaction = findViewById(R.id.onManualTransaction);
         cancelManualTransaction = findViewById(R.id.onManualCancelTransaction);
-        setDeviceClock = findViewById(R.id.setDeviceClock);
+        //setDeviceClock = findViewById(R.id.setDeviceClock);
     }
 
     //1.Event Handler 2. BroadCast Message
@@ -97,6 +98,28 @@ public class MainActivity extends AppCompatActivity {
 
     public void onCancelTransaction(View view) {
         TransactionApi.getInstance().cancelTransaction();
+
+        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", btAddress, 180, false, false);
+        ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
+
+            @Override
+            public void onManualTransactionComplete(TransactionApiData data) {
+
+                Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
+                Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
+                Log.d("TAG", "Naga...... amount : " + data.amount());
+                Log.d("TAG", "Naga...... returnStatus : " + data.returnStatus());
+                Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
+                Log.d("TAG", "Naga...... cardHolderName : " + data.cardHolderName());
+                Log.d("TAG", "Naga...... cardNumber : " + data.cardNumber());
+                Log.d("TAG", "Naga...... ccFirstFour : " + data.accountFirstFour());
+                Log.d("TAG", "Naga...... ccLastFour : " + data.accountLastFour());
+                Log.d("TAG", "Naga...... expiryDate : " + data.expiryDate());
+                Log.d("TAG", "Naga...... pedDeviceId : " + data.deviceId());
+                Log.d("TAG", "Naga...... sRedKSN : " + data.KSN());
+
+            }
+        });
     }
 
     public void onUpdateConfig(View view) {

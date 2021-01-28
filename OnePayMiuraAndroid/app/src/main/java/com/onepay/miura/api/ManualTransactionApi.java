@@ -150,7 +150,7 @@ public class ManualTransactionApi {
                     @WorkerThread
                     @Override
                     public void onError() {
-                        BluetoothModule.getInstance().closeSession();
+                        Log.d("TAG", "onConnectionError: ");
                     }
                 });
             }
@@ -175,6 +175,11 @@ public class ManualTransactionApi {
             public void onDeviceDisconnected() {
                 Log.d(TAG, "###RB#### onDeviceDisconnected: ");
                 Log.d("TAG", "onDeviceDisconnected: ");
+
+                if (!isTimerTimedOut) {
+                    reConnectDevice();
+                    return;
+                }
 
                 if (manualTransactionListener != null) {
                     returnReason = Constants.BluetoothDisconnectedReason;
