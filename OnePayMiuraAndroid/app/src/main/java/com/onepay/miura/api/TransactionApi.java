@@ -13,13 +13,9 @@ import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.ApiGetDeviceInfoListener;
 import com.miurasystems.mpi.api.listener.ApiGetSoftwareInfoListener;
 import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
-import com.miurasystems.mpi.api.objects.BatteryData;
 import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
 import com.miurasystems.mpi.enums.DeviceStatus;
-import com.miurasystems.mpi.enums.InterfaceType;
-import com.miurasystems.mpi.enums.ResetDeviceType;
-import com.miurasystems.mpi.enums.SystemLogMode;
 import com.miurasystems.mpi.events.DeviceStatusChange;
 import com.miurasystems.mpi.events.MpiEventHandler;
 import com.miurasystems.mpi.events.MpiEvents;
@@ -30,7 +26,6 @@ import com.miurasystems.transactions.magswipe.MagSwipeSummary;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
-import com.onepay.miura.core.Config;
 import com.onepay.miura.data.TransactionApiData;
 import com.onepay.miura.transactions.EmvTransactionAsync;
 import com.onepay.miura.transactions.MagSwipeTransaction;
@@ -38,8 +33,6 @@ import com.onepay.miura.transactions.MagSwipeTransactionAsync;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -258,8 +251,7 @@ public class TransactionApi {
             @WorkerThread
             @Override
             public void onError() {
-                closeBtSession();
-
+                Log.d(TAG, "###RB#### get Device Info ");
             }
         });
     }
@@ -340,79 +332,7 @@ public class TransactionApi {
                 }
             });
 
-            MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
-                @Override
-                public void runOnAsyncThread(@NonNull MpiClient client) {
-
-                    if (isPosDevice) {
-                        ArrayList<String> peripheralTypes = client.peripheralStatusCommand();
-                        if (peripheralTypes == null) {
-                            Log.d(TAG, "Peripheral Error");
-                            closeBtSession();
-
-                            return;
-                        } else if (!peripheralTypes.contains("PED")) {
-                            Log.d(TAG, "PED not attached to POS");
-                            closeBtSession();
-                            return;
-                        }
-
-                        // bit weird to do this, but it's what the old code did and we want to ensure
-                        // calls still go when they are meant to go.
-                        // There's also a threading issue here. Nothing else should be using
-                        // MiuraManager at the same time as this is running, so it shouldn't be a
-                        // problem.
-                        MiuraManager.getInstance().setDeviceType(MiuraManager.DeviceType.PED);
-                    }
-
-                    BatteryData batteryData = client.getBatteryStatus();
-                    if (batteryData == null) {
-                        Log.e(TAG, "Battery level check: Error");
-                        closeBtSession();
-
-                        return;
-                    }
-                    Log.d(TAG, "Battery level check: Success");
-
-                    boolean b = client.systemLog(InterfaceType.MPI, SystemLogMode.Remove);
-                    if (!b) {
-                        Log.d(TAG, "Delete Log: Error");
-                        closeBtSession();
-
-                        return;
-                    }
-                    Log.d(TAG, "Delete Log: Success");
-
-                    Date dateTime = client.systemClock(InterfaceType.MPI);
-                    if (dateTime == null) {
-                        Log.e(TAG, "Get Time: Error");
-                        closeBtSession();
-
-                        return;
-                    }
-                    Log.d(TAG, "Get Time: Success");
-
-                    SoftwareInfo softwareInfo = client.resetDevice(
-                            InterfaceType.MPI, ResetDeviceType.Soft_Reset);
-                    if (softwareInfo == null) {
-                        Log.e(TAG, "Get Software Info: Error");
-                        closeBtSession();
-
-                        return;
-                    }
-                    Log.e(TAG, "Get Software Info: Success");
-
-                    HashMap<String, String> versionMap = client.getConfiguration();
-                    if (versionMap == null) {
-                        Log.e(TAG, "Get PED config: Error");
-                        closeBtSession();
-
-                        return;
-                    }
-                    
-                    performTransaction();
-                }
-            });
+            performTransaction();
         } catch (Exception e) {
             if (transactionListener != null) {
                 returnReason = e.toString();
