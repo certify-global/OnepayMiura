@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         //deviceInfo = findViewById(R.id.deviceInfoButton);
         transaction = findViewById(R.id.transactionButton);
         cancelTransaction = findViewById(R.id.cancelTransactionButton);
-        manualTransaction = findViewById(R.id.onManualTransaction);
+       // manualTransaction = findViewById(R.id.onManualTransaction);
         cancelManualTransaction = findViewById(R.id.onManualCancelTransaction);
         //setDeviceClock = findViewById(R.id.setDeviceClock);
     }
@@ -124,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void onUpdateConfig(View view) {
         String path1 = Environment.getExternalStorageDirectory() + "/mpi_config/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
-        String path = "/storage/self/primary/mpi_config/";
+        String path = "/storage/self/primary/prompt/";
         ConfigApi.getInstance().setConfigListener(new ConfigApi.ConfigInfoListener() {
             @Override
             public void onConfigUpdateComplete(ConfigApiData data) {
