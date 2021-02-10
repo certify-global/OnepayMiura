@@ -9,11 +9,11 @@ namespace Onepay.Miura.Api
     public class Transaction
     {
         public static event EventHandler<TransactionData> TransactionComplete;
-        public void PerformTransaction(double amt, String desc, String btAddress, int tOut)
+        public void PerformTransaction(double amt, String desc, String btAddress, bool isPinRequired, int tOut)
         {
             try
             {
-                TransactionApi.Instance.SetTransactionParams(amt, desc, btAddress, tOut);
+                TransactionApi.Instance.SetTransactionParams(amt, desc, btAddress, isPinRequired, tOut);
                 TransactionApi.Instance.PerformTransaction(new Transaction.TransactionListener());
             }
             catch (Exception exception)
@@ -58,6 +58,8 @@ namespace Onepay.Miura.Api
                 transactionData.DeviceId = transactionApiData.DeviceId();
                 transactionData.KSN = transactionApiData.KSN();
                 transactionData.MaskedTrack2Data = transactionApiData.MaskedTrack2Data();
+                transactionData.PinData = transactionApiData.PinData();
+                transactionData.PinKsn = transactionApiData.PinKsn();
 
                 TransactionComplete?.Invoke(this, transactionData);
             }

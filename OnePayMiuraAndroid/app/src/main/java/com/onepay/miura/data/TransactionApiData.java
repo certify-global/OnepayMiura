@@ -15,6 +15,8 @@ public class TransactionApiData {
     private String deviceId;
     private String kSN;
     private String maskedTrack2Data;
+    private String pinData;
+    private String pinKsn;
 
     public String deviceCode() {
         return deviceCode;
@@ -126,6 +128,22 @@ public class TransactionApiData {
 
     public void setMaskedTrack2Data(String maskedTrack2Data) {
         this.maskedTrack2Data = maskedTrack2Data;
+    }
+
+    public String pinData() {
+        return pinData;
+    }
+
+    public void setPinData(String pinData) {
+        this.pinData = pinData;
+    }
+
+    public String pinKsn() {
+        return pinKsn;
+    }
+
+    public void setPinKsn(String pinKsn) {
+        this.pinKsn = pinKsn;
     }
 
 }
