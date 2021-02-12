@@ -29,7 +29,9 @@ public class MainActivity extends AppCompatActivity {
     Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
     //String btAddress = "0C:9A:42:89:2E:B9";
     //String btAddress  = "0C:9A:42:89:2E:CB";
-    String btAddress = "80:5E:4F:93:F6:AC";
+    //String btAddress = "80:5E:4F:93:F6:AC";
+    String btAddress = "80:5E:4F:93:F6:CA";
+
 
 
     @Override
@@ -76,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onTransaction(View view) {
-        TransactionApi.getInstance().setTransactionParams(1.00, "", btAddress, 180);
+        TransactionApi.getInstance().setTransactionParams(14.37, "", btAddress, true, 180);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -92,6 +94,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga...... expiryDate : " + data.expiryDate());
                 Log.d("TAG", "Naga...... pedDeviceId : " + data.deviceId());
                 Log.d("TAG", "Naga...... sRedKSN : " + data.KSN());
+                Log.d("TAG", "Naga...... sPinKsn : " + data.pinKsn());
+                Log.d("TAG", "Naga...... sPinData : " + data.pinData());
             }
         });
     }

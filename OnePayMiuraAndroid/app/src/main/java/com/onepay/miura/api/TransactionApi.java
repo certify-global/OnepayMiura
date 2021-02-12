@@ -29,6 +29,9 @@ import com.miurasystems.transactions.emv.EmvChipInsertStatus;
 import com.miurasystems.transactions.emv.EmvTransactionType;
 import com.miurasystems.transactions.magswipe.MagSwipeError;
 import com.miurasystems.transactions.magswipe.MagSwipeSummary;
+import com.miurasystems.transactions.magswipe.MagSwipeTransactionException;
+import com.miurasystems.transactions.magswipe.OnlinePinSummary;
+import com.miurasystems.transactions.magswipe.PaymentMagType;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
@@ -38,6 +41,7 @@ import com.onepay.miura.transactions.EmvTransaction;
 import com.onepay.miura.transactions.EmvTransactionAsync;
 import com.onepay.miura.transactions.MagSwipeTransaction;
 import com.onepay.miura.transactions.MagSwipeTransactionAsync;
+import com.onepay.miura.transactions.SignatureSummary;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -69,6 +73,9 @@ public class TransactionApi {
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
     private TransactionApiData transactionData = null;
     private static DecimalFormat decimalFormat = new DecimalFormat("#.##");
+    private boolean isPinRequired = false;
+    private String pinKsn = "";
+    private String pinData = "";
 
     @Nullable
     private EmvTransactionAsync mEmvTransactionAsync;
@@ -95,12 +102,13 @@ public class TransactionApi {
      * @param btAddress Miura bluetooth device address
      * @param tOut      Timeout for the transaction
      */
-    public void setTransactionParams(double amt, String desc, String btAddress, int tOut) {
+    public void setTransactionParams(double amt, String desc, String btAddress, boolean isPinRequired, int tOut) {
         Log.d(TAG, "###RB#### set transaction parameters ");
         clearData();
         isTransactionTimeOut = false;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
+        this.isPinRequired = isPinRequired;
         if (description != null)
             this.description = desc;
         if (btAddress != null)
@@ -469,18 +477,86 @@ public class TransactionApi {
                 return;
             }
 
-            this.cardData = cardData;
-            if (transactionListener != null) {
-                returnReason = Constants.SuccessReason;
-                returnStatus = Constants.SuccessStatus;
-                transactionListener.onTransactionComplete(createTransactionData(cardData));
+            if (isPinRequired) {
+                PaymentMagType paymentMagType = PaymentMagType.Pin;
+                MagSwipeSummary magSwipeSummary = result.asSuccess().getValue();
+                startSwipeTransaction(magSwipeSummary, paymentMagType, cardData);
+            } else {
+                this.cardData = cardData;
+                if (transactionListener != null) {
+                    returnReason = Constants.SuccessReason;
+                    returnStatus = Constants.SuccessStatus;
+                    transactionListener.onTransactionComplete(createTransactionData(cardData));
+                }
+                closeBtSession();
+                clearTransactionData();
+                clearData();
             }
-            closeBtSession();
-            clearTransactionData();
-            clearData();
         } catch (Exception e) {
             Log.d(TAG, "handleTransactionEvent: ");
         }
+    }
+
+    protected void startSwipeTransaction(
+            MagSwipeSummary magSwipeSummary,
+            PaymentMagType paymentMagType,
+            final CardData cardData
+    ) {
+
+        abortEmvTransactionAsync(null);
+        abortSwipeTransactionAsync(null);
+
+        mMagSwipeTransaction = new MagSwipeTransactionAsync(MiuraManager.getInstance(), paymentMagType);
+        mMagSwipeTransaction.startTransactionAsync(
+                magSwipeSummary,
+                amount*100,
+                MiuraApplication.currencyCode.getValue(),
+                new MagSwipeTransactionAsync.Callback() {
+
+                    @Override
+                    public void onPinSuccess(@NonNull MagSwipeSummary magSwipeSummary, @NonNull OnlinePinSummary onlinePinSummary) {
+                        Log.d(TAG, "Naga......... 2   onPinSuccess: ");
+
+                        pinKsn = onlinePinSummary.mPinKSN;
+                        pinData = onlinePinSummary.mPinData;
+
+                        if (transactionListener != null) {
+                            returnReason = Constants.SuccessReason;
+                            returnStatus = Constants.SuccessStatus;
+                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                        }
+                        closeBtSession();
+                        clearTransactionData();
+                        clearData();
+
+                    }
+
+                    @NonNull
+                    @Override
+                    public SignatureSummary getSignatureFromUser() {
+                        Log.d(TAG, "Naga......... 2   getSignatureFromUser: ");
+                        return null;
+                    }
+
+                    @Override
+                    public void onSignatureSuccess(@NonNull MagSwipeSummary magSwipeSummary, @NonNull SignatureSummary signature) {
+                        Log.d(TAG, "Naga......... 3   onSignatureSuccess: ");
+
+                    }
+
+                    @Override
+                    public void onError(@NonNull MagSwipeTransactionException exception) {
+                        Log.d(TAG, "Naga......... 4   onError: ");
+                        if (transactionListener != null) {
+                            returnReason = Constants.ErrorReason;
+                            returnStatus = Constants.ErrorStatus;
+                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                        }
+                        closeBtSession();
+                        clearTransactionData();
+                        clearData();
+                    }
+                });
     }
 
     private void deregisterEventHandlers() {
@@ -524,17 +600,20 @@ public class TransactionApi {
                     transactionData.setAccountLastFour(number.substring(number.length() - 4));
                 }
             }
+            transactionData.setKSN(cardData.getSredKSN());
             transactionData.setMaskedTrack2Data(cardData.getMaskedTrack2Data().toString());
-            //transactionData.setKSN(cardData.getSredKSN().toUpperCase());
-            if(cardData.getSredData()!= null) {
+            if (cardData.getSredData() != null) {
                 transactionData.setEncryptedCardData(cardData.getSredData().toUpperCase());
-            }else {
+            } else {
                 transactionData.setEncryptedCardData("");
             }
+            transactionData.setPinData(pinData);
+            transactionData.setPinKsn(pinKsn);
         }
         cancelTransactionTimer();
         return transactionData;
     }
+
 
     private String expireDate(String expireNumber) {
         int number = Integer.parseInt(expireNumber);

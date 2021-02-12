@@ -56,15 +56,15 @@ public class MagSwipeTransaction {
 
     public MagSwipePinResult processPinTransaction(
             MagSwipeSummary magSwipeSummary,
-            int amountInPennies,
+            double amountInPennies,
             int currencyCode
     ) throws MagSwipeTransactionException {
         Result<MpiClient.OnlinePinResult, OnlinePINError> response = mMpiClient.onlinePin(
                 MPI,
-                amountInPennies,
+                (int) amountInPennies,
                 currencyCode,
                 magSwipeSummary.mMaskedTrack2Data,
-                "Example label"
+                " "
         );
         if (response.isError()) {
             OnlinePINError error = response.asError().getError();

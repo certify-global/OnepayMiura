@@ -45,7 +45,7 @@ public class MagSwipeTransactionAsync {
     @UiThread
     public void startTransactionAsync(
             final MagSwipeSummary magSwipeSummary,
-            final int amountInPennies,
+            final double amountInPennies,
             final int currencyCode,
             final Callback callback
     ) {
@@ -72,7 +72,7 @@ public class MagSwipeTransactionAsync {
 
     private void startTransaction(
             MagSwipeSummary magSwipeSummary,
-            int amountInPennies,
+            double amountInPennies,
             int currencyCode,
             Callback callback
     ) throws MagSwipeTransactionException {
