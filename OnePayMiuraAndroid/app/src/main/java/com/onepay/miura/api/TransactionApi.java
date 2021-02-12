@@ -501,20 +501,22 @@ public class TransactionApi {
         mMagSwipeTransaction = new MagSwipeTransactionAsync(MiuraManager.getInstance(), paymentMagType);
         mMagSwipeTransaction.startTransactionAsync(
                 magSwipeSummary,
-                100,
+                amount * 100,
                 MiuraApplication.currencyCode.getValue(),
                 new MagSwipeTransactionAsync.Callback() {
 
                     @Override
                     public void onPinSuccess(@NonNull MagSwipeSummary magSwipeSummary, @NonNull OnlinePinSummary onlinePinSummary) {
 
+                        pinKsn = onlinePinSummary.mPinKSN;
+                        pinData = onlinePinSummary.mPinData;
+
                         if (transactionListener != null) {
                             returnReason = Constants.SuccessReason;
                             returnStatus = Constants.SuccessStatus;
                             transactionListener.onTransactionComplete(createTransactionData(cardData));
                         }
-                        pinKsn = onlinePinSummary.mPinKSN;
-                        pinData = onlinePinSummary.mPinData;
+
                         closeBtSession();
                         clearTransactionData();
                         clearData();
@@ -533,7 +535,14 @@ public class TransactionApi {
 
                     @Override
                     public void onError(@NonNull MagSwipeTransactionException exception) {
-
+                        if (transactionListener != null) {
+                            returnReason = Constants.ErrorReason;
+                            returnStatus = Constants.ErrorStatus;
+                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                        }
+                        closeBtSession();
+                        clearTransactionData();
+                        clearData();
                     }
                 });
     }
@@ -582,6 +591,9 @@ public class TransactionApi {
             transactionData.setMaskedTrack2Data(cardData.getMaskedTrack2Data().toString());
             transactionData.setKSN(cardData.getSredKSN().toUpperCase());
             transactionData.setEncryptedCardData(cardData.getSredData().toUpperCase());
+
+            transactionData.setPinData(pinData);
+            transactionData.setPinKsn(pinKsn);
         }
         cancelTransactionTimer();
         return transactionData;
