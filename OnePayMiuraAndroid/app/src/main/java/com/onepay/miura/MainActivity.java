@@ -8,6 +8,7 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -27,12 +28,11 @@ import com.onepay.miura.data.TransactionApiData;
 public class MainActivity extends AppCompatActivity {
 
     Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
-    //String btAddress = "0C:9A:42:89:2E:B9";
+    String btAddress = "0C:9A:42:89:2E:B9";
     //String btAddress  = "0C:9A:42:89:2E:CB";
     //String btAddress = "80:5E:4F:93:F6:AC";
-    String btAddress = "80:5E:4F:93:F6:CA";
-
-
+    //String btAddress = "80:5E:4F:93:F6:CA";
+    TextView showData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
         cancelTransaction = findViewById(R.id.cancelTransactionButton);
        // manualTransaction = findViewById(R.id.onManualTransaction);
         cancelManualTransaction = findViewById(R.id.onManualCancelTransaction);
+        showData = findViewById(R.id.show_text);
         //setDeviceClock = findViewById(R.id.setDeviceClock);
     }
 
@@ -78,10 +79,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onTransaction(View view) {
+        showData.setText("CARD DETAILS");
+
         TransactionApi.getInstance().setTransactionParams(14.37, "", btAddress, true, 180);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
+
+                String cardData = "CARD DETAILS"
+                        + "\n" +"TransactionType :" + data.entryMode()
+                        + "\n" + "CardData :" + data.encryptedCardData()
+                        + "\n" + "Amount :" + data.amount()
+                        + "\n" + "ReturnStatus :" + data.returnStatus()
+                        + "\n" + "ReturnReason :" + data.returnReason()
+                        + "\n" + "CardHolderName :" + data.cardHolderName()
+                        + "\n" + "CardNumber :" + data.cardNumber()
+                        + "\n" + "CCFirstFour :" + data.accountFirstFour()
+                        + "\n" + "CCLastFour :" + data.accountLastFour()
+                        + "\n" + "ExpiryDate :" + data.expiryDate()
+                        + "\n" + "PedDeviceId :" + data.deviceId()
+                        + "\n" + "SRedKSN :" + data.KSN()
+                        + "\n" + "PinKsn :" + data.pinKsn()
+                        + "\n" + "PinData :" + data.pinData();
+                //Log.d("TAG", "Naga.......Detailsssssssssssssss : " + cardData);
+                showData.setText(cardData);
+
                 Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
                 Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
                 Log.d("TAG", "Naga...... amount : " + data.amount());

@@ -64,7 +64,7 @@ public class MagSwipeTransaction {
                 (int) amountInPennies,
                 currencyCode,
                 magSwipeSummary.mMaskedTrack2Data,
-                " "
+                "Amount"
         );
         if (response.isError()) {
             OnlinePINError error = response.asError().getError();
@@ -87,7 +87,7 @@ public class MagSwipeTransaction {
             case PinEnteredOk:
                 boolean ok = contactHSM(magSwipeSummary, onlinePinResult, null);
                 if (ok) {
-                    showImportantTextOnDevice("PIN Ok\nTransaction Approved");
+                    showImportantTextOnDevice("PIN Ok");
 
                     if ((onlinePinResult.PinData == null) || (onlinePinResult.PinKsn == null)) {
                         throw new MagSwipeTransactionException("Null data in onlinePinResult?");

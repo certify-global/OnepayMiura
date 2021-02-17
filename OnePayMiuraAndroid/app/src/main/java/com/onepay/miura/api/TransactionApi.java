@@ -548,8 +548,8 @@ public class TransactionApi {
                     public void onError(@NonNull MagSwipeTransactionException exception) {
                         Log.d(TAG, "Naga......... 4   onError: ");
                         if (transactionListener != null) {
-                            returnReason = Constants.ErrorReason;
-                            returnStatus = Constants.ErrorStatus;
+                            returnReason = Constants.CanceledThroughPEDReason;
+                            returnStatus = Constants.CanceledThroughPEDStatus;
                             transactionListener.onTransactionComplete(createTransactionData(cardData));
                         }
                         closeBtSession();
