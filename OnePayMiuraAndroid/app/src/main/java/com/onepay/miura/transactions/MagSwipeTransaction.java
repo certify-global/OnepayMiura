@@ -64,7 +64,7 @@ public class MagSwipeTransaction {
                 (int) amountInPennies,
                 currencyCode,
                 magSwipeSummary.mMaskedTrack2Data,
-                "Amount"
+                "Amount "
         );
         if (response.isError()) {
             OnlinePINError error = response.asError().getError();

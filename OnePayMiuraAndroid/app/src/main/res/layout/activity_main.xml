@@ -6,71 +6,80 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <LinearLayout
-        android:id="@+id/layout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginLeft="15dp"
-        android:layout_marginRight="15dp"
-        android:layout_marginTop="20dp"
 
-        app:layout_constraintEnd_toEndOf="parent"
+    <EditText
+        android:id="@+id/edit_text_bt_address"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:hint="Enter Bt address"
+        android:inputType="textPersonName|textCapWords"
+        android:text="0C:9A:42:89:2E:B9"
+        android:textColor="@color/colorBlack"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="30dp"
-            android:text="80:5E:4F:93:F6:AC"
-            android:textColor="@color/colorBlack"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="15dp"
-            android:text="0"
-            android:textColor="@color/colorBlack"/>
-    </LinearLayout>
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/edit_text_pin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Type True or False"
+        android:inputType="textPersonName|textCapWords"
+        android:text="true"
+        android:textColor="@color/colorBlack"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@+id/edit_text_bt_address"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/transactionButton"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_marginLeft="15dp"
-        android:layout_marginRight="15dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
         android:onClick="onTransaction"
-        android:text="Transaction"
+        android:text="TRANSACTION"
         android:textIsSelectable="true"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/layout" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/edit_text_bt_address" />
+
+    <Button
+        android:id="@+id/cancelTranButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="16dp"
+        android:onClick="onCancelTransaction"
+        android:text="CANCEL TRANSACTION"
+        android:textIsSelectable="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/edit_text_pin" />
+
 
     <Button
         android:id="@+id/cancelTransactionButton"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_marginLeft="15dp"
-        android:layout_marginTop="20dp"
-        android:layout_marginRight="15dp"
-        android:onClick="onCancelTransaction"
-        android:text="Canacel Transaction"
-        app:layout_constraintHorizontal_bias="0.495"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:onClick="onManualTransaction"
+        android:text="Manual Transaction"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/transactionButton" />
 
     <Button
         android:id="@+id/onManualCancelTransaction"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_marginLeft="15dp"
-        android:layout_marginTop="20dp"
-        android:layout_marginRight="15dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
         android:onClick="onCancelManualTransaction"
-        android:text="Cancel Manual Transaction"
-        app:layout_constraintHorizontal_bias="0.577"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/cancelTransactionButton" />
+        android:text="Cancel Manual"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cancelTranButton" />
 
         <TextView
             android:id="@+id/show_text"

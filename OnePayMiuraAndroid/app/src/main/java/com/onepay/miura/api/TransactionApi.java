@@ -105,6 +105,9 @@ public class TransactionApi {
     public void setTransactionParams(double amt, String desc, String btAddress, boolean isPinRequired, int tOut) {
         Log.d(TAG, "###RB#### set transaction parameters ");
         clearData();
+        pinKsn = "";
+        pinData = "";
+        transactionData = null;
         isTransactionTimeOut = false;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
@@ -191,9 +194,12 @@ public class TransactionApi {
         try {
             transactionInProgress = false;
 
-            if (mEmvTransactionAsync == null) {
-                closeBtSession();
+            boolean isChip = mEmvTransactionAsync != null;
+            boolean isSwipe = mMagSwipeTransaction != null;
 
+            if (!isChip && !isSwipe) {
+
+                closeBtSession();
                 if (transactionListener != null) {
                     if (isTransactionTimeOut) {
                         returnReason = Constants.TimeoutReason;
@@ -207,9 +213,6 @@ public class TransactionApi {
                 }
                 return;
             }
-
-            boolean isChip = mEmvTransactionAsync != null;
-            boolean isSwipe = mMagSwipeTransaction != null;
 
             MiuraDefaultListener listener = new MiuraDefaultListener() {
                 @Override
@@ -445,7 +448,7 @@ public class TransactionApi {
                 return;
             }
             mMagSwipeTransaction.abortTransactionAsync(listener);
-            //mMagSwipeTransaction = null;
+            mMagSwipeTransaction = null;
         } catch (Exception e) {
             if (transactionListener != null) {
                 returnReason = e.toString();
@@ -470,11 +473,7 @@ public class TransactionApi {
             Result<MagSwipeSummary, MagSwipeError> result =
                     MagSwipeTransaction.canProcessMagSwipe(cardData);
             if (result.isError()) {
-                MagSwipeError error = result.asError().getError();
-                resetTransactionState();
-                //transactionListener.onTransactionError("SWIPE ERROR Please try again");
-                Log.d(TAG, "SWIPE ERROR Please try again");
-                return;
+
             }
 
             if (isPinRequired) {
@@ -509,7 +508,7 @@ public class TransactionApi {
         mMagSwipeTransaction = new MagSwipeTransactionAsync(MiuraManager.getInstance(), paymentMagType);
         mMagSwipeTransaction.startTransactionAsync(
                 magSwipeSummary,
-                amount*100,
+                amount * 100,
                 MiuraApplication.currencyCode.getValue(),
                 new MagSwipeTransactionAsync.Callback() {
 
@@ -547,12 +546,14 @@ public class TransactionApi {
                     @Override
                     public void onError(@NonNull MagSwipeTransactionException exception) {
                         Log.d(TAG, "Naga......... 4   onError: ");
-                        if (transactionListener != null) {
-                            returnReason = Constants.CanceledThroughPEDReason;
-                            returnStatus = Constants.CanceledThroughPEDStatus;
-                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                        if (BluetoothModule.getInstance().isSessionOpen()) {
+                            if (transactionListener != null) {
+                                returnReason = Constants.CanceledThroughPEDReason;
+                                returnStatus = Constants.CanceledThroughPEDStatus;
+                                transactionListener.onTransactionComplete(createTransactionData(cardData));
+                            }
+                            closeBtSession();
                         }
-                        closeBtSession();
                         clearTransactionData();
                         clearData();
                     }
