@@ -64,7 +64,7 @@ public class MagSwipeTransactionAsync {
                     startTransaction(magSwipeSummary, amountInPennies, currencyCode, callback);
                 } catch (MagSwipeTransactionException exception) {
                     Log.e(TAG, exception.toString());
-                    callback.onError(exception);
+                    //callback.onError(exception);
                 }
             }
         });

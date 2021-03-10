@@ -183,7 +183,10 @@ public class TransactionApi {
         try {
             transactionInProgress = false;
 
-            if (mEmvTransactionAsync == null) {
+            boolean isChip = mEmvTransactionAsync != null;
+            boolean isSwipe = mMagSwipeTransaction != null;
+
+            if (!isChip && !isSwipe) {
                 closeBtSession();
 
                 if (transactionListener != null) {
@@ -199,9 +202,6 @@ public class TransactionApi {
                 }
                 return;
             }
-
-            boolean isChip = mEmvTransactionAsync != null;
-            boolean isSwipe = mMagSwipeTransaction != null;
 
             MiuraDefaultListener listener = new MiuraDefaultListener() {
                 @Override
