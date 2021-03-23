@@ -272,15 +272,20 @@ public class BluetoothModule {
     @AnyThread
     // todo AnyThead but not thread safe.
     public void closeSession() {
-        // unsubscribe from events to avoid getting the inevitable disconnect
-        if (mHandler != null) {
-            mHandler.cancel();
-            mHandler = null;
+        try {
+            // unsubscribe from events to avoid getting the inevitable disconnect
+            if (mHandler != null) {
+                mHandler.cancel();
+                mHandler = null;
+            }
+            MiuraManager.getInstance().getMpiEvents().Connected.deregister(mConnectEventHandler);
+            MiuraManager.getInstance().getMpiEvents().Disconnected.deregister(mDisconnectEventHandler);
+            mSessionOpened.set(false);
+            MiuraManager.getInstance().closeSession();
         }
-        MiuraManager.getInstance().getMpiEvents().Connected.deregister(mConnectEventHandler);
-        MiuraManager.getInstance().getMpiEvents().Disconnected.deregister(mDisconnectEventHandler);
-        mSessionOpened.set(false);
-        MiuraManager.getInstance().closeSession();
+        catch (Exception ex){
+            Log.d(TAG, "closeSession: "+ ex.getMessage());
+        }
     }
 
     /**

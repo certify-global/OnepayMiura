@@ -1,20 +1,28 @@
 package com.onepay.miura.transactions;
 
+import android.content.Intent;
 import android.os.Message;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
 
 import com.miurasystems.mpi.MpiClient;
 import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
+import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.EncryptedPan;
 import com.miurasystems.mpi.api.objects.GetNumericDataRequest;
 import com.miurasystems.mpi.enums.GetCommandsOptions;
 import com.miurasystems.mpi.enums.GetEncryptedPanError;
 import com.miurasystems.mpi.enums.GetNumericDataError;
-import com.onepay.miura.api.ManualTransactionApi;
 import com.onepay.miura.common.Constants;
 
 import java.util.EnumSet;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 
 import static com.miurasystems.mpi.enums.InterfaceType.MPI;
 
@@ -22,6 +30,7 @@ public class ManualTransactionAsync {
 
     private static final String TAG = ManualTransactionAsync.class.getSimpleName();
 
+    private final MiuraManager mMiuraManager;
     private final MpiClient mMpiClient;
     public Result<EncryptedPan, GetEncryptedPanError> result = null;
     public String mExpireDate = "";
@@ -29,6 +38,7 @@ public class ManualTransactionAsync {
     public String mReturnReason = "";
     public boolean isUserCanceled = false;
     private boolean isExpireDate = false;
+    Result<String, GetNumericDataError> expireDate;
     android.os.Handler handler;
     private int ABORT_MANUAL_TRANSACTION = 1;
     private boolean isAbortTransaction = false;
@@ -38,6 +48,7 @@ public class ManualTransactionAsync {
         if (client == null) {
             throw new IllegalArgumentException("MiuraManager has a null client?");
         }
+        mMiuraManager = miuraManager;
         mMpiClient = client;
     }
 
@@ -74,7 +85,7 @@ public class ManualTransactionAsync {
         if (!isEbt) {
             isExpireDate = true;
             Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
-                    GetNumericDataRequest.GetBuilder(0, 154, 191, 4, 0)
+                    GetNumericDataRequest.GetBuilder(0, 154, 155, 4, 0)
                             .setOption(GetCommandsOptions.KeyboardBacklightOn, true)
                             .setTimeoutInSeconds(30)
                             .build());
@@ -89,17 +100,17 @@ public class ManualTransactionAsync {
                     case UserCancelled:
                         mReturnReason = Constants.CanceledThroughPEDReason;
                         mReturnStatus = Constants.CanceledThroughPEDStatus;
-                        Log.d(TAG, "Naga........manualTransaction: UserCancelled");
+                        Log.d(TAG, "ManualTransaction: UserCancelled");
                         return;
                     case Timeout:
                         mReturnReason = Constants.TimeoutReason;
                         mReturnStatus = Constants.TimeoutStatus;
-                        Log.d(TAG, "Naga.... manualTransaction: TimeOUt");
+                        Log.d(TAG, "ManualTransaction: TimeOUt");
                         return;
                     default:
                         mReturnReason = Constants.CanceledThroughPEDReason;
                         mReturnStatus = Constants.CanceledThroughPEDStatus;
-                        Log.d(TAG, "Naga.... manualTransaction: default");
+                        Log.d(TAG, "ManualTransaction: default");
                         return;
                 }
             }
@@ -107,9 +118,9 @@ public class ManualTransactionAsync {
     }
 
     public void abortManualTransaction() {
-        Log.d(TAG, "abortTransactionAsync");
+        Log.d(TAG, "AbortTransactionAsync");
 
-        if(!isAbortTransaction) {
+        if (!isAbortTransaction) {
             isAbortTransaction = true;
             try {
                 createHandler();
@@ -136,10 +147,8 @@ public class ManualTransactionAsync {
         handler = new android.os.Handler(new android.os.Handler.Callback() {
             @Override
             public boolean handleMessage(Message message) {
-                if (message.what == ABORT_MANUAL_TRANSACTION) {
+                if (message.what == ABORT_MANUAL_TRANSACTION)
                     mMpiClient.abortTransaction(MPI);
-                    ManualTransactionApi.getInstance().updateManualTransactionStatus();
-                }
                 return false;
             }
         });

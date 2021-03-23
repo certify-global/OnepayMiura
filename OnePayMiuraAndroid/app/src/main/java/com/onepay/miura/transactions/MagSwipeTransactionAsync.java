@@ -108,9 +108,9 @@ public class MagSwipeTransactionAsync {
         // fixme We can't abort if the app is blocking in its callbacks
         Log.d(TAG, "abortTransactionAsync");
 
-        if (!Objects.equals(mMiuraManager.getMpiClient(), mMpiClient)) {
+       /* if (!Objects.equals(mMiuraManager.getMpiClient(), mMpiClient)) {
             throw new AssertionError(CLIENT_CHANGED_ERROR_MESSAGE);
-        }
+        }*/
 
         boolean ok = mMagSwipeTransaction.abortTransaction();
         if (defaultListener != null) {

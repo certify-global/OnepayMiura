@@ -88,16 +88,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onTransaction(View view) {
-        showData.setText("CARD DETAILS");
+       /* showData.setText("CARD DETAILS");
         btAddress = edit_text_bt_address.getText().toString();
-        isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());
+        isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
 
-        TransactionApi.getInstance().setTransactionParams(32.10, "", btAddress, isPin, 180);
+        TransactionApi.getInstance().setTransactionParams(32.10, "", btAddress, true, 30);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
 
-                String cardData = "CARD DETAILS"
+                /*String cardData = "CARD DETAILS"
                         + "\n" + "TransactionType :" + data.entryMode()
                         + "\n" + "CardData :" + data.encryptedCardData()
                         + "\n" + "Amount :" + data.amount()
@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                         + "\n" + "SRedKSN :" + data.KSN()
                         + "\n" + "PinKsn :" + data.pinKsn()
                         + "\n" + "PinData :" + data.pinData();
-                showData.setText(cardData);
+                showData.setText(cardData);*/
 
                 Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
                 Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
@@ -135,6 +135,28 @@ public class MainActivity extends AppCompatActivity {
     public void onCancelTransaction(View view) {
         showData.setText("CARD DETAILS");
         TransactionApi.getInstance().cancelTransaction();
+
+        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", btAddress, 180, false, false);
+
+        ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
+
+            @Override
+            public void onManualTransactionComplete(TransactionApiData data) {
+                Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
+                Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
+                Log.d("TAG", "Naga...... amount : " + data.amount());
+                Log.d("TAG", "Naga...... returnStatus : " + data.returnStatus());
+                Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
+                Log.d("TAG", "Naga...... cardHolderName : " + data.cardHolderName());
+                Log.d("TAG", "Naga...... cardNumber : " + data.cardNumber());
+                Log.d("TAG", "Naga...... ccFirstFour : " + data.accountFirstFour());
+                Log.d("TAG", "Naga...... ccLastFour : " + data.accountLastFour());
+                Log.d("TAG", "Naga...... expiryDate : " + data.expiryDate());
+                Log.d("TAG", "Naga...... pedDeviceId : " + data.deviceId());
+                Log.d("TAG", "Naga...... sRedKSN : " + data.KSN());
+
+            }
+        });
     }
 
     public void onUpdateConfig(View view) {
@@ -151,8 +173,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onManualTransaction(View view) {
-        showData.setText("CARD DETAILS");
-        btAddress = edit_text_bt_address.getText().toString();
+        /*showData.setText("CARD DETAILS");
+        btAddress = edit_text_bt_address.getText().toString();*/
         ManualTransactionApi.getInstance().setManualTransactionParams(1, "", btAddress, 180, false, false);
 
         ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
@@ -160,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onManualTransactionComplete(TransactionApiData data) {
 
-                String cardData = "CARD DETAILS"
+                /*String cardData = "CARD DETAILS"
                         + "\n" + "TransactionType :" + data.entryMode()
                         + "\n" + "CardData :" + data.encryptedCardData()
                         + "\n" + "Amount :" + data.amount()
@@ -173,8 +195,7 @@ public class MainActivity extends AppCompatActivity {
                         + "\n" + "ExpiryDate :" + data.expiryDate()
                         + "\n" + "PedDeviceId :" + data.deviceId()
                         + "\n" + "SRedKSN :" + data.KSN();
-                showData.setText(cardData);
-
+                showData.setText(cardData);*/
                 Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
                 Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
                 Log.d("TAG", "Naga...... amount : " + data.amount());
@@ -194,9 +215,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void onCancelManualTransaction(View view) {
         showData.setText("CARD DETAILS");
-        /**
-         * Method that initiate for canceling transaction
-         */
         ManualTransactionApi.getInstance().cancelTransaction();
     }
 
