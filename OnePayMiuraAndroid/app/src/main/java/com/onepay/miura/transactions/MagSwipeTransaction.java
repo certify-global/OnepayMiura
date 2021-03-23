@@ -80,7 +80,7 @@ public class MagSwipeTransaction {
         switch (onlinePinResult.mType) {
             case CancelOrTimeout:
                 showImportantTextOnDevice("Online PIN error: Payment cancelled");
-                throw new MagSwipeTransactionException("Online PIN error: Payment cancelled");
+                return null;
             case BypassedPinEntry:
                 showImportantTextOnDevice("Online PIN error: Payment PIN bypassed");
                 throw new MagSwipeTransactionException("Online PIN error: Payment PIN bypassed");
