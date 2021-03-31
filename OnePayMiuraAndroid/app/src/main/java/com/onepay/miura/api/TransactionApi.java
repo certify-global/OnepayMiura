@@ -240,11 +240,11 @@ public class TransactionApi {
             }
             clearData();
         } catch (Exception e) {
-            if (transactionListener != null) {
+            /*if (transactionListener != null) {
                 returnReason = e.toString();
                 returnStatus = Constants.AbortException;
                 transactionListener.onTransactionComplete(createTransactionData(cardData));
-            }
+            }*/
         }
     }
 
@@ -534,14 +534,6 @@ public class TransactionApi {
 
                     @Override
                     public void onError(@NonNull MagSwipeTransactionException exception) {
-                        if (transactionListener != null) {
-                            returnReason = Constants.CanceledThroughPEDReason;
-                            returnStatus = Constants.CanceledThroughPEDStatus;
-                            transactionListener.onTransactionComplete(createTransactionData(cardData));
-                        }
-                        closeBtSession();
-                        clearTransactionData();
-                        clearData();
                     }
                 });
     }

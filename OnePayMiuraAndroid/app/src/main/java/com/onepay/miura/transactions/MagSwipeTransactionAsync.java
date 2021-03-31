@@ -87,7 +87,11 @@ public class MagSwipeTransactionAsync {
             MagSwipePinResult result = transaction.processPinTransaction(
                     magSwipeSummary, amountInPennies, currencyCode
             );
-            callback.onPinSuccess(result.mMagSwipeSummary, result.mOnlinePinSummary);
+            if (result != null) {
+                callback.onPinSuccess(result.mMagSwipeSummary, result.mOnlinePinSummary);
+            } else {
+                callback.onError(new MagSwipeTransactionException("Online PIN error: Payment cancelled"));
+            }
 
         } else {
 

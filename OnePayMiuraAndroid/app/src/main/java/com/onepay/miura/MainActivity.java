@@ -30,8 +30,8 @@ public class MainActivity extends AppCompatActivity {
 
     Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
     EditText edit_text_bt_address, edit_text_pin;
-    String btAddress = "0C:9A:42:89:2E:B9";
-    //String btAddress  = "0C:9A:42:89:2E:CB";
+    //String btAddress = "0C:9A:42:89:2E:B9";
+    String btAddress  = "0C:9A:42:89:2E:CB";
     //String btAddress = "80:5E:4F:93:F6:AC";
     //String btAddress = "80:5E:4F:93:F6:CA";
     //String btAddress = "80:5E:4F:93:F8:1C";
@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         btAddress = edit_text_bt_address.getText().toString();
         isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
 
-        TransactionApi.getInstance().setTransactionParams(32.10, "", btAddress, true, 30);
+        TransactionApi.getInstance().setTransactionParams(32.10, "", btAddress, true, 180);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {

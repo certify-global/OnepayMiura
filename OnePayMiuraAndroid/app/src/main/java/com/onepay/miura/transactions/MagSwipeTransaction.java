@@ -79,8 +79,9 @@ public class MagSwipeTransaction {
         MpiClient.OnlinePinResult onlinePinResult = response.asSuccess().getValue();
         switch (onlinePinResult.mType) {
             case CancelOrTimeout:
-                showImportantTextOnDevice("Online PIN error: Payment cancelled");
-                throw new MagSwipeTransactionException("Online PIN error: Payment cancelled");
+                showImportantTextOnDevice("Payment cancelled");
+                return null;
+               // throw new MagSwipeTransactionException("Online PIN error: Payment cancelled");
             case BypassedPinEntry:
                 showImportantTextOnDevice("Online PIN error: Payment PIN bypassed");
                 throw new MagSwipeTransactionException("Online PIN error: Payment PIN bypassed");
