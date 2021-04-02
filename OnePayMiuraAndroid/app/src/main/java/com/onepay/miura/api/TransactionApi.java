@@ -39,6 +39,7 @@ import com.onepay.miura.transactions.SignatureSummary;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -57,6 +58,7 @@ public class TransactionApi {
     private int mTransactionTime = 60;
     private TransactionListener transactionListener;
     private Boolean transactionInProgress = false;
+    private Boolean istransactionCancel = false;
     private String pedDeviceId = "";
     private CardData cardData = null;
     private boolean isTimerTimedOut = false;
@@ -97,6 +99,7 @@ public class TransactionApi {
     public void setTransactionParams(double amt, String desc, String btAddress, boolean isPinRequired, int tOut) {
         Log.d(TAG, "###RB#### set transaction parameters ");
         clearData();
+        istransactionCancel = false;
         isTransactionTimeOut = false;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
@@ -182,6 +185,7 @@ public class TransactionApi {
         Log.d(TAG, "###RB#### cancelTransaction: ");
         try {
             transactionInProgress = false;
+            istransactionCancel = true;
 
             boolean isChip = mEmvTransactionAsync != null;
             boolean isSwipe = mMagSwipeTransaction != null;
@@ -240,7 +244,7 @@ public class TransactionApi {
             }
             clearData();
         } catch (Exception e) {
-
+            Log.d(TAG, "Nagaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.........................cancelTransaction: ");
         }
     }
 
@@ -433,7 +437,6 @@ public class TransactionApi {
                 return;
             }
             mMagSwipeTransaction.abortTransactionAsync(listener);
-            //mMagSwipeTransaction = null;
         } catch (Exception e) {
             if (transactionListener != null) {
                 returnReason = e.toString();
@@ -531,7 +534,16 @@ public class TransactionApi {
 
                     @Override
                     public void onError(@NonNull MagSwipeTransactionException exception) {
-
+                        if (!istransactionCancel) {
+                            if (transactionListener != null) {
+                                returnReason = Constants.CanceledThroughPEDReason;
+                                returnStatus = Constants.CanceledThroughPEDStatus;
+                                transactionListener.onTransactionComplete(createTransactionData(cardData));
+                            }
+                            closeBtSession();
+                            clearTransactionData();
+                            clearData();
+                        }
                     }
                 });
     }
@@ -556,33 +568,34 @@ public class TransactionApi {
     }
 
     private TransactionApiData createTransactionData(CardData cardData) {
-        transactionData.setDeviceId(pedDeviceId);
-        transactionData.setAmount(this.amount);
-        transactionData.setReturnReason(returnReason);
-        transactionData.setReturnStatus(returnStatus);
-        transactionData.setDeviceCode("41");
-        if (cardData != null) {
-            transactionData.setEntryMode(entryMode);
-            transactionData.setCardHolderName(cardData.getCardholderName());
-            if (cardData.getMaskedTrack2Data() != null) {
-                if (cardData.getMaskedTrack2Data().getExpirationDate() != null) {
+        if (pedDeviceId != null) {
+            transactionData.setDeviceId(pedDeviceId);
+            transactionData.setAmount(this.amount);
+            transactionData.setReturnReason(returnReason);
+            transactionData.setReturnStatus(returnStatus);
+            transactionData.setDeviceCode("41");
+            if (cardData != null) {
+                transactionData.setEntryMode(entryMode);
+                transactionData.setCardHolderName(cardData.getCardholderName());
+                if (cardData.getMaskedTrack2Data() != null) {
+                    cardData.getMaskedTrack2Data().getExpirationDate();
                     String expireDate = expireDate(cardData.getMaskedTrack2Data().getExpirationDate());
                     transactionData.setExpiryDate(expireDate);
-                }
-                transactionData.setCardNumber(cardData.getMaskedTrack2Data().mPan);
-                String number = cardData.getMaskedTrack2Data().mPan;
+                    transactionData.setCardNumber(cardData.getMaskedTrack2Data().mPan);
+                    String number = cardData.getMaskedTrack2Data().mPan;
 
-                if (!number.isEmpty() && number.length() > 4) {
-                    transactionData.setAccountFirstFour(number.substring(0, 4));
-                    transactionData.setAccountLastFour(number.substring(number.length() - 4));
+                    if (!number.isEmpty() && number.length() > 4) {
+                        transactionData.setAccountFirstFour(number.substring(0, 4));
+                        transactionData.setAccountLastFour(number.substring(number.length() - 4));
+                    }
                 }
+                transactionData.setMaskedTrack2Data(Objects.requireNonNull(cardData.getMaskedTrack2Data()).toString());
+                transactionData.setKSN(Objects.requireNonNull(cardData.getSredKSN()).toUpperCase());
+                transactionData.setEncryptedCardData(Objects.requireNonNull(cardData.getSredData()).toUpperCase());
+
+                transactionData.setPinData(pinData);
+                transactionData.setPinKsn(pinKsn);
             }
-            transactionData.setMaskedTrack2Data(cardData.getMaskedTrack2Data().toString());
-            transactionData.setKSN(cardData.getSredKSN().toUpperCase());
-            transactionData.setEncryptedCardData(cardData.getSredData().toUpperCase());
-
-            transactionData.setPinData(pinData);
-            transactionData.setPinKsn(pinKsn);
         }
         cancelTransactionTimer();
         return transactionData;

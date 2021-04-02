@@ -64,7 +64,7 @@ public class MagSwipeTransaction {
                 (int) amountInPennies,
                 currencyCode,
                 magSwipeSummary.mMaskedTrack2Data,
-                "Amount"
+                "Amount "
         );
         if (response.isError()) {
             OnlinePINError error = response.asError().getError();
@@ -79,33 +79,42 @@ public class MagSwipeTransaction {
         MpiClient.OnlinePinResult onlinePinResult = response.asSuccess().getValue();
         switch (onlinePinResult.mType) {
             case CancelOrTimeout:
-                showImportantTextOnDevice("Online PIN error: Payment cancelled");
+                //showImportantTextOnDevice("Payment cancelled");
+                Log.d(TAG, "Nagarj................CancelOrTimeout: ");
                 return null;
+            // throw new MagSwipeTransactionException("Online PIN error: Payment cancelled");
             case BypassedPinEntry:
-                showImportantTextOnDevice("Online PIN error: Payment PIN bypassed");
-                throw new MagSwipeTransactionException("Online PIN error: Payment PIN bypassed");
+                Log.d(TAG, "Nagarj................BypassedPinEntry: ");
+                //showImportantTextOnDevice("Online PIN error: Payment PIN bypassed");
+                return null;
             case PinEnteredOk:
                 boolean ok = contactHSM(magSwipeSummary, onlinePinResult, null);
                 if (ok) {
-                    showImportantTextOnDevice("PIN Ok");
+                    Log.d(TAG, "Nagarj................PinEnteredOk: ");
+                    //showImportantTextOnDevice("PIN Ok");
 
+                    Log.d(TAG, "Nagarj................PinEnteredOk: 1");
                     if ((onlinePinResult.PinData == null) || (onlinePinResult.PinKsn == null)) {
-                        throw new MagSwipeTransactionException("Null data in onlinePinResult?");
+                        Log.d(TAG, "Nagarj................PinEnteredOk: 2 null" );
+                        return  null;
                     }
 
+                    Log.d(TAG, "Nagarj................PinEnteredOk: 3");
                     String pinData = HexUtil.bytesToHexStrings(onlinePinResult.PinData);
                     String pinKsn = HexUtil.bytesToHexStrings(onlinePinResult.PinKsn);
                     OnlinePinSummary onlinePinSummary = new OnlinePinSummary(pinData, pinKsn);
 
+                    Log.d(TAG, "Nagarj................PinEnteredOk: 4");
                     return new MagSwipePinResult(magSwipeSummary, onlinePinSummary);
                 } else {
-                    showImportantTextOnDevice("Transaction Declined");
-                    throw new MagSwipeTransactionException("Transaction Declined");
+                    Log.d(TAG, "Nagarj................Failed PinEnteredOk: ");
+
+                    //showImportantTextOnDevice("Transaction Declined");
+                    return null;
                 }
             default:
-                throw new MagSwipeTransactionException(
-                        "Unknown enum value:" + onlinePinResult.mType
-                );
+                Log.d(TAG, "Nagarj................default: ");
+                return null;
         }
     }
 
@@ -186,10 +195,10 @@ public class MagSwipeTransaction {
     void showImportantTextOnDevice(String s)
             throws MagSwipeTransactionException {
         String text = DisplayTextUtils.getCenteredText(s);
+        Log.d(TAG, "Nagarj................text " +text);
         boolean ok = mMpiClient.displayText(MPI, text, true, true, true);
         if (!ok) {
-            throw new MagSwipeTransactionException("Display text failed");
+            Log.d(TAG, "Nagarj................PinEnteredOk 0000000000: ");
         }
     }
-
 }
