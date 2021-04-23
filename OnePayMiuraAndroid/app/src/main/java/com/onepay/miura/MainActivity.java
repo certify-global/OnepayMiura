@@ -30,8 +30,8 @@ public class MainActivity extends AppCompatActivity {
 
     Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
     EditText edit_text_bt_address, edit_text_pin;
-    //String btAddress = "0C:9A:42:89:2E:B9";
-    String btAddress  = "0C:9A:42:89:2E:CB";
+    String btAddress = "0C:9A:42:89:2E:B9";
+    //String btAddress  = "0C:9A:42:89:2E:CB";
     //String btAddress = "80:5E:4F:93:F6:AC";
     //String btAddress = "80:5E:4F:93:F6:CA";
     //String btAddress = "80:5E:4F:93:F8:1C";
