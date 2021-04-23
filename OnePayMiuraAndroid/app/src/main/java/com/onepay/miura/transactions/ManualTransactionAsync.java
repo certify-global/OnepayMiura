@@ -85,7 +85,7 @@ public class ManualTransactionAsync {
         if (!isEbt) {
             isExpireDate = true;
             Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
-                    GetNumericDataRequest.GetBuilder(0, 154, 155, 4, 0)
+                    GetNumericDataRequest.GetBuilder(0, 154, 191, 4, 0)
                             .setOption(GetCommandsOptions.KeyboardBacklightOn, true)
                             .setTimeoutInSeconds(30)
                             .build());
