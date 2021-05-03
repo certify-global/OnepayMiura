@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         btAddress = edit_text_bt_address.getText().toString();
         isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
 
-        TransactionApi.getInstance().setTransactionParams(32.10, "", btAddress, true, 180);
+        TransactionApi.getInstance().setTransactionParams(32.10, "", btAddress, false, 180);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -114,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
                         + "\n" + "PinData :" + data.pinData();
                 showData.setText(cardData);*/
 
+                Log.d("TAG", "Naga...... DeviceId : " + data.deviceId());
                 Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
                 Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
                 Log.d("TAG", "Naga...... amount : " + data.amount());
@@ -128,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga...... sRedKSN : " + data.KSN());
                 Log.d("TAG", "Naga...... sPinKsn : " + data.pinKsn());
                 Log.d("TAG", "Naga...... sPinData : " + data.pinData());
+                Log.d("TAG", "Naga...... tlv : " + data.getTLVData());
             }
         });
     }
@@ -142,6 +144,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onManualTransactionComplete(TransactionApiData data) {
+                Log.d("TAG", "Naga...... DeviceId : " + data.deviceId());
                 Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
                 Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
                 Log.d("TAG", "Naga...... amount : " + data.amount());
@@ -196,6 +199,7 @@ public class MainActivity extends AppCompatActivity {
                         + "\n" + "PedDeviceId :" + data.deviceId()
                         + "\n" + "SRedKSN :" + data.KSN();
                 showData.setText(cardData);*/
+                Log.d("TAG", "Naga...... DeviceId : " + data.deviceId());
                 Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
                 Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
                 Log.d("TAG", "Naga...... amount : " + data.amount());

@@ -17,6 +17,7 @@ public class TransactionApiData {
     private String maskedTrack2Data;
     private String pinData;
     private String pinKsn;
+    private String TLVData;
 
     public String deviceCode() {
         return deviceCode;
@@ -146,4 +147,11 @@ public class TransactionApiData {
         this.pinKsn = pinKsn;
     }
 
+    public String getTLVData() {
+        return TLVData;
+    }
+
+    public void setTLVData(String TLVData) {
+        this.TLVData = TLVData;
+    }
 }

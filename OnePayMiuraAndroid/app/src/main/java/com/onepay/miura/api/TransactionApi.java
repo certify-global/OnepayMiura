@@ -16,11 +16,15 @@ import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
 import com.miurasystems.mpi.enums.DeviceStatus;
+import com.miurasystems.mpi.enums.TransactionResponse;
 import com.miurasystems.mpi.events.DeviceStatusChange;
 import com.miurasystems.mpi.events.MpiEventHandler;
 import com.miurasystems.mpi.events.MpiEvents;
 import com.miurasystems.mpi.tlv.CardData;
 import com.miurasystems.transactions.emv.EmvChipInsertStatus;
+import com.miurasystems.transactions.emv.EmvTransactionException;
+import com.miurasystems.transactions.emv.EmvTransactionSummary;
+import com.miurasystems.transactions.emv.EmvTransactionType;
 import com.miurasystems.transactions.magswipe.MagSwipeError;
 import com.miurasystems.transactions.magswipe.MagSwipeSummary;
 import com.miurasystems.transactions.magswipe.MagSwipeTransactionException;
@@ -68,6 +72,8 @@ public class TransactionApi {
     private boolean isPinRequired = false;
     private String pinKsn = "";
     private String pinData = "";
+    private double displayAmount = 0.00d;
+    private boolean isEmv = false;
 
     @Nullable
     private EmvTransactionAsync mEmvTransactionAsync;
@@ -97,9 +103,11 @@ public class TransactionApi {
     public void setTransactionParams(double amt, String desc, String btAddress, boolean isPinRequired, int tOut) {
         Log.d(TAG, "###RB#### set transaction parameters ");
         clearData();
+        isEmv = false;
         isTransactionTimeOut = false;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
+        displayAmount = amt * 100;
         this.isPinRequired = isPinRequired;
         if (description != null)
             this.description = desc;
@@ -278,7 +286,7 @@ public class TransactionApi {
             for (Capability capability : capabilities) {
                 String key = capability.getName();
                 if (capability.getName() != null) {
-                    if (key.contains("Contactless")) {
+                    if (key.equals("Contactless")) {
                         startPayment();
                     }
                     keys.add(key);
@@ -341,7 +349,12 @@ public class TransactionApi {
                 }
             });
 
-            performTransaction();
+            MiuraManager.getInstance().executeAsync(new MiuraManager.AsyncRunnable() {
+                @Override
+                public void runOnAsyncThread(@NonNull MpiClient client) {
+                    performTransaction();
+                }
+            });
         } catch (Exception e) {
             if (transactionListener != null) {
                 returnReason = e.toString();
@@ -356,25 +369,20 @@ public class TransactionApi {
         try {
             Log.d(TAG, "Starting Transaction");
 
-            String deviceText = amount + "\n Swipe card";
+            //String deviceText = amount + "\n Swipe card";
+            String deviceText = String.format(Locale.US,
+                    "Amount: %s%.2f",
+                    MiuraApplication.currencyCode.getSign(),
+                    amount);
 
-            MiuraManager.getInstance().displayText(
-                    deviceText,
-                    new MiuraDefaultListener() {
-                        @Override
-                        public void onSuccess() {
-                            registerEventHandlers();
-                            MpiClient client = MiuraManager.getInstance().getMpiClient();
-                            if (client != null) {
-                                client.cardStatus(MPI, true, false, true, true, false, true);
-                            }
-                            //MiuraManager.getInstance().cardStatus(true);
-                        }
+            registerEventHandlers();
+            MpiClient client = MiuraManager.getInstance().getMpiClient();
+            if (client != null) {
+                client.cardStatus(MPI, true, false, true, true, false, true);
+            }
+            MiuraManager.getInstance().cardStatus(true);
+            startEmvTransaction(EmvTransactionType.Contactless);
 
-                        @Override
-                        public void onError() {
-                        }
-                    });
         } catch (Exception e) {
             Log.d(TAG, "performTransaction: " + e.toString());
         }
@@ -406,6 +414,21 @@ public class TransactionApi {
         Log.d(TAG, "###RB#### registerEventHandlers: ");
         MPI_EVENTS.CardStatusChanged.register(mCardEventHandler);
         MPI_EVENTS.DeviceStatusChanged.register(mDeviceStatusHandler);
+    }
+
+    private void deregisterEventHandlers() {
+        Log.d(TAG, "###RB#### deregisterEventHandlers: ");
+        try {
+            MPI_EVENTS.CardStatusChanged.deregister(mCardEventHandler);
+            MPI_EVENTS.DeviceStatusChanged.deregister(mDeviceStatusHandler);
+        } catch (Exception e) {
+            Log.d(TAG, "deregisterEventHandlers: " + e.toString());
+            if (transactionListener != null) {
+                returnReason = e.toString();
+                returnStatus = Constants.Exception;
+                transactionListener.onTransactionComplete(createTransactionData(cardData));
+            }
+        }
     }
 
     private void abortEmvTransactionAsync(@Nullable MiuraDefaultListener listener) {
@@ -452,24 +475,24 @@ public class TransactionApi {
             if (!BluetoothModule.getInstance().isSessionOpen()) {
                 return;
             }
-
             EmvChipInsertStatus insertStatus = EmvTransactionAsync.canProcessEmvChip(cardData);
             if (insertStatus == EmvChipInsertStatus.CardInsertedOk) {
+                isEmv = true;
+                entryMode = Constants.Chip;
+                startEmvTransaction(EmvTransactionType.Chip);
                 return;
             }
 
             Result<MagSwipeSummary, MagSwipeError> result =
                     MagSwipeTransaction.canProcessMagSwipe(cardData);
             if (result.isError()) {
-                MagSwipeError error = result.asError().getError();
                 resetTransactionState();
-                //transactionListener.onTransactionError("SWIPE ERROR Please try again");
                 Log.d(TAG, "SWIPE ERROR Please try again");
                 return;
             }
 
             if (isPinRequired) {
-                PaymentMagType paymentMagType = PaymentMagType.Pin;
+                PaymentMagType paymentMagType = PaymentMagType.Auto;
                 MagSwipeSummary magSwipeSummary = result.asSuccess().getValue();
                 startSwipeTransaction(magSwipeSummary, paymentMagType, cardData);
             } else {
@@ -523,34 +546,81 @@ public class TransactionApi {
 
                     @NonNull
                     @Override
-                    public SignatureSummary getSignatureFromUser() throws MagSwipeTransactionException {
+                    public SignatureSummary getSignatureFromUser() {
+                        Log.d(TAG, "getSignatureFromUser: ");
                         return null;
                     }
 
                     @Override
                     public void onSignatureSuccess(@NonNull MagSwipeSummary magSwipeSummary, @NonNull SignatureSummary signature) {
-
+                        Log.d(TAG, "onSignatureSuccess: ");
                     }
 
                     @Override
                     public void onError(@NonNull MagSwipeTransactionException exception) {
+                        Log.d(TAG, "onError: ");
                     }
                 });
     }
 
-    private void deregisterEventHandlers() {
-        Log.d(TAG, "###RB#### deregisterEventHandlers: ");
-        try {
-            MPI_EVENTS.CardStatusChanged.deregister(mCardEventHandler);
-            MPI_EVENTS.DeviceStatusChanged.deregister(mDeviceStatusHandler);
-        } catch (Exception e) {
-            Log.d(TAG, "deregisterEventHandlers: " + e.toString());
-            if (transactionListener != null) {
-                returnReason = e.toString();
-                returnStatus = Constants.Exception;
-                transactionListener.onTransactionComplete(createTransactionData(cardData));
-            }
-        }
+    private void startEmvTransaction(EmvTransactionType emvTransactionType) {
+        startTransactionTimer();
+
+        abortEmvTransactionAsync(null);
+        abortSwipeTransactionAsync(null);
+
+
+        EmvTransactionAsync emvTransactionAsync = new EmvTransactionAsync(
+                MiuraManager.getInstance(), emvTransactionType
+        );
+
+        mEmvTransactionAsync = emvTransactionAsync;
+
+        mEmvTransactionAsync.startTransactionAsync(
+                (int) this.displayAmount,
+                MiuraApplication.currencyCode.getValue(),
+                new EmvTransactionAsync.Callback() {
+
+                    @Override
+                    public void publishStartTransactionResult(@NonNull final String response) {
+                        Log.d(TAG, "###RB#### response: " + response);
+                        if (!isEmv) {
+                            entryMode = Constants.NFC;
+                        }
+                        getCardNumber(response);
+                        getExpireCardNumber(response);
+                        getCardNumberName(response);
+                        getSREDKSN(response);
+
+                        if (transactionListener != null) {
+                            returnReason = Constants.SuccessReason;
+                            returnStatus = Constants.SuccessStatus;
+                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                        }
+                        deregisterEventHandlers();
+                        BluetoothModule.getInstance().closeSession();
+                    }
+
+                    @Override
+                    public void onSuccess(@NonNull final EmvTransactionSummary result) {
+                        Log.d(TAG, "onSuccess: continue transaction success");
+                    }
+
+                    @Override
+                    public void onError(@NonNull EmvTransactionException exception) {
+                        TransactionResponse response = exception.mErrCode;
+                        String explanation = exception.getMessage();
+
+                        Log.d(TAG, String.format("onError(%s, %s)", response, explanation));
+
+                        if (transactionListener != null) {
+                            returnReason = explanation;
+                            returnStatus = Constants.ErrorStatus;
+                        }
+
+                        resetTransactionState();
+                    }
+                });
     }
 
     private void resetTransactionState() {
@@ -564,12 +634,15 @@ public class TransactionApi {
             transactionData.setReturnReason(returnReason);
             transactionData.setReturnStatus(returnStatus);
             transactionData.setDeviceCode("41");
+            transactionData.setEntryMode(entryMode);
+            if (mEmvTransactionAsync != null)
+                transactionData.setTLVData(mEmvTransactionAsync.mEmvTransaction.tlvData);
+
             if (cardData != null) {
-                transactionData.setEntryMode(entryMode);
                 transactionData.setCardHolderName(cardData.getCardholderName());
                 if (cardData.getMaskedTrack2Data() != null) {
                     if (cardData.getMaskedTrack2Data().getExpirationDate() != null) {
-                        String expireDate = expireDate(cardData.getMaskedTrack2Data().getExpirationDate());
+                        String expireDate = convertExpireDateToMMYY(cardData.getMaskedTrack2Data().getExpirationDate());
                         transactionData.setExpiryDate(expireDate);
                     }
                     transactionData.setCardNumber(cardData.getMaskedTrack2Data().mPan);
@@ -586,13 +659,28 @@ public class TransactionApi {
 
                 transactionData.setPinData(pinData);
                 transactionData.setPinKsn(pinKsn);
+            } else {
+                transactionData.setCardNumber(maskedCreditCardNumber);
+                if (maskedCreditCardNumber.length() > 4) ;
+                {
+                    transactionData.setAccountFirstFour(maskedCreditCardNumber.substring(0, 4));
+                    transactionData.setAccountLastFour(maskedCreditCardNumber.substring(maskedCreditCardNumber.length() - 4));
+                }
+                if (expireDate.length() > 4) {
+                    String convertExpireDate = convertExpireDateToMMYY(expireDate.substring(0, 4));
+                    transactionData.setExpiryDate(convertExpireDate);
+                }
+                if (cardHolderName != null && cardHolderName.length() > 0)
+                    transactionData.setCardHolderName(cardHolderName);
+                if (sRedKsn != null && sRedKsn.length() > 0)
+                    transactionData.setKSN(sRedKsn.toUpperCase());
             }
         }
         cancelTransactionTimer();
         return transactionData;
     }
 
-    private String expireDate(String expireNumber) {
+    private String convertExpireDateToMMYY(String expireNumber) {
         int number = Integer.parseInt(expireNumber);
         String firstTwo = Integer.toString(number / 100);
         if (firstTwo.length() < 2) {
@@ -605,6 +693,90 @@ public class TransactionApi {
 
         expireNumber = lastTwo + firstTwo;
         return expireNumber;
+    }
+
+    private String maskedCreditCardNumber = "";
+
+    private String getCardNumber(String response) {
+        String[] splitAfterMaskedTrackData = response.split("ICC_Masked_Track_2");
+        String splitResponse = splitAfterMaskedTrackData[1].trim();
+
+        String lines[] = splitResponse.split("\\r?\\n");
+        for (int i = 0; i < lines.length; i++) {
+            if (lines[i].contains("data")) {
+                String[] part = lines[i].split("\\[");
+                String part2 = part[1].trim();
+                String[] split = part2.split("\\]");
+                String maskedTrackData = split[0].trim();
+                String[] splitCreditCardNumber = maskedTrackData.split("d");
+
+                maskedCreditCardNumber = splitCreditCardNumber[0];
+                return maskedCreditCardNumber;
+            }
+        }
+        return maskedCreditCardNumber;
+    }
+
+    private String expireDate = "";
+
+    private String getExpireCardNumber(String response) {
+        String[] splitAfterMaskedTrackData = response.split("ICC_Masked_Track_2");
+        String splitResponse = splitAfterMaskedTrackData[1].trim();
+
+        String lines[] = splitResponse.split("\\r?\\n");
+        for (int i = 0; i < lines.length; i++) {
+            if (lines[i].contains("data")) {
+                String[] part = lines[i].split("\\[");
+                String part2 = part[1].trim();
+                String[] split = part2.split("\\]");
+                String maskedTrackData = split[0].trim();
+                String[] splitCreditCardNumber = maskedTrackData.split("d");
+
+                expireDate = splitCreditCardNumber[1];
+                return expireDate;
+            }
+        }
+        return expireDate;
+    }
+
+    private String cardHolderName = "";
+
+    private String getCardNumberName(String response) {
+        String[] splitAfterMaskedTrackData = response.split("Cardholder_Name");
+        String splitResponse = splitAfterMaskedTrackData[1].trim();
+
+        String lines[] = splitResponse.split("\\r?\\n");
+        for (int i = 0; i < lines.length; i++) {
+            if (lines[i].contains("text")) {
+                String[] part = lines[i].split("text");
+                String split1 = part[1];
+                String[] part1 = split1.split("\\[");
+                String part2 = part1[1].trim();
+                String[] split = part2.split("\\]");
+                cardHolderName = split[0].trim();
+                return cardHolderName;
+            }
+        }
+        return cardHolderName;
+    }
+
+    private String sRedKsn = "";
+
+    private String getSREDKSN(String response) {
+        String[] splitAfterMaskedTrackData = response.split("SRED_KSN");
+        String splitResponse = splitAfterMaskedTrackData[1].trim();
+
+        String lines[] = splitResponse.split("\\r?\\n");
+        for (int i = 0; i < lines.length; i++) {
+            if (lines[i].contains("data")) {
+                String[] part = lines[i].split("\\[");
+                String part2 = part[1].trim();
+                String[] split = part2.split("\\]");
+                sRedKsn = split[0].trim();
+                return sRedKsn;
+            }
+        }
+        return sRedKsn;
     }
 
     /**
@@ -625,10 +797,9 @@ public class TransactionApi {
     }
 
     private void closeBtSession() {
-        if (mEmvTransactionAsync == null) {
-            deregisterEventHandlers();
-            BluetoothModule.getInstance().closeSession();
-        }
+        mEmvTransactionAsync = null;
+        deregisterEventHandlers();
+        BluetoothModule.getInstance().closeSession();
     }
 
     private void cancelTransactionTimer() {
@@ -654,6 +825,7 @@ public class TransactionApi {
     private void clearData() {
         cancelTransactionTimer();
         transactionData = null;
+        isEmv = false;
         isTransactionTimeOut = false;
         this.pedDeviceId = "";
         this.amount = 0.0d;
