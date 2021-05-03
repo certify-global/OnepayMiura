@@ -25,7 +25,7 @@ public class EmvTransactionAsync {
                     + "this EmvTransactionAsync's construction";
 
     private final MiuraManager mMiuraManager;
-    private final EmvTransaction mEmvTransaction;
+    public final EmvTransaction mEmvTransaction;
     private final MpiClient mMpiClient;
 
     @AnyThread
@@ -76,9 +76,9 @@ public class EmvTransactionAsync {
 
     @UiThread
     public void abortTransactionAsync(@Nullable MiuraDefaultListener defaultListener) {
-        if (!Objects.equals(mMiuraManager.getMpiClient(), mMpiClient)) {
+        /*if (!Objects.equals(mMiuraManager.getMpiClient(), mMpiClient)) {
             throw new AssertionError(CLIENT_CHANGED_ERROR_MESSAGE);
-        }
+        }*/
 
         boolean ok = mEmvTransaction.abortTransaction();
         if (defaultListener != null) {

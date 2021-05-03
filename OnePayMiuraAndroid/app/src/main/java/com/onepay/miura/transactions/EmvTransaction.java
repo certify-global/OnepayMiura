@@ -44,6 +44,7 @@ public class EmvTransaction {
 
     private final MpiClient mMpiClient;
     private final EmvTransactionType mEmvTransactionType;
+    public String tlvData = "";
 
     @AnyThread
     public EmvTransaction(MpiClient mpiClient, EmvTransactionType emvTransactionType) {
@@ -131,6 +132,11 @@ public class EmvTransaction {
             throw new EmvTransactionException("Aborted");
         }
 
+        if (startResult.isSuccess()) {
+            byte[] rawData = startResult.asSuccess().getValue();
+            tlvData = bytesToHexString(rawData);
+            Log.d(TAG, "Naga..............tlvData "+ tlvData);
+        }
         List<TLVObject> startTlv = TLVParser.decode(startResult.asSuccess().getValue());
         throwIfDeclined(startTlv);
 
@@ -198,7 +204,8 @@ public class EmvTransaction {
         try {
             mLatch.await();
         } catch (InterruptedException e) {
-            throw new EmvTransactionException("Transaction thread interrupted whilst yielding", e);
+            //throw new EmvTransactionException("Transaction thread interrupted whilst yielding", e);
+            Log.d(TAG, "yieldForContinue: ");
         }
     }
 
@@ -233,6 +240,8 @@ public class EmvTransaction {
     private static String getTransactionDisplayString(List<TLVObject> tlvObjects) {
         StringBuilder builder = new StringBuilder(tlvObjects.size() * 32);
         for (TLVObject tlvObject : tlvObjects) {
+            String description=  tlvObject.getTag().description.toString();
+            Log.d(TAG, "Naga1...........description" + description);
             builder.append(tlvObject);
             builder.append("\n\n");
         }
@@ -260,6 +269,21 @@ public class EmvTransaction {
         } else {
             return EmvChipInsertStatus.CardInsertedOk;
         }
+    }
+
+    private static String bytesToHexString(byte[] src) {
+        Log.d("TAG", "###RB#### bytesToHexString: ");
+        StringBuilder stringBuilder = new StringBuilder("");
+        if (src == null || src.length <= 0) {
+            return null;
+        }
+        char[] buffer = new char[2];
+        for (int i = 0; i < src.length; i++) {
+            buffer[0] = Character.forDigit((src[i] >>> 4) & 0x0F, 16);
+            buffer[1] = Character.forDigit(src[i] & 0x0F, 16);
+            stringBuilder.append(buffer);
+        }
+        return stringBuilder.toString();
     }
 
     @WorkerThread

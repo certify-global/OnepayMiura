@@ -20,6 +20,7 @@ namespace Onepay.Miura.Data
         private String maskedTrack2Data;
         private String pinKsn;
         private String pinData;
+        private String emvData;
 
         public string DeviceCode { get => deviceCode; set => deviceCode = value; }
         public string EntryMode { get => entryMode; set => entryMode = value; }
@@ -37,5 +38,7 @@ namespace Onepay.Miura.Data
         public string MaskedTrack2Data { get => maskedTrack2Data; set => maskedTrack2Data = value; }
         public string PinData { get => pinData; set => pinData = value; }
         public string PinKsn { get => pinKsn; set => pinKsn = value; }
+        public string EmvData { get => emvData; set => emvData = value; }
+
     }
 }

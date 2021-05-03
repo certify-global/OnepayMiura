@@ -60,6 +60,7 @@ namespace Onepay.Miura.Api
                 transactionData.MaskedTrack2Data = transactionApiData.MaskedTrack2Data();
                 transactionData.PinData = transactionApiData.PinData();
                 transactionData.PinKsn = transactionApiData.PinKsn();
+                transactionData.EmvData = transactionApiData.TlvData();
 
                 TransactionComplete?.Invoke(this, transactionData);
             }

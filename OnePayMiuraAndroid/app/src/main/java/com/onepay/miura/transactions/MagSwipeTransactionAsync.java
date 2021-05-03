@@ -82,8 +82,7 @@ public class MagSwipeTransactionAsync {
         transaction.showImportantTextOnDevice("Processing\nTransaction");
 
         UserInputType inputType = UserInputType.resolvePaymentType(mType, magSwipeSummary);
-        if (inputType == UserInputType.Pin) {
-
+        if (inputType == UserInputType.Pin || inputType == UserInputType.Signature) {
             MagSwipePinResult result = transaction.processPinTransaction(
                     magSwipeSummary, amountInPennies, currencyCode
             );
