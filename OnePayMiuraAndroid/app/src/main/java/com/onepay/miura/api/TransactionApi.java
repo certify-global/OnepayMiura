@@ -15,6 +15,7 @@ import com.miurasystems.mpi.api.listener.ApiGetSoftwareInfoListener;
 import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
+import com.miurasystems.mpi.api.utils.DisplayTextUtils;
 import com.miurasystems.mpi.enums.DeviceStatus;
 import com.miurasystems.mpi.enums.TransactionResponse;
 import com.miurasystems.mpi.events.DeviceStatusChange;
@@ -380,7 +381,6 @@ public class TransactionApi {
             if (client != null) {
                 client.cardStatus(MPI, true, false, true, true, false, true);
             }
-            MiuraManager.getInstance().cardStatus(true);
             startEmvTransaction(EmvTransactionType.Contactless);
 
         } catch (Exception e) {
@@ -488,6 +488,7 @@ public class TransactionApi {
             if (result.isError()) {
                 resetTransactionState();
                 Log.d(TAG, "SWIPE ERROR Please try again");
+                showTextOnDevice("SWIPE ERROR\nPlease try again");
                 return;
             }
 
@@ -584,21 +585,31 @@ public class TransactionApi {
                     @Override
                     public void publishStartTransactionResult(@NonNull final String response) {
                         Log.d(TAG, "###RB#### response: " + response);
-                        if (!isEmv) {
-                            entryMode = Constants.NFC;
-                        }
-                        getCardNumber(response);
-                        getExpireCardNumber(response);
-                        getCardNumberName(response);
-                        getSREDKSN(response);
+                        if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
+                            if (!isEmv) {
+                                entryMode = Constants.NFC;
+                            }
+                            getCardNumber(response);
+                            getExpireCardNumber(response);
+                            getCardHolderName(response);
+                            getSREDKSN(response);
 
-                        if (transactionListener != null) {
-                            returnReason = Constants.SuccessReason;
-                            returnStatus = Constants.SuccessStatus;
-                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                            if (transactionListener != null) {
+                                returnReason = Constants.SuccessReason;
+                                returnStatus = Constants.SuccessStatus;
+                                transactionListener.onTransactionComplete(createTransactionData(cardData));
+                            }
+                            deregisterEventHandlers();
+                            BluetoothModule.getInstance().closeSession();
+                        } else {
+                            if (transactionListener != null) {
+                                returnReason = Constants.ErrorReason;
+                                returnStatus = Constants.ErrorStatus;
+                                transactionListener.onTransactionComplete(createTransactionData(cardData));
+                            }
+                            deregisterEventHandlers();
+                            BluetoothModule.getInstance().closeSession();
                         }
-                        deregisterEventHandlers();
-                        BluetoothModule.getInstance().closeSession();
                     }
 
                     @Override
@@ -623,6 +634,12 @@ public class TransactionApi {
                 });
     }
 
+    protected static void showTextOnDevice(String text) {
+        if (BluetoothModule.getInstance().isSessionOpen()) {
+            MiuraManager.getInstance().displayText(DisplayTextUtils.getCenteredText(text), null);
+        }
+    }
+
     private void resetTransactionState() {
         transactionInProgress = false;
     }
@@ -639,6 +656,7 @@ public class TransactionApi {
                 transactionData.setTLVData(mEmvTransactionAsync.mEmvTransaction.tlvData);
 
             if (cardData != null) {
+                transactionData.setEntryMode(Constants.Swipe);
                 transactionData.setCardHolderName(cardData.getCardholderName());
                 if (cardData.getMaskedTrack2Data() != null) {
                     if (cardData.getMaskedTrack2Data().getExpirationDate() != null) {
@@ -660,20 +678,25 @@ public class TransactionApi {
                 transactionData.setPinData(pinData);
                 transactionData.setPinKsn(pinKsn);
             } else {
-                transactionData.setCardNumber(maskedCreditCardNumber);
-                if (maskedCreditCardNumber.length() > 4) ;
-                {
-                    transactionData.setAccountFirstFour(maskedCreditCardNumber.substring(0, 4));
-                    transactionData.setAccountLastFour(maskedCreditCardNumber.substring(maskedCreditCardNumber.length() - 4));
+                if (mEmvTransactionAsync != null) {
+                    if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
+                        Log.d(TAG, "###RB####  createTransactionData");
+                        transactionData.setCardNumber(maskedCreditCardNumber);
+                        if (maskedCreditCardNumber.length() > 4) ;
+                        {
+                            transactionData.setAccountFirstFour(maskedCreditCardNumber.substring(0, 4));
+                            transactionData.setAccountLastFour(maskedCreditCardNumber.substring(maskedCreditCardNumber.length() - 4));
+                        }
+                        if (expireDate.length() > 4) {
+                            String convertExpireDate = convertExpireDateToMMYY(expireDate.substring(0, 4));
+                            transactionData.setExpiryDate(convertExpireDate);
+                        }
+                        if (cardHolderName != null && cardHolderName.length() > 0)
+                            transactionData.setCardHolderName(cardHolderName);
+                        if (sRedKsn != null && sRedKsn.length() > 0)
+                            transactionData.setKSN(sRedKsn.toUpperCase());
+                    }
                 }
-                if (expireDate.length() > 4) {
-                    String convertExpireDate = convertExpireDateToMMYY(expireDate.substring(0, 4));
-                    transactionData.setExpiryDate(convertExpireDate);
-                }
-                if (cardHolderName != null && cardHolderName.length() > 0)
-                    transactionData.setCardHolderName(cardHolderName);
-                if (sRedKsn != null && sRedKsn.length() > 0)
-                    transactionData.setKSN(sRedKsn.toUpperCase());
             }
         }
         cancelTransactionTimer();
@@ -698,66 +721,81 @@ public class TransactionApi {
     private String maskedCreditCardNumber = "";
 
     private String getCardNumber(String response) {
-        String[] splitAfterMaskedTrackData = response.split("ICC_Masked_Track_2");
-        String splitResponse = splitAfterMaskedTrackData[1].trim();
+        try {
+            String[] splitAfterMaskedTrackData = response.split("ICC_Masked_Track_2");
+            String splitResponse = splitAfterMaskedTrackData[1].trim();
 
-        String lines[] = splitResponse.split("\\r?\\n");
-        for (int i = 0; i < lines.length; i++) {
-            if (lines[i].contains("data")) {
-                String[] part = lines[i].split("\\[");
-                String part2 = part[1].trim();
-                String[] split = part2.split("\\]");
-                String maskedTrackData = split[0].trim();
-                String[] splitCreditCardNumber = maskedTrackData.split("d");
+            String lines[] = splitResponse.split("\\r?\\n");
+            for (int i = 0; i < lines.length; i++) {
+                if (lines[i].contains("data")) {
+                    String[] part = lines[i].split("\\[");
+                    String part2 = part[1].trim();
+                    String[] split = part2.split("\\]");
+                    String maskedTrackData = split[0].trim();
+                    String[] splitCreditCardNumber = maskedTrackData.split("d");
 
-                maskedCreditCardNumber = splitCreditCardNumber[0];
-                return maskedCreditCardNumber;
+                    maskedCreditCardNumber = splitCreditCardNumber[0];
+                    return maskedCreditCardNumber;
+                }
             }
+            return maskedCreditCardNumber;
+        } catch (Exception ex) {
+            Log.d(TAG, "###RB#### exception at maskedCreditCardNumber: " + ex.toString());
+            return maskedCreditCardNumber;
         }
-        return maskedCreditCardNumber;
     }
 
     private String expireDate = "";
 
     private String getExpireCardNumber(String response) {
-        String[] splitAfterMaskedTrackData = response.split("ICC_Masked_Track_2");
-        String splitResponse = splitAfterMaskedTrackData[1].trim();
+        try {
+            String[] splitAfterMaskedTrackData = response.split("ICC_Masked_Track_2");
+            String splitResponse = splitAfterMaskedTrackData[1].trim();
 
-        String lines[] = splitResponse.split("\\r?\\n");
-        for (int i = 0; i < lines.length; i++) {
-            if (lines[i].contains("data")) {
-                String[] part = lines[i].split("\\[");
-                String part2 = part[1].trim();
-                String[] split = part2.split("\\]");
-                String maskedTrackData = split[0].trim();
-                String[] splitCreditCardNumber = maskedTrackData.split("d");
+            String lines[] = splitResponse.split("\\r?\\n");
+            for (int i = 0; i < lines.length; i++) {
+                if (lines[i].contains("data")) {
+                    String[] part = lines[i].split("\\[");
+                    String part2 = part[1].trim();
+                    String[] split = part2.split("\\]");
+                    String maskedTrackData = split[0].trim();
+                    String[] splitCreditCardNumber = maskedTrackData.split("d");
 
-                expireDate = splitCreditCardNumber[1];
-                return expireDate;
+                    expireDate = splitCreditCardNumber[1];
+                    return expireDate;
+                }
             }
+            return expireDate;
+        } catch (Exception ex) {
+            Log.d(TAG, "###RB#### exception at expireDate: " + ex.toString());
+            return expireDate;
         }
-        return expireDate;
     }
 
     private String cardHolderName = "";
 
-    private String getCardNumberName(String response) {
-        String[] splitAfterMaskedTrackData = response.split("Cardholder_Name");
-        String splitResponse = splitAfterMaskedTrackData[1].trim();
+    private String getCardHolderName(String response) {
+        try {
+            String[] splitAfterMaskedTrackData = response.split("Cardholder_Name");
+            String splitResponse = splitAfterMaskedTrackData[1].trim();
 
-        String lines[] = splitResponse.split("\\r?\\n");
-        for (int i = 0; i < lines.length; i++) {
-            if (lines[i].contains("text")) {
-                String[] part = lines[i].split("text");
-                String split1 = part[1];
-                String[] part1 = split1.split("\\[");
-                String part2 = part1[1].trim();
-                String[] split = part2.split("\\]");
-                cardHolderName = split[0].trim();
-                return cardHolderName;
+            String lines[] = splitResponse.split("\\r?\\n");
+            for (int i = 0; i < lines.length; i++) {
+                if (lines[i].contains("text")) {
+                    String[] part = lines[i].split("text");
+                    String split1 = part[1];
+                    String[] part1 = split1.split("\\[");
+                    String part2 = part1[1].trim();
+                    String[] split = part2.split("\\]");
+                    cardHolderName = split[0].trim();
+                    return cardHolderName;
+                }
             }
+            return cardHolderName;
+        } catch (Exception ex) {
+            Log.d(TAG, "###RB#### exception at cardHolderName: " + ex.toString());
+            return cardHolderName;
         }
-        return cardHolderName;
     }
 
     private String sRedKsn = "";

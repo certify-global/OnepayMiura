@@ -45,6 +45,7 @@ public class EmvTransaction {
     private final MpiClient mMpiClient;
     private final EmvTransactionType mEmvTransactionType;
     public String tlvData = "";
+    public boolean errorEmv = false;
 
     @AnyThread
     public EmvTransaction(MpiClient mpiClient, EmvTransactionType emvTransactionType) {
@@ -69,7 +70,7 @@ public class EmvTransaction {
             int currencyCode,
             @Nullable YieldCallback callback
     ) throws EmvTransactionException {
-        Log.d(TAG, "startTransaction: " + amountInPennies+  currencyCode);
+        Log.d(TAG, "startTransaction: " + amountInPennies + currencyCode);
 
         if (!mTransactionStarted.compareAndSet(false, true)) {
             throw new EmvTransactionException(
@@ -81,9 +82,9 @@ public class EmvTransaction {
         try {
             return process(amountInPennies, currencyCode, callback);
         } catch (EmvTransactionException exception) {
-            Log.e(TAG, "process() exception! msg:{}"+ exception.getMessage(), exception);
+            Log.e(TAG, "process() exception! msg:{}" + exception.getMessage(), exception);
             Log.d(TAG, exception.mErrCode.toString());
-            Log.d(TAG, "mAbortAttempted: {}"+ mAbortAttempted.get());
+            Log.d(TAG, "mAbortAttempted: {}" + mAbortAttempted.get());
 
             /*
                 abortTransaction and displayText fail here if e.g. the connection
@@ -106,6 +107,7 @@ public class EmvTransaction {
             @Nullable YieldCallback callback
     ) throws EmvTransactionException {
 
+        errorEmv = false;
         // showImportantTextOnDevice("Processing\nTransaction");
 
         Result<byte[], TransactionResponse> startResult;
@@ -127,32 +129,29 @@ public class EmvTransaction {
             );
         }
         if (startResult.isError()) {
+            errorEmv = true;
+            Log.d(TAG, "Naga........ Error.....process: ");
             throw new EmvTransactionException(startResult.asError().getError());
-        } else if (mAbortAttempted.get()) {
-            throw new EmvTransactionException("Aborted");
+            //return new EmvTransactionSummary("Error", "Error");
         }
-
         if (startResult.isSuccess()) {
             byte[] rawData = startResult.asSuccess().getValue();
             tlvData = bytesToHexString(rawData);
-            Log.d(TAG, "Naga..............tlvData "+ tlvData);
         }
         List<TLVObject> startTlv = TLVParser.decode(startResult.asSuccess().getValue());
         throwIfDeclined(startTlv);
-
-        // showImportantTextOnDevice("Start transaction\nSuccess");
         String startOutput = getTransactionDisplayString(startTlv);
         TLVObject hsmTlv = contactHSM(callback, startOutput);
         if (mAbortAttempted.get()) {
             throw new EmvTransactionException("Aborted");
         }
-
         Result<byte[], TransactionResponse> continueResult = mMpiClient.continueTransaction(
                 MPI,
                 hsmTlv
         );
         if (continueResult.isError()) {
-            throw new EmvTransactionException(continueResult.asError().getError());
+            return null;
+            //throw new EmvTransactionException(continueResult.asError().getError());
         }
 
         if (mEmvTransactionType == EmvTransactionType.Chip) {
@@ -240,8 +239,6 @@ public class EmvTransaction {
     private static String getTransactionDisplayString(List<TLVObject> tlvObjects) {
         StringBuilder builder = new StringBuilder(tlvObjects.size() * 32);
         for (TLVObject tlvObject : tlvObjects) {
-           String description=  tlvObject.getTag().description.toString();
-            Log.d(TAG, "Naga1...........description" + description);
             builder.append(tlvObject);
             builder.append("\n\n");
         }
