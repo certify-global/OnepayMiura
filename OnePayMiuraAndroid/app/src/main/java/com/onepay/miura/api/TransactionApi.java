@@ -15,6 +15,7 @@ import com.miurasystems.mpi.api.listener.ApiGetSoftwareInfoListener;
 import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.objects.SoftwareInfo;
+import com.miurasystems.mpi.api.utils.DisplayTextUtils;
 import com.miurasystems.mpi.enums.DeviceStatus;
 import com.miurasystems.mpi.enums.TransactionResponse;
 import com.miurasystems.mpi.events.DeviceStatusChange;
@@ -380,7 +381,6 @@ public class TransactionApi {
             if (client != null) {
                 client.cardStatus(MPI, true, false, true, true, false, true);
             }
-            MiuraManager.getInstance().cardStatus(true);
             startEmvTransaction(EmvTransactionType.Contactless);
 
         } catch (Exception e) {
@@ -488,6 +488,7 @@ public class TransactionApi {
             if (result.isError()) {
                 resetTransactionState();
                 Log.d(TAG, "SWIPE ERROR Please try again");
+                showTextOnDevice("SWIPE ERROR\nPlease try again");
                 return;
             }
 
@@ -590,7 +591,7 @@ public class TransactionApi {
                             }
                             getCardNumber(response);
                             getExpireCardNumber(response);
-                            getCardNumberName(response);
+                            getCardHolderName(response);
                             getSREDKSN(response);
 
                             if (transactionListener != null) {
@@ -633,6 +634,12 @@ public class TransactionApi {
                 });
     }
 
+    protected static void showTextOnDevice(String text) {
+        if (BluetoothModule.getInstance().isSessionOpen()) {
+            MiuraManager.getInstance().displayText(DisplayTextUtils.getCenteredText(text), null);
+        }
+    }
+
     private void resetTransactionState() {
         transactionInProgress = false;
     }
@@ -673,7 +680,7 @@ public class TransactionApi {
             } else {
                 if (mEmvTransactionAsync != null) {
                     if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
-                        Log.d(TAG, "###RB####  createTransactionData" );
+                        Log.d(TAG, "###RB####  createTransactionData");
                         transactionData.setCardNumber(maskedCreditCardNumber);
                         if (maskedCreditCardNumber.length() > 4) ;
                         {
@@ -732,7 +739,7 @@ public class TransactionApi {
                 }
             }
             return maskedCreditCardNumber;
-        }catch (Exception ex){
+        } catch (Exception ex) {
             Log.d(TAG, "###RB#### exception at maskedCreditCardNumber: " + ex.toString());
             return maskedCreditCardNumber;
         }
@@ -759,7 +766,7 @@ public class TransactionApi {
                 }
             }
             return expireDate;
-        }catch (Exception ex){
+        } catch (Exception ex) {
             Log.d(TAG, "###RB#### exception at expireDate: " + ex.toString());
             return expireDate;
         }
@@ -767,7 +774,7 @@ public class TransactionApi {
 
     private String cardHolderName = "";
 
-    private String getCardNumberName(String response) {
+    private String getCardHolderName(String response) {
         try {
             String[] splitAfterMaskedTrackData = response.split("Cardholder_Name");
             String splitResponse = splitAfterMaskedTrackData[1].trim();
