@@ -1,5 +1,4 @@
-﻿using Android.Content;
-using System;
+﻿using System;
 using Com.Onepay.Miura.Api;
 using Com.Onepay.Miura.Data;
 using Onepay.Miura.Data;
