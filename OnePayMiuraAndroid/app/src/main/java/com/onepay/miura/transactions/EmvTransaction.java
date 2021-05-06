@@ -130,9 +130,7 @@ public class EmvTransaction {
         }
         if (startResult.isError()) {
             errorEmv = true;
-            Log.d(TAG, "Naga........ Error.....process: ");
             throw new EmvTransactionException(startResult.asError().getError());
-            //return new EmvTransactionSummary("Error", "Error");
         }
         if (startResult.isSuccess()) {
             byte[] rawData = startResult.asSuccess().getValue();

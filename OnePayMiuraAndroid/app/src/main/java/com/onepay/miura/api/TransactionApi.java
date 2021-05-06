@@ -75,6 +75,10 @@ public class TransactionApi {
     private String pinData = "";
     private double displayAmount = 0.00d;
     private boolean isEmv = false;
+    private boolean mFirstTry = false;
+    private String cardHolderName = "";
+    private String maskedCreditCardNumber = "";
+    private String expireDate = "";
 
     @Nullable
     private EmvTransactionAsync mEmvTransactionAsync;
@@ -105,6 +109,7 @@ public class TransactionApi {
         Log.d(TAG, "###RB#### set transaction parameters ");
         clearData();
         isEmv = false;
+        mFirstTry = false;
         isTransactionTimeOut = false;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
@@ -483,11 +488,15 @@ public class TransactionApi {
                 return;
             }
 
+            if (!mFirstTry) {
+                mFirstTry = true;
+                return;
+            }
+
             Result<MagSwipeSummary, MagSwipeError> result =
                     MagSwipeTransaction.canProcessMagSwipe(cardData);
             if (result.isError()) {
                 resetTransactionState();
-                Log.d(TAG, "SWIPE ERROR Please try again");
                 showTextOnDevice("SWIPE ERROR\nPlease try again");
                 return;
             }
@@ -681,6 +690,7 @@ public class TransactionApi {
                 if (mEmvTransactionAsync != null) {
                     if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
                         Log.d(TAG, "###RB####  createTransactionData");
+                        maskedCreditCardNumber = maskedCreditCardNumber.replace("f", "*");
                         transactionData.setCardNumber(maskedCreditCardNumber);
                         if (maskedCreditCardNumber.length() > 4) ;
                         {
@@ -718,8 +728,6 @@ public class TransactionApi {
         return expireNumber;
     }
 
-    private String maskedCreditCardNumber = "";
-
     private String getCardNumber(String response) {
         try {
             String[] splitAfterMaskedTrackData = response.split("ICC_Masked_Track_2");
@@ -745,8 +753,6 @@ public class TransactionApi {
         }
     }
 
-    private String expireDate = "";
-
     private String getExpireCardNumber(String response) {
         try {
             String[] splitAfterMaskedTrackData = response.split("ICC_Masked_Track_2");
@@ -771,8 +777,6 @@ public class TransactionApi {
             return expireDate;
         }
     }
-
-    private String cardHolderName = "";
 
     private String getCardHolderName(String response) {
         try {
@@ -862,6 +866,7 @@ public class TransactionApi {
      */
     private void clearData() {
         cancelTransactionTimer();
+        mFirstTry = false;
         transactionData = null;
         isEmv = false;
         isTransactionTimeOut = false;
@@ -871,5 +876,8 @@ public class TransactionApi {
         this.cardData = null;
         this.returnReason = "";
         this.returnStatus = 0;
+        cardHolderName = "";
+        maskedCreditCardNumber = "";
+        expireDate = "";
     }
 }
