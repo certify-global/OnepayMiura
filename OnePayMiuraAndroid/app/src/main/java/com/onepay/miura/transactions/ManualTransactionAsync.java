@@ -13,6 +13,7 @@ import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.EncryptedPan;
 import com.miurasystems.mpi.api.objects.GetNumericDataRequest;
+import com.miurasystems.mpi.enums.ExpirationDateElementType;
 import com.miurasystems.mpi.enums.GetCommandsOptions;
 import com.miurasystems.mpi.enums.GetEncryptedPanError;
 import com.miurasystems.mpi.enums.GetNumericDataError;
@@ -55,11 +56,17 @@ public class ManualTransactionAsync {
     public void manualTransaction(boolean isEbt, int timeOut, boolean isCvv) {
         EnumSet<GetCommandsOptions> options;
         options = GetCommandsOptions.makeOptionsSet(
+                GetCommandsOptions.EnablePanGrouping,
                 GetCommandsOptions.BacklightOn,
                 GetCommandsOptions.KeyboardBacklightOn,
                 GetCommandsOptions.ShowStatusBar);
 
-        result = mMpiClient.getSecureCardData(true, false, false, isCvv, false, options, timeOut);
+        if (isEbt) {
+            result = mMpiClient.getSecureCardData(true, false, true, false, false, isCvv, false, options, null, timeOut);
+        } else {
+            result = mMpiClient.getSecureCardData(true, false, false, false, false, isCvv, false, options, null, timeOut);
+        }
+
 
         if (result.isError()) {
             isUserCanceled = true;
@@ -83,12 +90,22 @@ public class ManualTransactionAsync {
         }
 
         if (!isEbt) {
+            EnumSet<GetCommandsOptions> expireOptions;
+            expireOptions = GetCommandsOptions.makeOptionsSet(
+                    GetCommandsOptions.BacklightOn,
+                    GetCommandsOptions.KeyboardBacklightOn,
+                    GetCommandsOptions.ShowStatusBar);
             isExpireDate = true;
-            Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
+            //    public Result<String, GetNumericDataError> getNumericData(@Nonnull GetNumericDataRequest request) {
+            /*Result<String, GetNumericDataError> expireDate1 = mMpiClient.getNumericData(
                     GetNumericDataRequest.GetBuilder(0, 154, 191, 4, 0)
                             .setOption(GetCommandsOptions.KeyboardBacklightOn, true)
                             .setTimeoutInSeconds(30)
-                            .build());
+                            .build());*/
+
+           //getExpirationDate(int firstLineIndex, int secondLineIndex, int thirdLineIndex, @Nonnull ExpirationDateElementType elementType,
+            // @Nonnull EnumSet<GetCommandsOptions> options, @Nullable GetCommandsAmountLine getCommandsAmountLine, @Nullable Integer timeoutInSeconds) {
+           Result<String, GetNumericDataError> expireDate = mMpiClient.getExpirationDate(0,154,191, ExpirationDateElementType.DateMMYY, expireOptions, null, 30);
 
             if (expireDate.isSuccess()) {
                 mExpireDate = expireDate.asSuccess().getValue();
