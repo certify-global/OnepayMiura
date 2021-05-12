@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         btAddress = edit_text_bt_address.getText().toString();
         isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
 
-        TransactionApi.getInstance().setTransactionParams(32.10, "", btAddress, false, 180);
+        TransactionApi.getInstance().setTransactionParams(32.10, "", btAddress, false, false,180);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -256,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
         DeviceApi.getInstance().getDeviceInfo(btAddress, 380);
     }
 
-    public void setDeviceInfomation(View view) throws Exception {
+    public void setDeviceInformation(View view) throws Exception {
         String sDate1 = "2021-01-03 05:18:37";
 
         Log.d("TAG", "Naga...........setDeviceClock: " + sDate1);
