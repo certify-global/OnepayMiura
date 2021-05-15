@@ -201,7 +201,7 @@ public class TransactionApi {
     public void cancelTransaction() {
         Log.d(TAG, "###RB#### cancelTransaction: ");
         try {
-
+            deregisterEventHandlers();
             boolean isChip = mEmvTransactionAsync != null;
             boolean isSwipe = mMagSwipeTransaction != null;
 
@@ -655,25 +655,21 @@ public class TransactionApi {
                     @Override
                     public void onError(@NonNull EmvTransactionException exception) {
 
-                        TransactionResponse response = exception.mErrCode;
+                        if (!isTransactionTimeOut) {
+                            TransactionResponse response = exception.mErrCode;
 
-                        if (response.name() == "USER_CANCELLED") {
-                            Log.d(TAG, "Naga......... cancel through PED ...onError: ");
-                            if (transactionListener != null) {
-                                returnReason = Constants.ErrorReason;
-                                returnStatus = Constants.ErrorStatus;
-                                transactionListener.onTransactionComplete(createTransactionData(cardData));
-                            }
-                            deregisterEventHandlers();
-                            BluetoothModule.getInstance().closeSession();
-                        } else {
-                            String explanation = exception.getMessage();
-
-                            Log.d(TAG, String.format("onError(%s, %s)", response, explanation));
-
-                            if (transactionListener != null) {
-                                returnReason = explanation;
-                                returnStatus = Constants.ErrorStatus;
+                            if (response.name() == "USER_CANCELLED") {
+                                Log.d(TAG, "Naga......... cancel through PED ...onError: ");
+                                if (transactionListener != null) {
+                                    returnReason = Constants.CanceledThroughPEDReason;
+                                    returnStatus = Constants.CanceledThroughPEDStatus;
+                                    transactionListener.onTransactionComplete(createTransactionData(cardData));
+                                }
+                                deregisterEventHandlers();
+                                BluetoothModule.getInstance().closeSession();
+                            } else {
+                                String explanation = exception.getMessage();
+                                Log.d(TAG, String.format("onError(%s, %s)", response, explanation));
                             }
                         }
                     }
