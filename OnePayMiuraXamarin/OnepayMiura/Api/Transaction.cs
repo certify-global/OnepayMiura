@@ -9,11 +9,11 @@ namespace Onepay.Miura.Api
     public class Transaction
     {
         public static event EventHandler<TransactionData> TransactionComplete;
-        public void PerformTransaction(double amt, String desc, String btAddress, bool isPinRequired, int tOut)
+        public void PerformTransaction(double amt, String desc, String btAddress, bool isPinRequired, bool isEbt, int tOut)
         {
             try
             {
-                TransactionApi.Instance.SetTransactionParams(amt, desc, btAddress, isPinRequired, tOut);
+                TransactionApi.Instance.SetTransactionParams(amt, desc, btAddress, isPinRequired, isEbt, tOut);
                 TransactionApi.Instance.PerformTransaction(new Transaction.TransactionListener());
             }
             catch (Exception exception)

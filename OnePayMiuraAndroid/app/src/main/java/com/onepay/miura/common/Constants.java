@@ -32,5 +32,5 @@ public class Constants {
     public static String Swipe = "02";
     public static String Chip = "05";
     public static String NFC = "07";
-    public static String EmvSwipe = "08";
+    public static String EmvFallback = "80";
 }
