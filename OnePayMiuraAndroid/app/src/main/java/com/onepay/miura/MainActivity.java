@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         btAddress = edit_text_bt_address.getText().toString();
         isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
 
-        TransactionApi.getInstance().setTransactionParams(32.10, "", btAddress, false, false,180);
+        TransactionApi.getInstance().setTransactionParams(-32.10, "", btAddress, true, true,25);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -138,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         showData.setText("CARD DETAILS");
         TransactionApi.getInstance().cancelTransaction();
 
-        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", btAddress, 180, false, false);
+       /* ManualTransactionApi.getInstance().setManualTransactionParams(1, "", btAddress, 180, false, false);
 
         ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 
@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga...... sRedKSN : " + data.KSN());
 
             }
-        });
+        });*/
     }
 
     public void onUpdateConfig(View view) {

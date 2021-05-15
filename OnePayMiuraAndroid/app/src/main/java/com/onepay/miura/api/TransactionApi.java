@@ -107,6 +107,9 @@ public class TransactionApi {
      * @param tOut      Timeout for the transaction
      */
     public void setTransactionParams(double amt, String desc, String btAddress, boolean isPinRequired, boolean isEBT, int tOut) {
+        if (amt < 0) {
+            amt *= -1;
+        }
         Log.d(TAG, "###RB#### set transaction parameters ");
         clearData();
         isEmv = false;
@@ -198,7 +201,7 @@ public class TransactionApi {
     public void cancelTransaction() {
         Log.d(TAG, "###RB#### cancelTransaction: ");
         try {
-
+            deregisterEventHandlers();
             boolean isChip = mEmvTransactionAsync != null;
             boolean isSwipe = mMagSwipeTransaction != null;
 
@@ -491,26 +494,18 @@ public class TransactionApi {
         }
     }
 
-    private String serviceCode = "";
     protected void handleTransactionEvent(CardData cardData) {
         Log.d(TAG, "###RB#### handleTransactionEvent: ");
         try {
             if (!BluetoothModule.getInstance().isSessionOpen()) {
                 return;
             }
-            if(!isEbt) {
+            if (!isEbt) {
                 EmvChipInsertStatus insertStatus = EmvTransactionAsync.canProcessEmvChip(cardData);
-               /* if(cardData != null && cardData.getMaskedTrack2Data()!= null && cardData.getMaskedTrack2Data().getServiceCode().getServiceCode() != null) {
-                    serviceCode = cardData.getMaskedTrack2Data().getServiceCode().getServiceCode();
-                }
-                if(!isFallBack && serviceCode.equals("201")){
-                    showTextOnDevice("Please Use NFC/CHIP");
-                    startEmvTransaction(EmvTransactionType.Contactless);
-                    return;
-                }*/
                 if (insertStatus == EmvChipInsertStatus.CardInsertedOk) {
                     isEmv = true;
                     entryMode = Constants.Chip;
+                    showTextOnDevice("\nProcessing...");
                     startEmvTransaction(EmvTransactionType.Chip);
                     return;
                 }
@@ -525,7 +520,6 @@ public class TransactionApi {
                     isFallBack = true;
                     Log.d(TAG, "Naga............EmvFallback: ");
                     entryMode = Constants.EmvFallback;
-                    resetTransactionState();
                     showTextOnDevice("SWIPE ERROR\nPlease try again");
                     return;
                 }
@@ -545,7 +539,7 @@ public class TransactionApi {
                     clearTransactionData();
                     clearData();
                 }
-            }else{
+            } else {
                 swipeTransaction(cardData);
             }
         } catch (Exception e) {
@@ -660,22 +654,29 @@ public class TransactionApi {
 
                     @Override
                     public void onError(@NonNull EmvTransactionException exception) {
-                        TransactionResponse response = exception.mErrCode;
-                        String explanation = exception.getMessage();
 
-                        Log.d(TAG, String.format("onError(%s, %s)", response, explanation));
+                        if (!isTransactionTimeOut) {
+                            TransactionResponse response = exception.mErrCode;
 
-                        if (transactionListener != null) {
-                            returnReason = explanation;
-                            returnStatus = Constants.ErrorStatus;
+                            if (response.name() == "USER_CANCELLED") {
+                                Log.d(TAG, "Naga......... cancel through PED ...onError: ");
+                                if (transactionListener != null) {
+                                    returnReason = Constants.CanceledThroughPEDReason;
+                                    returnStatus = Constants.CanceledThroughPEDStatus;
+                                    transactionListener.onTransactionComplete(createTransactionData(cardData));
+                                }
+                                deregisterEventHandlers();
+                                BluetoothModule.getInstance().closeSession();
+                            } else {
+                                String explanation = exception.getMessage();
+                                Log.d(TAG, String.format("onError(%s, %s)", response, explanation));
+                            }
                         }
-
-                        resetTransactionState();
                     }
                 });
     }
 
-    private void swipeTransaction(CardData cardData){
+    private void swipeTransaction(CardData cardData) {
         entryMode = Constants.Swipe;
         EmvChipInsertStatus insertStatus = EmvTransactionAsync.canProcessEmvChip(cardData);
         if (insertStatus == EmvChipInsertStatus.CardInsertedOk) {
@@ -685,7 +686,6 @@ public class TransactionApi {
         Result<MagSwipeSummary, MagSwipeError> result =
                 MagSwipeTransaction.canProcessMagSwipe(cardData);
         if (result.isError()) {
-            resetTransactionState();
             Log.d(TAG, "SWIPE ERROR Please try again");
             return;
         }
@@ -711,9 +711,6 @@ public class TransactionApi {
         if (BluetoothModule.getInstance().isSessionOpen()) {
             MiuraManager.getInstance().displayText(DisplayTextUtils.getCenteredText(text), null);
         }
-    }
-
-    private void resetTransactionState() {
     }
 
     private TransactionApiData createTransactionData(CardData cardData) {
