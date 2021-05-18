@@ -65,6 +65,7 @@ public class TransactionApi {
     private CardData cardData = null;
     private boolean isTimerTimedOut = false;
     private boolean isTransactionTimeOut = false;
+    private boolean isTransactionCancel = false;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
     private TransactionApiData transactionData = null;
@@ -115,6 +116,7 @@ public class TransactionApi {
         isEmv = false;
         mFirstTry = false;
         isTransactionTimeOut = false;
+        isTransactionCancel = false;
         isFallBack = false;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
@@ -201,6 +203,7 @@ public class TransactionApi {
     public void cancelTransaction() {
         Log.d(TAG, "###RB#### cancelTransaction: ");
         try {
+            isTransactionCancel = true;
             deregisterEventHandlers();
             boolean isChip = mEmvTransactionAsync != null;
             boolean isSwipe = mMagSwipeTransaction != null;
@@ -655,7 +658,7 @@ public class TransactionApi {
                     @Override
                     public void onError(@NonNull EmvTransactionException exception) {
 
-                        if (!isTransactionTimeOut) {
+                        if (!isTransactionTimeOut && !isTransactionCancel) {
                             TransactionResponse response = exception.mErrCode;
 
                             if (response.name() == "USER_CANCELLED") {
@@ -929,6 +932,7 @@ public class TransactionApi {
         isEmv = false;
         isFallBack = false;
         isTransactionTimeOut = false;
+        isTransactionCancel = false;
         this.pedDeviceId = "";
         this.amount = 0.0d;
         this.description = "";
