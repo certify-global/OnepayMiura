@@ -5,6 +5,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
 
 import com.miurasystems.mpi.MpiClient;
@@ -116,6 +117,7 @@ public class TransactionApi {
         mFirstTry = false;
         isTransactionTimeOut = false;
         isFallBack = false;
+        entryMode = Constants.Swipe;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
         displayAmount = amt * 100;
@@ -518,9 +520,8 @@ public class TransactionApi {
                         MagSwipeTransaction.canProcessMagSwipe(cardData);
                 if (result.isError()) {
                     isFallBack = true;
-                    Log.d(TAG, "Naga............EmvFallback: ");
                     entryMode = Constants.EmvFallback;
-                    showTextOnDevice("SWIPE ERROR\nPlease try again");
+                    showTextOnDevice("Transaction Error\nPlease try again");
                     return;
                 }
 
@@ -599,18 +600,24 @@ public class TransactionApi {
                 });
     }
 
+    @UiThread
     private void startEmvTransaction(EmvTransactionType emvTransactionType) {
         startTransactionTimer();
 
-        abortEmvTransactionAsync(null);
-        abortSwipeTransactionAsync(null);
+        if(mEmvTransactionAsync != null)
+        {
+            if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
+                abortEmvTransactionAsync(null);
+                abortSwipeTransactionAsync(null);
+            }
+        }else {
+            abortEmvTransactionAsync(null);
+            abortSwipeTransactionAsync(null);
+        }
 
-
-        EmvTransactionAsync emvTransactionAsync = new EmvTransactionAsync(
+        mEmvTransactionAsync = new EmvTransactionAsync(
                 MiuraManager.getInstance(), emvTransactionType
         );
-
-        mEmvTransactionAsync = emvTransactionAsync;
 
         mEmvTransactionAsync.startTransactionAsync(
                 (int) this.displayAmount,
@@ -924,6 +931,7 @@ public class TransactionApi {
      */
     private void clearData() {
         cancelTransactionTimer();
+        entryMode = Constants.Swipe;
         mFirstTry = false;
         transactionData = null;
         isEmv = false;

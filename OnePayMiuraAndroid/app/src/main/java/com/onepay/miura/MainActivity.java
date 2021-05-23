@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         btAddress = edit_text_bt_address.getText().toString();
         isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
 
-        TransactionApi.getInstance().setTransactionParams(-32.10, "", btAddress, true, true,25);
+        TransactionApi.getInstance().setTransactionParams(-32.10, "", btAddress, false, false,125);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
