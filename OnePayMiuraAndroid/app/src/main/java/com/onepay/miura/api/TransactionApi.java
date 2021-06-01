@@ -66,6 +66,7 @@ public class TransactionApi {
     private CardData cardData = null;
     private boolean isTimerTimedOut = false;
     private boolean isTransactionTimeOut = false;
+    private boolean isCancelTransaction = false;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
     private TransactionApiData transactionData = null;
@@ -116,6 +117,7 @@ public class TransactionApi {
         isEmv = false;
         mFirstTry = false;
         isTransactionTimeOut = false;
+        isCancelTransaction = false;
         isFallBack = false;
         entryMode = Constants.Swipe;
         amt = Double.parseDouble(decimalFormat.format(amt));
@@ -203,6 +205,7 @@ public class TransactionApi {
     public void cancelTransaction() {
         Log.d(TAG, "###RB#### cancelTransaction: ");
         try {
+            isCancelTransaction = true;
             deregisterEventHandlers();
             boolean isChip = mEmvTransactionAsync != null;
             boolean isSwipe = mMagSwipeTransaction != null;
@@ -388,7 +391,6 @@ public class TransactionApi {
                 if (client != null) {
                     client.cardStatus(MPI, true, false, true, true, false, true);
                 }
-                startEmvTransaction(EmvTransactionType.Contactless);
             } else {
                 String deviceText = amount + "\n Swipe card";
 
@@ -511,6 +513,10 @@ public class TransactionApi {
                     startEmvTransaction(EmvTransactionType.Chip);
                     return;
                 }
+                if (!isFallBack) {
+                    startEmvTransaction(EmvTransactionType.Contactless);
+
+                }
                 if (!mFirstTry) {
                     mFirstTry = true;
                     return;
@@ -604,13 +610,12 @@ public class TransactionApi {
     private void startEmvTransaction(EmvTransactionType emvTransactionType) {
         startTransactionTimer();
 
-        if(mEmvTransactionAsync != null)
-        {
+        if (mEmvTransactionAsync != null) {
             if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
                 abortEmvTransactionAsync(null);
                 abortSwipeTransactionAsync(null);
             }
-        }else {
+        } else {
             abortEmvTransactionAsync(null);
             abortSwipeTransactionAsync(null);
         }
@@ -662,7 +667,7 @@ public class TransactionApi {
                     @Override
                     public void onError(@NonNull EmvTransactionException exception) {
 
-                        if (!isTransactionTimeOut) {
+                        if (!isTransactionTimeOut && !isCancelTransaction) {
                             TransactionResponse response = exception.mErrCode;
 
                             if (response.name() == "USER_CANCELLED") {
@@ -734,7 +739,8 @@ public class TransactionApi {
             if (cardData != null) {
                 transactionData.setCardHolderName(cardData.getCardholderName());
                 if (cardData.getMaskedTrack2Data() != null) {
-                    if (cardData.getMaskedTrack2Data().getExpirationDate() != null) {
+                    if (cardData.getMaskedTrack2Data().getExpirationDate() == null) {
+                    } else {
                         String expireDate = convertExpireDateToMMYY(cardData.getMaskedTrack2Data().getExpirationDate());
                         transactionData.setExpiryDate(expireDate);
                     }
@@ -937,6 +943,7 @@ public class TransactionApi {
         isEmv = false;
         isFallBack = false;
         isTransactionTimeOut = false;
+        isCancelTransaction = false;
         this.pedDeviceId = "";
         this.amount = 0.0d;
         this.description = "";

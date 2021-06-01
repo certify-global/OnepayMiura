@@ -25,12 +25,15 @@ import com.onepay.miura.data.DeviceApiData;
 import com.onepay.miura.data.SetClockApiData;
 import com.onepay.miura.data.TransactionApiData;
 
+import java.io.File;
+
 
 public class MainActivity extends AppCompatActivity {
 
     Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
     EditText edit_text_bt_address, edit_text_pin;
     String btAddress = "0C:9A:42:89:2E:B9";
+    //String btAddress = "C4:3A:35:40:56:51";
     //String btAddress  = "0C:9A:42:89:2E:CB";
     //String btAddress = "80:5E:4F:93:F6:AC";
     //String btAddress = "80:5E:4F:93:F6:CA";
