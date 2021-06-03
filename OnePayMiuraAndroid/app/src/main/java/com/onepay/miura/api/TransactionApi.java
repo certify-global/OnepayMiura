@@ -82,6 +82,7 @@ public class TransactionApi {
     private String expireDate = "";
     private boolean isEbt = false;
     private boolean isFallBack = false;
+    private int count = 1;
 
     @Nullable
     private EmvTransactionAsync mEmvTransactionAsync;
@@ -119,6 +120,7 @@ public class TransactionApi {
         isTransactionTimeOut = false;
         isCancelTransaction = false;
         isFallBack = false;
+        count = 1;
         entryMode = Constants.Swipe;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
@@ -139,6 +141,7 @@ public class TransactionApi {
      * @param listener callback listener for the transaction
      */
     public void performTransaction(final TransactionListener listener) {
+        Log.d("TAG", "Naga...... count : " + count);
         Log.d(TAG, "###RB#### perform transaction: ");
         startTransactionTimer();
         this.transactionListener = listener;
@@ -505,31 +508,38 @@ public class TransactionApi {
                 return;
             }
             if (!isEbt) {
-                EmvChipInsertStatus insertStatus = EmvTransactionAsync.canProcessEmvChip(cardData);
-                if (insertStatus == EmvChipInsertStatus.CardInsertedOk) {
-                    isEmv = true;
-                    entryMode = Constants.Chip;
-                    showTextOnDevice("\nProcessing...");
-                    startEmvTransaction(EmvTransactionType.Chip);
-                    return;
-                }
-                if (!isFallBack) {
-                    startEmvTransaction(EmvTransactionType.Contactless);
+                if (cardData.getSredData() == null) {
+                    EmvChipInsertStatus insertStatus = EmvTransactionAsync.canProcessEmvChip(cardData);
+                    if (insertStatus == EmvChipInsertStatus.CardInsertedOk) {
+                        isEmv = true;
+                        entryMode = Constants.Chip;
+                        showTextOnDevice("\nProcessing...");
+                        startEmvTransaction(EmvTransactionType.Chip);
+                        return;
+                    }
+                    if (insertStatus == EmvChipInsertStatus.CardIncompatibleError) {
+                        count++;
+                        Log.d("TAG", "Naga...... count : " + count);
+                        if (count > 3) {
+                            isFallBack = true;
+                            entryMode = Constants.EmvFallback;
+                        }
+                    }
 
-                }
-                if (!mFirstTry) {
-                    mFirstTry = true;
-                    return;
+                    if (!isFallBack) {
+                        startEmvTransaction(EmvTransactionType.Contactless);
+                        return;
+                    }
                 }
 
                 Result<MagSwipeSummary, MagSwipeError> result =
                         MagSwipeTransaction.canProcessMagSwipe(cardData);
+
                 if (result.isError()) {
-                    isFallBack = true;
-                    entryMode = Constants.EmvFallback;
                     showTextOnDevice("Transaction Error\nPlease try again");
                     return;
                 }
+
 
                 if (isPinRequired) {
                     PaymentMagType paymentMagType = PaymentMagType.Auto;
@@ -939,6 +949,7 @@ public class TransactionApi {
         cancelTransactionTimer();
         entryMode = Constants.Swipe;
         mFirstTry = false;
+        count = 1;
         transactionData = null;
         isEmv = false;
         isFallBack = false;
