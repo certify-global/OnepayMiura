@@ -17,11 +17,13 @@ import com.onepay.miura.api.ConfigApi;
 import com.onepay.miura.api.ConnectApi;
 import com.onepay.miura.api.DeviceApi;
 import com.onepay.miura.api.ManualTransactionApi;
+import com.onepay.miura.api.MpiUpdateApi;
 import com.onepay.miura.api.SetClockApi;
 import com.onepay.miura.api.TransactionApi;
 import com.onepay.miura.data.ConfigApiData;
 import com.onepay.miura.data.ConnectApiData;
 import com.onepay.miura.data.DeviceApiData;
+import com.onepay.miura.data.MpiUpdateApiData;
 import com.onepay.miura.data.SetClockApiData;
 import com.onepay.miura.data.TransactionApiData;
 
@@ -95,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         btAddress = edit_text_bt_address.getText().toString();
         isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
 
-        TransactionApi.getInstance().setTransactionParams(-32.10, "", btAddress, false, false,125);
+        TransactionApi.getInstance().setTransactionParams(-32.10, "", btAddress, false, false, 125);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -165,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
         });*/
     }
 
-    public void onUpdateConfig(View view) {
+  /*  public void onUpdateConfig(View view) {
         String path1 = Environment.getExternalStorageDirectory() + "/mpi_config/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
         String path = "/storage/self/primary/prompt/";
         ConfigApi.getInstance().setConfigListener(new ConfigApi.ConfigInfoListener() {
@@ -176,6 +178,17 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         ConfigApi.getInstance().performConfig(btAddress, 380, path);
+    }*/
+
+    public void onUpdateConfig(View view) {
+        MpiUpdateApi.getInstance().setPerformMpiUpdate(btAddress, 180, "", this);
+
+        MpiUpdateApi.getInstance().performMpiUpdate(new MpiUpdateApi.MpiUpdateListener() {
+            @Override
+            public void onMpiUpdateComplete(MpiUpdateApiData data) {
+                Log.d("TAG", "onMpiUpdateComplete: ");
+            }
+        });
     }
 
     public void onManualTransaction(View view) {
@@ -202,6 +215,30 @@ public class MainActivity extends AppCompatActivity {
                         + "\n" + "PedDeviceId :" + data.deviceId()
                         + "\n" + "SRedKSN :" + data.KSN();
                 showData.setText(cardData);*/
+                Log.d("TAG", "Naga...... DeviceId : " + data.deviceId());
+                Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
+                Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
+                Log.d("TAG", "Naga...... amount : " + data.amount());
+                Log.d("TAG", "Naga...... returnStatus : " + data.returnStatus());
+                Log.d("TAG", "Naga...... returnReason : " + data.returnReason());
+                Log.d("TAG", "Naga...... cardHolderName : " + data.cardHolderName());
+                Log.d("TAG", "Naga...... cardNumber : " + data.cardNumber());
+                Log.d("TAG", "Naga...... ccFirstFour : " + data.accountFirstFour());
+                Log.d("TAG", "Naga...... ccLastFour : " + data.accountLastFour());
+                Log.d("TAG", "Naga...... expiryDate : " + data.expiryDate());
+                Log.d("TAG", "Naga...... pedDeviceId : " + data.deviceId());
+                Log.d("TAG", "Naga...... sRedKSN : " + data.KSN());
+
+            }
+        });
+    }
+
+    public void onManualEbtTransaction(View view) {
+        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", btAddress, 180, true, false);
+        ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
+
+            @Override
+            public void onManualTransactionComplete(TransactionApiData data) {
                 Log.d("TAG", "Naga...... DeviceId : " + data.deviceId());
                 Log.d("TAG", "Naga...... transactionType : " + data.entryMode());
                 Log.d("TAG", "Naga...... cardData : " + data.encryptedCardData());
