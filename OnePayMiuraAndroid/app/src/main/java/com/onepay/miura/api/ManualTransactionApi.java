@@ -41,6 +41,7 @@ public class ManualTransactionApi {
     private String description = "";
     private String bluetoothAddress = "";
     private String pedDeviceId = "";
+    private String mpiVersion = "";
     private String expireDate = null;
     private boolean isEbt = false;
     private Timer mTimer;
@@ -244,6 +245,7 @@ public class ManualTransactionApi {
                 @Override
                 public void onSuccess(SoftwareInfo softwareInfo) {
                     pedDeviceId = softwareInfo.getSerialNumber();
+                    mpiVersion = softwareInfo.getMpiVersion();
                 }
 
                 @WorkerThread
@@ -339,7 +341,7 @@ public class ManualTransactionApi {
         Log.d(TAG, "###RB#### startManualTransaction: ");
         try {
             mManualTransactionAsync = new ManualTransactionAsync(MiuraManager.getInstance());
-            mManualTransactionAsync.manualTransaction(isEbt, mTransactionTime, isCvv);
+            mManualTransactionAsync.manualTransaction(isEbt, mTransactionTime, isCvv, mpiVersion);
 
             if (mManualTransactionAsync.isUserCanceled) {
                 if (manualTransactionListener != null && !isTransactionDataCheck) {
@@ -494,6 +496,7 @@ public class ManualTransactionApi {
     private void clearData() {
         cancelTransactionTimer();
         this.pedDeviceId = "";
+        this.mpiVersion = "";
         this.amount = 0.0d;
         this.description = "";
         this.isCvv = false;

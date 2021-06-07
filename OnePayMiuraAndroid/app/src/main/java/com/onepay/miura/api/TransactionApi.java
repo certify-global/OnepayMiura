@@ -67,6 +67,7 @@ public class TransactionApi {
     private boolean isTimerTimedOut = false;
     private boolean isTransactionTimeOut = false;
     private boolean isCancelTransaction = false;
+    private boolean isTransactionComplete = false;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
     private TransactionApiData transactionData = null;
@@ -82,6 +83,7 @@ public class TransactionApi {
     private String expireDate = "";
     private boolean isEbt = false;
     private boolean isFallBack = false;
+    private int count = 1;
 
     @Nullable
     private EmvTransactionAsync mEmvTransactionAsync;
@@ -118,7 +120,9 @@ public class TransactionApi {
         mFirstTry = false;
         isTransactionTimeOut = false;
         isCancelTransaction = false;
+        isTransactionComplete = false;
         isFallBack = false;
+        count = 1;
         entryMode = Constants.Swipe;
         amt = Double.parseDouble(decimalFormat.format(amt));
         this.amount = amt;
@@ -139,6 +143,7 @@ public class TransactionApi {
      * @param listener callback listener for the transaction
      */
     public void performTransaction(final TransactionListener listener) {
+        Log.d("TAG", "Naga...... count : " + count);
         Log.d(TAG, "###RB#### perform transaction: ");
         startTransactionTimer();
         this.transactionListener = listener;
@@ -505,31 +510,38 @@ public class TransactionApi {
                 return;
             }
             if (!isEbt) {
-                EmvChipInsertStatus insertStatus = EmvTransactionAsync.canProcessEmvChip(cardData);
-                if (insertStatus == EmvChipInsertStatus.CardInsertedOk) {
-                    isEmv = true;
-                    entryMode = Constants.Chip;
-                    showTextOnDevice("\nProcessing...");
-                    startEmvTransaction(EmvTransactionType.Chip);
-                    return;
-                }
-                if (!isFallBack) {
-                    startEmvTransaction(EmvTransactionType.Contactless);
+                if (cardData.getSredData() == null) {
+                    EmvChipInsertStatus insertStatus = EmvTransactionAsync.canProcessEmvChip(cardData);
+                    if (insertStatus == EmvChipInsertStatus.CardInsertedOk) {
+                        isEmv = true;
+                        entryMode = Constants.Chip;
+                        showTextOnDevice("\nProcessing...");
+                        startEmvTransaction(EmvTransactionType.Chip);
+                        return;
+                    }
+                    if (insertStatus == EmvChipInsertStatus.CardIncompatibleError) {
+                        count++;
+                        Log.d("TAG", "Naga...... count : " + count);
+                        if (count > 3) {
+                            isFallBack = true;
+                            entryMode = Constants.EmvFallback;
+                        }
+                    }
 
-                }
-                if (!mFirstTry) {
-                    mFirstTry = true;
-                    return;
+                    if (!isFallBack) {
+                        startEmvTransaction(EmvTransactionType.Contactless);
+                        return;
+                    }
                 }
 
                 Result<MagSwipeSummary, MagSwipeError> result =
                         MagSwipeTransaction.canProcessMagSwipe(cardData);
+
                 if (result.isError()) {
-                    isFallBack = true;
-                    entryMode = Constants.EmvFallback;
                     showTextOnDevice("Transaction Error\nPlease try again");
                     return;
                 }
+
 
                 if (isPinRequired) {
                     PaymentMagType paymentMagType = PaymentMagType.Auto;
@@ -670,19 +682,23 @@ public class TransactionApi {
                         if (!isTransactionTimeOut && !isCancelTransaction) {
                             TransactionResponse response = exception.mErrCode;
 
-                            if (response.name() == "USER_CANCELLED") {
+                            if (response.name().equals("USER_CANCELLED")) {
                                 Log.d(TAG, "Naga......... cancel through PED ...onError: ");
-                                if (transactionListener != null) {
+                                if (transactionListener != null && !isTransactionComplete) {
                                     returnReason = Constants.CanceledThroughPEDReason;
                                     returnStatus = Constants.CanceledThroughPEDStatus;
                                     transactionListener.onTransactionComplete(createTransactionData(cardData));
                                 }
-                                deregisterEventHandlers();
-                                BluetoothModule.getInstance().closeSession();
+                                if (BluetoothModule.getInstance().isSessionOpen()) {
+                                    deregisterEventHandlers();
+                                    BluetoothModule.getInstance().closeSession();
+                                }
+
                             } else {
-                                String explanation = exception.getMessage();
+                                String explanation = String.valueOf(exception.mErrCode);
                                 Log.d(TAG, String.format("onError(%s, %s)", response, explanation));
                             }
+
                         }
                     }
                 });
@@ -726,6 +742,7 @@ public class TransactionApi {
     }
 
     private TransactionApiData createTransactionData(CardData cardData) {
+        isTransactionComplete = true;
         if (pedDeviceId != null) {
             transactionData.setDeviceId(pedDeviceId);
             transactionData.setAmount(this.amount);
@@ -739,7 +756,8 @@ public class TransactionApi {
             if (cardData != null) {
                 transactionData.setCardHolderName(cardData.getCardholderName());
                 if (cardData.getMaskedTrack2Data() != null) {
-                    if (cardData.getMaskedTrack2Data().getExpirationDate() != null) {
+                    if (cardData.getMaskedTrack2Data().getExpirationDate() == null) {
+                    } else {
                         String expireDate = convertExpireDateToMMYY(cardData.getMaskedTrack2Data().getExpirationDate());
                         transactionData.setExpiryDate(expireDate);
                     }
@@ -762,20 +780,22 @@ public class TransactionApi {
                     if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
                         Log.d(TAG, "###RB####  createTransactionData");
                         maskedCreditCardNumber = maskedCreditCardNumber.replace("f", "*");
-                        transactionData.setCardNumber(maskedCreditCardNumber);
-                        if (maskedCreditCardNumber.length() > 4) ;
-                        {
-                            transactionData.setAccountFirstFour(maskedCreditCardNumber.substring(0, 4));
-                            transactionData.setAccountLastFour(maskedCreditCardNumber.substring(maskedCreditCardNumber.length() - 4));
+                        if (!maskedCreditCardNumber.isEmpty()) {
+                            transactionData.setCardNumber(maskedCreditCardNumber);
+                            if (maskedCreditCardNumber.length() > 4) ;
+                            {
+                                transactionData.setAccountFirstFour(maskedCreditCardNumber.substring(0, 4));
+                                transactionData.setAccountLastFour(maskedCreditCardNumber.substring(maskedCreditCardNumber.length() - 4));
+                            }
+                            if (expireDate.length() > 4) {
+                                String convertExpireDate = convertExpireDateToMMYY(expireDate.substring(0, 4));
+                                transactionData.setExpiryDate(convertExpireDate);
+                            }
+                            if (cardHolderName != null && cardHolderName.length() > 0)
+                                transactionData.setCardHolderName(cardHolderName);
+                            if (sRedKsn != null && sRedKsn.length() > 0)
+                                transactionData.setKSN(sRedKsn.toUpperCase());
                         }
-                        if (expireDate.length() > 4) {
-                            String convertExpireDate = convertExpireDateToMMYY(expireDate.substring(0, 4));
-                            transactionData.setExpiryDate(convertExpireDate);
-                        }
-                        if (cardHolderName != null && cardHolderName.length() > 0)
-                            transactionData.setCardHolderName(cardHolderName);
-                        if (sRedKsn != null && sRedKsn.length() > 0)
-                            transactionData.setKSN(sRedKsn.toUpperCase());
                     }
                 }
             }
@@ -938,11 +958,13 @@ public class TransactionApi {
         cancelTransactionTimer();
         entryMode = Constants.Swipe;
         mFirstTry = false;
+        count = 1;
         transactionData = null;
         isEmv = false;
         isFallBack = false;
         isTransactionTimeOut = false;
         isCancelTransaction = false;
+        isTransactionComplete = false;
         this.pedDeviceId = "";
         this.amount = 0.0d;
         this.description = "";

@@ -69,11 +69,31 @@
 	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiOnlinePinListener']/method[@name='onError']/parameter[1]" name="managedName">paramOnlinePINError</attr>
 	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiP2PEImportListener']/method[@name='onError']/parameter[1]" name="managedName">paramRKIError</attr>
 	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiMenuOptionListener']/method[@name='onError']/parameter[1]" name="managedName">paramGetMenuOptionError</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiBluetoothControlListener']/method[@name='onError']/parameter[1]" name="managedName">paramSuccessEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiBluetoothControlListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramSecondSuccessEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiBuzzerListener']/method[@name='onError']/parameter[1]" name="managedName">paramBuzzerResponse</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiBluetoothErrorListener']/method[@name='onError']/parameter[1]" name="managedName">paramErrorEventArgs</attr>
 
-
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiBluetoothErrorListener']/method[@name='onError' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.enums.BluetoothError']]" name="argsType">ApiBluetoothErrorListenerErrorEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetSecureDataListener']/method[@name='onError' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.enums.GetEncryptedPanError']]" name="argsType">ApiGetSecureDataListenerErrorEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiP2PEImportListener']/method[@name='onError' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.enums.RKIError']]" name="argsType">ApiP2PEImportListenerErrorEventArgs</attr>
+	
 
 	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='APITransferFileListener']/method[@name='onProgress']/parameter[1]" name="managedName">paramInt</attr>
 
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiP2PEStatusListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.api.objects.P2PEStatus']]" name="argsType">ApiP2PEStatusListenerSuccessEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetSecureDataListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.api.objects.EncryptedPan']]" name="argsType">ApiGetSecureDataListenerSuccessEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiCardStatusListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.tlv.CardData']]" name="argsType">ApiCardStatusListenerSuccessEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='SingleReturnValueListener']/method[@name='onSuccess']/parameter[1]" name="managedName">paramSingleReturnSuccessEventArgs</attr>
+
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='ApiGetSoftwareInfoListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='com.miurasystems.mpi.api.objects.SoftwareInfo']]" name="argsType">ApiGetSoftwareInfoListenerSuccessEventArgs</attr>
+	<attr path="/api/package[@name='com.miurasystems.mpi.api.listener']/interface[@name='SingleReturnValueListener']/method[@name='onSuccess' and count(parameter)=1 and parameter[1][@type='V']]" name="argsType">SingleReturnValueListenerSuccessEventArgs</attr>
 
 
+	<add-node path="/api/package[@name='com.miurasystems.mpi.api.objects']/class[@name='MiuraVersion']">
+		<method name="compareTo" return="int" abstract="false" native="false" synchronized="false" static="false" final="false" deprecated="not deprecated" visibility="public">
+			<parameter name="p0" type="java.lang.Object" />
+		</method>
+	</add-node>
+	
 </metadata>

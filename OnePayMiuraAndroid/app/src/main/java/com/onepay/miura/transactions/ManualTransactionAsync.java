@@ -1,28 +1,19 @@
 package com.onepay.miura.transactions;
 
-import android.content.Intent;
 import android.os.Message;
 import android.util.Log;
-
-import androidx.annotation.Nullable;
-import androidx.annotation.UiThread;
 
 import com.miurasystems.mpi.MpiClient;
 import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
-import com.miurasystems.mpi.api.listener.MiuraDefaultListener;
 import com.miurasystems.mpi.api.objects.EncryptedPan;
-import com.miurasystems.mpi.api.objects.GetNumericDataRequest;
+import com.miurasystems.mpi.enums.ExpirationDateElementType;
 import com.miurasystems.mpi.enums.GetCommandsOptions;
 import com.miurasystems.mpi.enums.GetEncryptedPanError;
 import com.miurasystems.mpi.enums.GetNumericDataError;
 import com.onepay.miura.common.Constants;
 
 import java.util.EnumSet;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 
 import static com.miurasystems.mpi.enums.InterfaceType.MPI;
 
@@ -30,7 +21,6 @@ public class ManualTransactionAsync {
 
     private static final String TAG = ManualTransactionAsync.class.getSimpleName();
 
-    private final MiuraManager mMiuraManager;
     private final MpiClient mMpiClient;
     public Result<EncryptedPan, GetEncryptedPanError> result = null;
     public String mExpireDate = "";
@@ -48,18 +38,23 @@ public class ManualTransactionAsync {
         if (client == null) {
             throw new IllegalArgumentException("MiuraManager has a null client?");
         }
-        mMiuraManager = miuraManager;
         mMpiClient = client;
     }
 
-    public void manualTransaction(boolean isEbt, int timeOut, boolean isCvv) {
+    public void manualTransaction(boolean isEbt, int timeOut, boolean isCvv, String mpiVersion) {
         EnumSet<GetCommandsOptions> options;
         options = GetCommandsOptions.makeOptionsSet(
+                GetCommandsOptions.EnablePanGrouping,
                 GetCommandsOptions.BacklightOn,
                 GetCommandsOptions.KeyboardBacklightOn,
                 GetCommandsOptions.ShowStatusBar);
 
-        result = mMpiClient.getSecureCardData(true, false, false, isCvv, false, options, timeOut);
+        if (isEbt) {
+            result = mMpiClient.getSecureCardData(true, false, true, false, false, isCvv, false, options, null, timeOut);
+        } else {
+            result = mMpiClient.getSecureCardData(true, false, false, false, false, isCvv, false, options, null, timeOut);
+        }
+
 
         if (result.isError()) {
             isUserCanceled = true;
@@ -83,13 +78,18 @@ public class ManualTransactionAsync {
         }
 
         if (!isEbt) {
+            EnumSet<GetCommandsOptions> expireOptions;
+            expireOptions = GetCommandsOptions.makeOptionsSet(
+                    GetCommandsOptions.BacklightOn,
+                    GetCommandsOptions.KeyboardBacklightOn,
+                    GetCommandsOptions.ShowStatusBar);
             isExpireDate = true;
-            Result<String, GetNumericDataError> expireDate = mMpiClient.getNumericData(
-                    GetNumericDataRequest.GetBuilder(0, 154, 191, 4, 0)
-                            .setOption(GetCommandsOptions.KeyboardBacklightOn, true)
-                            .setTimeoutInSeconds(30)
-                            .build());
-
+            Result<String, GetNumericDataError> expireDate;
+            if (mpiVersion.equals("1-60b")) {
+                expireDate = mMpiClient.getExpirationDate(0, 154, 191, ExpirationDateElementType.DateMMYY, expireOptions, null, 30);
+            } else {
+                expireDate = mMpiClient.getExpirationDate(0, 154, 155, ExpirationDateElementType.DateMMYY, expireOptions, null, 30);
+            }
             if (expireDate.isSuccess()) {
                 mExpireDate = expireDate.asSuccess().getValue();
             }
