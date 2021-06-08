@@ -717,8 +717,8 @@ public class TransactionApi {
                         if (!isTransactionTimeOut && !isCancelTransaction) {
                             TransactionResponse response = exception.mErrCode;
                             if (response.name().equals("CONTACTLESS_ABORT_BY_CARD_INSERT")) {
-                                Log.d(TAG, "onError: ");
-                                if (BluetoothModule.getInstance().isSessionOpen()) {
+                                Log.d(TAG, "onError: Contactless ");
+                                /*if (BluetoothModule.getInstance().isSessionOpen()) {
                                     deregisterEventHandlers();
                                     BluetoothModule.getInstance().closeSession();
                                 }
@@ -727,7 +727,7 @@ public class TransactionApi {
                                         restartConnection();
                                     }
                                 });
-                                return;
+                                return;*/
                             }
                             if (response.name().equals("USER_CANCELLED")) {
                                 Log.d(TAG, "Naga......... cancel through PED ...onError: ");
@@ -974,14 +974,6 @@ public class TransactionApi {
                 this.cancel();
             }
         }, mTransactionTime * 1000);
-    }
-
-    public boolean isTransactionInProcess() {
-        return isTransactionInProcess;
-    }
-
-    public void setTransactionInProcess(boolean transactionInProcess) {
-        isTransactionInProcess = transactionInProcess;
     }
 
     private void closeBtSession() {

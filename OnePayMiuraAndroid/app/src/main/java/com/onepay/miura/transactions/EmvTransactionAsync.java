@@ -46,14 +46,19 @@ public class EmvTransactionAsync {
             final int currencyCode,
             final Callback callback
     ) {
+        //noinspection UnnecessaryLocalVariable
+        final EmvTransaction transaction = mEmvTransaction;
+        //noinspection UnnecessaryLocalVariable
+        final MpiClient ourClient = mMpiClient;
+
         mMiuraManager.executeAsync(new MiuraManager.AsyncRunnable() {
             @Override
             public void runOnAsyncThread(@NonNull MpiClient client) {
-                if (!Objects.equals(client, mMpiClient)) {
+                if (!Objects.equals(client, ourClient)) {
                     throw new AssertionError(CLIENT_CHANGED_ERROR_MESSAGE);
                 }
                 try {
-                    EmvTransactionSummary result = mEmvTransaction.startTransaction(
+                    EmvTransactionSummary result = transaction.startTransaction(
                             amountInPennies, currencyCode, callback
                     );
                     callback.onSuccess(result);

@@ -7,6 +7,7 @@ import com.miurasystems.mpi.MpiClient;
 import com.miurasystems.mpi.Result;
 import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.objects.EncryptedPan;
+import com.miurasystems.mpi.api.objects.GetNumericDataRequest;
 import com.miurasystems.mpi.enums.ExpirationDateElementType;
 import com.miurasystems.mpi.enums.GetCommandsOptions;
 import com.miurasystems.mpi.enums.GetEncryptedPanError;
@@ -49,10 +50,10 @@ public class ManualTransactionAsync {
                 GetCommandsOptions.KeyboardBacklightOn,
                 GetCommandsOptions.ShowStatusBar);
 
-        if (isEbt) {
+        if (mpiVersion.equals("1-60b")) {
             result = mMpiClient.getSecureCardData(true, false, true, false, false, isCvv, false, options, null, timeOut);
         } else {
-            result = mMpiClient.getSecureCardData(true, false, false, false, false, isCvv, false, options, null, timeOut);
+            result = mMpiClient.getSecureCardData(true, false, false, isCvv, false, options, timeOut);
         }
 
 
@@ -88,7 +89,11 @@ public class ManualTransactionAsync {
             if (mpiVersion.equals("1-60b")) {
                 expireDate = mMpiClient.getExpirationDate(0, 154, 191, ExpirationDateElementType.DateMMYY, expireOptions, null, 30);
             } else {
-                expireDate = mMpiClient.getExpirationDate(0, 154, 155, ExpirationDateElementType.DateMMYY, expireOptions, null, 30);
+                expireDate = mMpiClient.getNumericData(
+                        GetNumericDataRequest.GetBuilder(0, 154, 155, 4, 0)
+                                .setOption(GetCommandsOptions.KeyboardBacklightOn, true)
+                                .setTimeoutInSeconds(30)
+                                .build());
             }
             if (expireDate.isSuccess()) {
                 mExpireDate = expireDate.asSuccess().getValue();

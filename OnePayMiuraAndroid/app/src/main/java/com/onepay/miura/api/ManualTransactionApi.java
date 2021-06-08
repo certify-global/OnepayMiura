@@ -408,6 +408,8 @@ public class ManualTransactionApi {
         transactionData.setDeviceCode("41");
         transactionData.setEntryMode(entryMode);
         if (data != null) {
+            /*transactionData.setReturnReason(Constants.SuccessReason);
+            transactionData.setReturnStatus(Constants.SuccessStatus);*/
             transactionData.setExpiryDate(expireDate);
             if (data.RedactedPan != null) {
                 transactionData.setCardNumber(data.RedactedPan);
