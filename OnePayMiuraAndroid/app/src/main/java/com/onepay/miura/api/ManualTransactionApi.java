@@ -504,5 +504,6 @@ public class ManualTransactionApi {
         this.returnReason = "";
         this.returnStatus = 0;
         isTransactionTimeOut = false;
+        manualTransactionListener = null;
     }
 }

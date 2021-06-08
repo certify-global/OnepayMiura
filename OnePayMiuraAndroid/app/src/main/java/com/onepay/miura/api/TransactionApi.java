@@ -1,8 +1,11 @@
 package com.onepay.miura.api;
 
 import android.bluetooth.BluetoothDevice;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
@@ -47,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import static com.miurasystems.mpi.enums.InterfaceType.MPI;
 
@@ -68,8 +72,10 @@ public class TransactionApi {
     private boolean isTransactionTimeOut = false;
     private boolean isCancelTransaction = false;
     private boolean isTransactionComplete = false;
+    private boolean isTransactionInProcess = false;
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
     private static final MpiEvents MPI_EVENTS = MiuraManager.getInstance().getMpiEvents();
+    private static final MiuraManager MIURA_MANAGER = MiuraManager.getInstance();
     private TransactionApiData transactionData = null;
     private static DecimalFormat decimalFormat = new DecimalFormat("#.##");
     private boolean isPinRequired = false;
@@ -121,6 +127,7 @@ public class TransactionApi {
         isTransactionTimeOut = false;
         isCancelTransaction = false;
         isTransactionComplete = false;
+        isTransactionInProcess = false;
         isFallBack = false;
         count = 1;
         entryMode = Constants.Swipe;
@@ -159,6 +166,22 @@ public class TransactionApi {
         if (BluetoothModule.getInstance().isSessionOpen()) {
             getDeviceInfo();
         } else {
+            setDeviceReconnectListener();
+            BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
+        }
+    }
+
+    @UiThread
+    public void restartConnection() {
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (Exception e) {
+            Log.d(TAG, "restartConnection: " + e.getMessage());
+        }
+        if (BluetoothModule.getInstance().isSessionOpen()) {
+            getDeviceInfo();
+        } else {
+            Log.d(TAG, "Naga...........restartConnection: ");
             setDeviceReconnectListener();
             BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
         }
@@ -209,33 +232,14 @@ public class TransactionApi {
      */
     public void cancelTransaction() {
         Log.d(TAG, "###RB#### cancelTransaction: ");
-        try {
-            isCancelTransaction = true;
-            deregisterEventHandlers();
-            boolean isChip = mEmvTransactionAsync != null;
-            boolean isSwipe = mMagSwipeTransaction != null;
+        if (!isTransactionInProcess) {
+            try {
+                isCancelTransaction = true;
+                deregisterEventHandlers();
+                boolean isChip = mEmvTransactionAsync != null;
+                boolean isSwipe = mMagSwipeTransaction != null;
 
-            if (!isChip && !isSwipe) {
-                closeBtSession();
-
-                if (transactionListener != null) {
-                    if (isTransactionTimeOut) {
-                        returnReason = Constants.TimeoutReason;
-                        returnStatus = Constants.TimeoutStatus;
-                    } else {
-                        returnReason = Constants.CancelReason;
-                        returnStatus = Constants.CancelStatus;
-                    }
-
-                    transactionListener.onTransactionComplete(createTransactionData(cardData));
-                }
-                return;
-            }
-
-            MiuraDefaultListener listener = new MiuraDefaultListener() {
-                @Override
-                public void onSuccess() {
-                    Log.d(TAG, "Abort Success");
+                if (!isChip && !isSwipe) {
                     closeBtSession();
 
                     if (transactionListener != null) {
@@ -246,34 +250,55 @@ public class TransactionApi {
                             returnReason = Constants.CancelReason;
                             returnStatus = Constants.CancelStatus;
                         }
+
                         transactionListener.onTransactionComplete(createTransactionData(cardData));
                     }
+                    return;
                 }
 
-                @Override
-                public void onError() {
-                    Log.d(TAG, "Abort Failed");
-                    closeBtSession();
+                MiuraDefaultListener listener = new MiuraDefaultListener() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "Abort Success");
+                        closeBtSession();
 
-                    if (transactionListener != null) {
-                        returnReason = Constants.CancelReason;
-                        returnStatus = Constants.CancelStatus;
-                        transactionListener.onTransactionComplete(createTransactionData(cardData));
+                        if (transactionListener != null) {
+                            if (isTransactionTimeOut) {
+                                returnReason = Constants.TimeoutReason;
+                                returnStatus = Constants.TimeoutStatus;
+                            } else {
+                                returnReason = Constants.CancelReason;
+                                returnStatus = Constants.CancelStatus;
+                            }
+                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                        }
                     }
+
+                    @Override
+                    public void onError() {
+                        Log.d(TAG, "Abort Failed");
+                        closeBtSession();
+
+                        if (transactionListener != null) {
+                            returnReason = Constants.CancelReason;
+                            returnStatus = Constants.CancelStatus;
+                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                        }
+                    }
+                };
+                if (isChip) {
+                    abortEmvTransactionAsync(listener);
+                } else {
+                    abortSwipeTransactionAsync(listener);
                 }
-            };
-            if (isChip) {
-                abortEmvTransactionAsync(listener);
-            } else {
-                abortSwipeTransactionAsync(listener);
-            }
-            clearData();
-        } catch (Exception e) {
+                clearData();
+            } catch (Exception e) {
             /*if (transactionListener != null) {
                 returnReason = e.toString();
                 returnStatus = Constants.AbortException;
                 transactionListener.onTransactionComplete(createTransactionData(cardData));
             }*/
+            }
         }
     }
 
@@ -513,12 +538,14 @@ public class TransactionApi {
                 if (cardData.getSredData() == null) {
                     EmvChipInsertStatus insertStatus = EmvTransactionAsync.canProcessEmvChip(cardData);
                     if (insertStatus == EmvChipInsertStatus.CardInsertedOk) {
+                        isTransactionInProcess = true;
                         isEmv = true;
                         entryMode = Constants.Chip;
                         showTextOnDevice("\nProcessing...");
                         startEmvTransaction(EmvTransactionType.Chip);
                         return;
                     }
+                    isTransactionInProcess = false;
                     if (insertStatus == EmvChipInsertStatus.CardIncompatibleError) {
                         count++;
                         Log.d("TAG", "Naga...... count : " + count);
@@ -621,7 +648,6 @@ public class TransactionApi {
     @UiThread
     private void startEmvTransaction(EmvTransactionType emvTransactionType) {
         startTransactionTimer();
-
         if (mEmvTransactionAsync != null) {
             if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
                 abortEmvTransactionAsync(null);
@@ -632,17 +658,22 @@ public class TransactionApi {
             abortSwipeTransactionAsync(null);
         }
 
-        mEmvTransactionAsync = new EmvTransactionAsync(
-                MiuraManager.getInstance(), emvTransactionType
+        EmvTransactionAsync emvTransactionAsync = new EmvTransactionAsync(
+                MIURA_MANAGER, emvTransactionType
         );
+        mEmvTransactionAsync = emvTransactionAsync;
 
-        mEmvTransactionAsync.startTransactionAsync(
+        emvTransactionAsync.startTransactionAsync(
                 (int) this.displayAmount,
                 MiuraApplication.currencyCode.getValue(),
                 new EmvTransactionAsync.Callback() {
 
                     @Override
                     public void publishStartTransactionResult(@NonNull final String response) {
+                        Log.d(TAG, "Naga............ step 2");
+                        isTransactionInProcess = true;
+                        Log.d(TAG, "Naga...............isTransactionInProcess : " + isTransactionInProcess);
+
                         Log.d(TAG, "###RB#### response: " + response);
                         if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
                             if (!isEmv) {
@@ -658,16 +689,20 @@ public class TransactionApi {
                                 returnStatus = Constants.SuccessStatus;
                                 transactionListener.onTransactionComplete(createTransactionData(cardData));
                             }
-                            deregisterEventHandlers();
-                            BluetoothModule.getInstance().closeSession();
+                            if (BluetoothModule.getInstance().isSessionOpen()) {
+                                deregisterEventHandlers();
+                                BluetoothModule.getInstance().closeSession();
+                            }
                         } else {
                             if (transactionListener != null) {
                                 returnReason = Constants.ErrorReason;
                                 returnStatus = Constants.ErrorStatus;
                                 transactionListener.onTransactionComplete(createTransactionData(cardData));
                             }
-                            deregisterEventHandlers();
-                            BluetoothModule.getInstance().closeSession();
+                            if (BluetoothModule.getInstance().isSessionOpen()) {
+                                deregisterEventHandlers();
+                                BluetoothModule.getInstance().closeSession();
+                            }
                         }
                     }
 
@@ -681,7 +716,19 @@ public class TransactionApi {
 
                         if (!isTransactionTimeOut && !isCancelTransaction) {
                             TransactionResponse response = exception.mErrCode;
-
+                            if (response.name().equals("CONTACTLESS_ABORT_BY_CARD_INSERT")) {
+                                Log.d(TAG, "onError: ");
+                                if (BluetoothModule.getInstance().isSessionOpen()) {
+                                    deregisterEventHandlers();
+                                    BluetoothModule.getInstance().closeSession();
+                                }
+                                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                    public void run() {
+                                        restartConnection();
+                                    }
+                                });
+                                return;
+                            }
                             if (response.name().equals("USER_CANCELLED")) {
                                 Log.d(TAG, "Naga......... cancel through PED ...onError: ");
                                 if (transactionListener != null && !isTransactionComplete) {
@@ -929,10 +976,25 @@ public class TransactionApi {
         }, mTransactionTime * 1000);
     }
 
+    public boolean isTransactionInProcess() {
+        return isTransactionInProcess;
+    }
+
+    public void setTransactionInProcess(boolean transactionInProcess) {
+        isTransactionInProcess = transactionInProcess;
+    }
+
     private void closeBtSession() {
         mEmvTransactionAsync = null;
-        deregisterEventHandlers();
-        BluetoothModule.getInstance().closeSession();
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            public void run() {
+                if (BluetoothModule.getInstance().isSessionOpen()) {
+                    deregisterEventHandlers();
+                    BluetoothModule.getInstance().closeSession();
+                }
+            }
+        });
+
     }
 
     private void cancelTransactionTimer() {
@@ -965,6 +1027,7 @@ public class TransactionApi {
         isTransactionTimeOut = false;
         isCancelTransaction = false;
         isTransactionComplete = false;
+        isTransactionInProcess = false;
         this.pedDeviceId = "";
         this.amount = 0.0d;
         this.description = "";
@@ -974,5 +1037,6 @@ public class TransactionApi {
         cardHolderName = "";
         maskedCreditCardNumber = "";
         expireDate = "";
+        transactionListener = null;
     }
 }
