@@ -10,7 +10,7 @@ import java.util.List;
 public class Config {
 
     private static final String REQUIRED_OS_VERSION = "9-2";
-    private static final String REQUIRED_MPI_VERSION = "1-56";
+    private static final String REQUIRED_MPI_VERSION = "1-60b";
     private static final String REQUIRED_RPI_VERSION = "1-6";
     private static final String REQUIRED_RPI_OS_VERSION = "1-6";
     private static final int MAX_TIME_DIFFERENCE_SECONDS = 10;
@@ -78,8 +78,8 @@ public class Config {
         return OS_UPDATE_FILE_NAME;
     }
 
-    public static String getTestMpiFileName() {
-        return (TEST_MPI_FILE_NAME_BASE + REQUIRED_MPI_VERSION + FILE_EXTENSION);
+    public static String getTestMpiFileName(String mpiVersion) {
+        return (TEST_MPI_FILE_NAME_BASE + mpiVersion + FILE_EXTENSION);
     }
 
     public static String getTestMpiConfFileName() {

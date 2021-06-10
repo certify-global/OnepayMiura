@@ -15,6 +15,7 @@ import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SelectFileMode;
 import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
+import com.onepay.miura.common.Constants;
 import com.onepay.miura.data.ConfigApiData;
 
 import java.io.File;
@@ -403,8 +404,8 @@ public class ConfigApi {
                 isTimeOut = true;
                 isTimerTimedOut = true;
                 if (listener != null) {
-                    returnReason = "Timeout, Failure";
-                    returnStatus = 2;
+                    returnReason = Constants.TimeoutReason;
+                    returnStatus = Constants.TimeoutStatus;
                     listener.onConfigUpdateComplete(createConfigData());
                 }
                 this.cancel();

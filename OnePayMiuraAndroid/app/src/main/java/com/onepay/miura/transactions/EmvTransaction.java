@@ -138,7 +138,7 @@ public class EmvTransaction {
             Log.d(TAG, "Naga...........process: "+ tlvData);
         }
         List<TLVObject> startTlv = TLVParser.decode(startResult.asSuccess().getValue());
-        throwIfDeclined(startTlv);
+        //throwIfDeclined(startTlv);
         String startOutput = getTransactionDisplayString(startTlv);
         TLVObject hsmTlv = contactHSM(callback, startOutput);
         if (mAbortAttempted.get()) {

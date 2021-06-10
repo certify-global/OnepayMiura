@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         btAddress = edit_text_bt_address.getText().toString();
         isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
 
-        TransactionApi.getInstance().setTransactionParams(-32.10, "", btAddress, false, false, 125);
+        TransactionApi.getInstance().setTransactionParams(-2.10, "", btAddress, false, false, 125);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -181,12 +181,20 @@ public class MainActivity extends AppCompatActivity {
     }*/
 
     public void onUpdateConfig(View view) {
-        MpiUpdateApi.getInstance().setPerformMpiUpdate(btAddress, 180, "", this);
+
+        String path = Environment.getExternalStorageDirectory() + "/Miura/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
+        String path1 = "/storage/self/primary/mpi_config/";
+
+        // 1-60b
+        // 1-56
+        MpiUpdateApi.getInstance().setPerformMpiUpdate(btAddress, 120, path, "1-56");
 
         MpiUpdateApi.getInstance().performMpiUpdate(new MpiUpdateApi.MpiUpdateListener() {
             @Override
             public void onMpiUpdateComplete(MpiUpdateApiData data) {
-                Log.d("TAG", "onMpiUpdateComplete: ");
+                Log.d("TAG", "Naga...... Reason : " + data.getReturnReason());
+                Log.d("TAG", "Naga...... status : " + data.getReturnStatus());
+
             }
         });
     }
