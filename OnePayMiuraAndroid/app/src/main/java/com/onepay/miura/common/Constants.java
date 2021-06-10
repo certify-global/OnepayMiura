@@ -12,7 +12,9 @@ public class Constants {
     public static String BadFileUploadedReason = "BadFileUploaded";
     public static String InvalidExpireDateReason = "InvalidExpireDate";
     public static String CanceledThroughPEDReason = "User canceled Transaction through PED";
+    public static String LatestMPIReason = "Its on latest, No Update required";
 
+    public static int  SuccessLevelOneStatus = 0;
     public static int SuccessStatus = 1;
     public static int ErrorStatus = 2;
     public static int CancelStatus = 3;
