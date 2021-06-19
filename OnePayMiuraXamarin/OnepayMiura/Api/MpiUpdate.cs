@@ -14,8 +14,6 @@ namespace Onepay.Miura.Api
              {
                 MpiUpdateApi.Instance.SetPerformMpiUpdate(btAddress, tOut, filePath, mpiVersion);
                 MpiUpdateApi.Instance.PerformMpiUpdate(new MpiUpdate.MpiUpdateListener());
-                TransactionApi.Instance.PerformTransaction(new Transaction.TransactionListener());
-
             }
             catch (Exception exception)
              {

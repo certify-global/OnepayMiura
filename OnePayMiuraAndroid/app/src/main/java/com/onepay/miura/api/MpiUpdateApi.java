@@ -62,12 +62,7 @@ public class MpiUpdateApi {
         this.mpiVersion = mpiVersion;
         mpiUpdateData = new MpiUpdateApiData();
 
-    }
-
-    public void performMpiUpdate(MpiUpdateListener listener) {
-        Log.d(TAG, "###RB#### performManualTransaction: ");
         startTimer();
-        this.mpiUpdateListener = listener;
 
         if (BluetoothModule.getInstance().isSessionOpen()) {
             checkDevice();
@@ -75,6 +70,12 @@ public class MpiUpdateApi {
             setDeviceReconnectListener();
             BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
         }
+
+    }
+
+    public void performMpiUpdate(MpiUpdateListener listener) {
+        Log.d(TAG, "###RB#### performManualTransaction: ");
+        this.mpiUpdateListener = listener;
     }
 
     private void reConnectDevice() {
@@ -202,7 +203,7 @@ public class MpiUpdateApi {
             e.printStackTrace();
             Log.d(TAG, "updateMpi: An IOException was caught!");
             if (mpiUpdateListener != null) {
-                returnReason = e.toString();
+                returnReason = "File not found";
                 returnStatus = Constants.ErrorStatus;
                 mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
             }
