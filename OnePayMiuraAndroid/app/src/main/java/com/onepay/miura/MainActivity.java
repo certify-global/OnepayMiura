@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         btAddress = edit_text_bt_address.getText().toString();
         isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
 
-        TransactionApi.getInstance().setTransactionParams(-2.10, "", btAddress, false, false, 125);
+        TransactionApi.getInstance().setTransactionParams(10, "", btAddress, false, false, 125);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
@@ -187,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 1-60b
         // 1-56
-        MpiUpdateApi.getInstance().setPerformMpiUpdate(btAddress, 120, path, "1-56");
+        MpiUpdateApi.getInstance().setPerformMpiUpdate(btAddress, 120, path);
 
         MpiUpdateApi.getInstance().performMpiUpdate(new MpiUpdateApi.MpiUpdateListener() {
             @Override

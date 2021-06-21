@@ -22,7 +22,9 @@ public class Config {
     private static final String OS_FILE_NAME_BASE = "M000-OS-V";
     private static final String OS_UPDATE_FILE_NAME = "M000-OSUPDATE-V1-6.tar.gz";
     private static final String TEST_MPI_FILE_NAME_BASE = "M000-TESTMPI-V";
-    private static final String TEST_MPI_CONF_FILE_NAME = "M000-TESTMPI-Vx-x-CONF00-V6.tar.gz";
+    private static final String TEST_MPI_CONF_FILE_NAME_BASE = "M000-TESTMPI-V";
+    private static final String CONF_FILE_EXTENSION = "-CONF00-V6.tar.gz";
+
 
     private static final String TEST_RPI_OS_FILE_NAME_BASE = "M100-TESTOS-V";
     private static final String TEST_RPI_OS_UPDATE_FILE_NAME = "M100-TESTOSUPDATE-V1-0.tar.gz";
@@ -82,8 +84,8 @@ public class Config {
         return (TEST_MPI_FILE_NAME_BASE + mpiVersion + FILE_EXTENSION);
     }
 
-    public static String getTestMpiConfFileName() {
-        return TEST_MPI_CONF_FILE_NAME;
+    public static String getTestMpiConfFileName(String mpiVersion) {
+        return (TEST_MPI_CONF_FILE_NAME_BASE + mpiVersion + CONF_FILE_EXTENSION);
     }
 
     public static String getTestRpiOsFileName() {
