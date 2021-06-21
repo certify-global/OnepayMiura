@@ -18,6 +18,7 @@ import com.onepay.miura.common.Constants;
 import com.onepay.miura.core.Config;
 import com.onepay.miura.data.MpiUpdateApiData;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,7 +38,9 @@ public class MpiUpdateApi {
     private int returnStatus = 0;
     private String filepath = "";
     private BluetoothConnect.DeviceConnectListener deviceConnectListener;
-    String mpiVersion = "";
+    private int fileVersionNumber = 0;
+    private int versionNumber = 0;
+    private String versionFileName ="1-60b";
 
     public interface MpiUpdateListener {
         void onMpiUpdateComplete(MpiUpdateApiData data);
@@ -51,7 +54,7 @@ public class MpiUpdateApi {
     }
 
 
-    public void setPerformMpiUpdate(String btAddress, int tOut, String filePath, String mpiVersion) {
+    public void setPerformMpiUpdate(String btAddress, int tOut, String filePath) {
         Log.d(TAG, "###RB#### setManualTransactionParams: ");
 
         clearData();
@@ -59,10 +62,14 @@ public class MpiUpdateApi {
             this.bluetoothAddress = btAddress;
         mTimeOut = tOut;
         this.filepath = filePath;
-        this.mpiVersion = mpiVersion;
         mpiUpdateData = new MpiUpdateApiData();
 
+    }
+
+    public void performMpiUpdate(MpiUpdateListener listener) {
+        Log.d(TAG, "###RB#### performManualTransaction: ");
         startTimer();
+        this.mpiUpdateListener = listener;
 
         if (BluetoothModule.getInstance().isSessionOpen()) {
             checkDevice();
@@ -70,12 +77,6 @@ public class MpiUpdateApi {
             setDeviceReconnectListener();
             BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
         }
-
-    }
-
-    public void performMpiUpdate(MpiUpdateListener listener) {
-        Log.d(TAG, "###RB#### performManualTransaction: ");
-        this.mpiUpdateListener = listener;
     }
 
     private void reConnectDevice() {
@@ -147,10 +148,11 @@ public class MpiUpdateApi {
                 @Override
                 public void onSuccess(SoftwareInfo softwareInfo) {
                     String currentMpiVersion = softwareInfo.getMpiVersion();
-                    if (currentMpiVersion.equals(mpiVersion)) {
+                    versionNumber = convertCurrentMpiVersion(currentMpiVersion);
+                    if (versionNumber == 0) {
                         if (mpiUpdateListener != null) {
-                            returnReason = Constants.LatestMPIReason;
-                            returnStatus = Constants.SuccessLevelOneStatus;
+                            returnReason = "Not able to get the version number from the mpi";
+                            returnStatus = Constants.ErrorStatus;
                             mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
                         }
                         closeSession();
@@ -186,8 +188,20 @@ public class MpiUpdateApi {
         final int configSize;
         final int totalSize;
 
-        fileMPIPath = fileMPIPath + Config.getTestMpiFileName(mpiVersion) + ".tmp";
-        fileConfigPath = fileConfigPath + Config.getTestMpiConfFileName() + ".tmp";
+        fileVersionNumber = fileNameVersion();
+
+        if(!(fileVersionNumber > versionNumber)){
+            if (mpiUpdateListener != null) {
+                returnReason = Constants.LatestMPIReason;
+                returnStatus = Constants.SuccessLevelOneStatus;
+                mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
+            }
+            closeSession();
+            return;
+        }
+
+        fileMPIPath = fileMPIPath + Config.getTestMpiFileName(versionFileName) + ".tmp";
+        fileConfigPath = fileConfigPath + Config.getTestMpiConfFileName(versionFileName) + ".tmp";
 
         Log.d(TAG, fileMPIPath + " and " + fileConfigPath);
 
@@ -210,8 +224,13 @@ public class MpiUpdateApi {
             closeSession();
             return;
         }
-
-        Log.d(TAG, "MPI Update starting. Updating to: " + Config.getTestMpiFileName(mpiVersion) + "...");
+        cancelTimer();
+        if (mpiUpdateListener != null) {
+            returnReason = Constants.SuccessReason;
+            returnStatus = Constants.SuccessStatus;
+            mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
+        }
+        Log.d(TAG, "MPI Update starting. Updating to: " + Config.getTestMpiFileName(versionFileName) + "...");
         MiuraManager.getInstance().displayText(" Updating MPI\n Please Wait...", new MiuraDefaultListener() {
             @WorkerThread
             @Override
@@ -220,18 +239,18 @@ public class MpiUpdateApi {
                     @WorkerThread
                     @Override
                     public void onSuccess() {
-                        Log.d(TAG, "onSuccess: Transferring file: " + Config.getTestMpiFileName(mpiVersion) + "...");
-                        MiuraManager.getInstance().transferFileToDevice(Config.getTestMpiFileName(mpiVersion), inputStreamMPI, new APITransferFileListener() {
+                        Log.d(TAG, "onSuccess: Transferring file: " + Config.getTestMpiFileName(versionFileName) + "...");
+                        MiuraManager.getInstance().transferFileToDevice(Config.getTestMpiFileName(versionFileName), inputStreamMPI, new APITransferFileListener() {
                             @WorkerThread
                             @Override
                             public void onSuccess() {
-                                Log.d(TAG, "onSuccess: Successfully transferred file: " + Config.getTestMpiFileName(mpiVersion));
-                                Log.d(TAG, "onSuccess: Transferring MPI config file: " + Config.getTestMpiConfFileName());
-                                MiuraManager.getInstance().transferFileToDevice(Config.getTestMpiConfFileName(), inputStreamConfig, new APITransferFileListener() {
+                                Log.d(TAG, "onSuccess: Successfully transferred file: " + Config.getTestMpiFileName(versionFileName));
+                                Log.d(TAG, "onSuccess: Transferring MPI config file: " + Config.getTestMpiConfFileName(versionFileName));
+                                MiuraManager.getInstance().transferFileToDevice(Config.getTestMpiConfFileName(versionFileName), inputStreamConfig, new APITransferFileListener() {
                                     @WorkerThread
                                     @Override
                                     public void onSuccess() {
-                                        Log.d(TAG, "onSuccess: Successfully transferred file: " + Config.getTestMpiConfFileName());
+                                        Log.d(TAG, "onSuccess: Successfully transferred file: " + Config.getTestMpiConfFileName(versionFileName));
                                         Log.d(TAG, "onSuccess: Applying update...");
                                         //postOnUiThread(DeviceInfoActivity::showPostTransferHardResetDialog);
 
@@ -240,11 +259,7 @@ public class MpiUpdateApi {
                                             @Override
                                             public void onSuccess() {
                                                 Log.d(TAG, "onSuccess: Update applied, restarting device.");
-                                                if (mpiUpdateListener != null) {
-                                                    returnReason = Constants.SuccessReason;
-                                                    returnStatus = Constants.SuccessStatus;
-                                                    mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
-                                                }
+
                                                 closeSession();
                                             }
 
@@ -252,11 +267,11 @@ public class MpiUpdateApi {
                                             @Override
                                             public void onError() {
                                                 Log.d(TAG, "onError: MPIUpdate " + "error reset");
-                                                if (mpiUpdateListener != null) {
+                                               /* if (mpiUpdateListener != null) {
                                                     returnReason = Constants.ErrorReason;
                                                     returnStatus = Constants.ErrorStatus;
                                                     mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
-                                                }
+                                                }*/
                                                 closeSession();
                                             }
                                         });
@@ -265,12 +280,12 @@ public class MpiUpdateApi {
                                     @WorkerThread
                                     @Override
                                     public void onError() {
-                                        Log.d(TAG, "MPIUpdate error on file: " + Config.getTestMpiConfFileName());
-                                        if (mpiUpdateListener != null) {
+                                        Log.d(TAG, "MPIUpdate error on file: " + Config.getTestMpiConfFileName(versionFileName));
+                                        /*if (mpiUpdateListener != null) {
                                             returnReason = Constants.ErrorReason;
                                             returnStatus = Constants.ErrorStatus;
                                             mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
-                                        }
+                                        }*/
                                         closeSession();
                                     }
 
@@ -289,12 +304,12 @@ public class MpiUpdateApi {
                             @WorkerThread
                             @Override
                             public void onError() {
-                                Log.d(TAG, "MPIUpdate error on file: " + Config.getTestMpiFileName(mpiVersion));
-                                if (mpiUpdateListener != null) {
+                                Log.d(TAG, "MPIUpdate error on file: " + Config.getTestMpiFileName(versionFileName));
+                               /* if (mpiUpdateListener != null) {
                                     returnReason = Constants.ErrorReason;
                                     returnStatus = Constants.ErrorStatus;
                                     mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
-                                }
+                                }*/
                                 closeSession();
                             }
 
@@ -314,11 +329,11 @@ public class MpiUpdateApi {
                     @Override
                     public void onError() {
                         Log.d(TAG, "Error on Clear device files");
-                        if (mpiUpdateListener != null) {
+                        /*if (mpiUpdateListener != null) {
                             returnReason = Constants.ErrorReason;
                             returnStatus = Constants.ErrorStatus;
                             mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
-                        }
+                        }*/
                         closeSession();
                     }
                 });
@@ -328,14 +343,71 @@ public class MpiUpdateApi {
             @Override
             public void onError() {
                 Log.d(TAG, "onError: Display text failed");
-                if (mpiUpdateListener != null) {
+              /*  if (mpiUpdateListener != null) {
                     returnReason = Constants.ErrorReason;
                     returnStatus = Constants.ErrorStatus;
                     mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
-                }
+                }*/
                 closeSession();
             }
         });
+    }
+
+    private File[] getListOfFiles() {
+        try {
+            Log.d("Files", "Path: " + this.filepath);
+            File directory = new File(this.filepath);
+            File[] files = directory.listFiles();
+            Log.d("Files", "Size: " + files.length);
+            for (int i = 0; i < files.length; i++) {
+                Log.d("Files", "FileName:" + files[i].getName());
+            }
+            return files;
+        } catch (Exception e) {
+            Log.e(TAG, "getListOfFiles: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private int fileNameVersion() {
+        File[] filesList = getListOfFiles();
+
+        for (File value : filesList) {
+            String fileName = value.toString();
+            if (fileName.contains("M000-TESTMPI")) {
+                if (!fileName.contains("CONF00-V6")) {
+                    String[] part = fileName.split("-V");
+                    String file = part[1].trim();
+                    String[] part2 = file.split(".tar");
+                    String file2 = part2[0].trim();
+                    versionFileName = file2;
+                    String[] part3 = file2.split("1-");
+                    String file3 = part3[1].trim();
+                    file3 = file3.length() < 2 ? file3 : file3.substring(0, 2);
+
+                    try {
+                        fileVersionNumber = Integer.parseInt(file3);
+                    } catch (Exception ex) {
+                        fileVersionNumber = 0;
+                    }
+                }
+            }
+        }
+        return fileVersionNumber;
+    }
+
+    private int convertCurrentMpiVersion(String mpiVersion) {
+        String[] splitVersion = mpiVersion.split("1-");
+        String versionName = splitVersion[1].trim();
+        versionName = versionName.length() < 2 ? versionName : versionName.substring(0, 2);
+
+        try {
+            versionNumber = Integer.parseInt(versionName);
+        } catch (Exception ex) {
+            versionNumber = 0;
+        }
+
+        return versionNumber;
     }
 
     private void closeSession() {
@@ -381,6 +453,8 @@ public class MpiUpdateApi {
         mpiUpdateListener = null;
         deviceConnectListener = null;
         isTimerTimedOut = false;
+        fileVersionNumber = 0;
+        versionNumber = 0;
         cancelTimer();
     }
 }
