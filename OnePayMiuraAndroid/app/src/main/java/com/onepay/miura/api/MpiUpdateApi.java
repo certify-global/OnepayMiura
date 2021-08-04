@@ -41,6 +41,7 @@ public class MpiUpdateApi {
     private int fileVersionNumber = 0;
     private int versionNumber = 0;
     private String versionFileName ="1-60b";
+    private String fileName = "";
 
     public interface MpiUpdateListener {
         void onMpiUpdateComplete(MpiUpdateApiData data);
@@ -54,7 +55,7 @@ public class MpiUpdateApi {
     }
 
 
-    public void setPerformMpiUpdate(String btAddress, int tOut, String filePath) {
+    public void setPerformMpiUpdate(String btAddress, int tOut, String filePath, String configFileName) {
         Log.d(TAG, "###RB#### setManualTransactionParams: ");
 
         clearData();
@@ -63,6 +64,7 @@ public class MpiUpdateApi {
         mTimeOut = tOut;
         this.filepath = filePath;
         mpiUpdateData = new MpiUpdateApiData();
+        this.fileName = configFileName;
 
     }
 
@@ -201,13 +203,13 @@ public class MpiUpdateApi {
         }
 
         fileMPIPath = fileMPIPath + Config.getTestMpiFileName(versionFileName) + ".tmp";
-        fileConfigPath = fileConfigPath + Config.getTestMpiConfFileName(versionFileName) + ".tmp";
+        fileConfigPath = fileConfigPath + Config.getTestMpiConfFileName(fileName) + ".tmp";
 
         Log.d(TAG, fileMPIPath + " and " + fileConfigPath);
 
         try {
             inputStreamMPI = new FileInputStream(fileMPIPath);
-            inputStreamConfig = new FileInputStream(fileMPIPath);
+            inputStreamConfig = new FileInputStream(fileConfigPath);
 
             mpiSize = inputStreamMPI.available();
             configSize = inputStreamConfig.available();
@@ -217,8 +219,8 @@ public class MpiUpdateApi {
             e.printStackTrace();
             Log.d(TAG, "updateMpi: An IOException was caught!");
             if (mpiUpdateListener != null) {
-                returnReason = "File not found";
-                returnStatus = Constants.ErrorStatus;
+                returnReason = "MPI Update CONFIG file Not Found";
+                returnStatus = Constants.FileNotFoundStatus;
                 mpiUpdateListener.onMpiUpdateComplete(createMpiUpdateData());
             }
             closeSession();
@@ -246,11 +248,11 @@ public class MpiUpdateApi {
                             public void onSuccess() {
                                 Log.d(TAG, "onSuccess: Successfully transferred file: " + Config.getTestMpiFileName(versionFileName));
                                 Log.d(TAG, "onSuccess: Transferring MPI config file: " + Config.getTestMpiConfFileName(versionFileName));
-                                MiuraManager.getInstance().transferFileToDevice(Config.getTestMpiConfFileName(versionFileName), inputStreamConfig, new APITransferFileListener() {
+                                MiuraManager.getInstance().transferFileToDevice(Config.getTestMpiConfFileName(fileName), inputStreamConfig, new APITransferFileListener() {
                                     @WorkerThread
                                     @Override
                                     public void onSuccess() {
-                                        Log.d(TAG, "onSuccess: Successfully transferred file: " + Config.getTestMpiConfFileName(versionFileName));
+                                        Log.d(TAG, "onSuccess: Successfully transferred file: " + Config.getTestMpiConfFileName(fileName));
                                         Log.d(TAG, "onSuccess: Applying update...");
                                         //postOnUiThread(DeviceInfoActivity::showPostTransferHardResetDialog);
 
@@ -280,7 +282,7 @@ public class MpiUpdateApi {
                                     @WorkerThread
                                     @Override
                                     public void onError() {
-                                        Log.d(TAG, "MPIUpdate error on file: " + Config.getTestMpiConfFileName(versionFileName));
+                                        Log.d(TAG, "MPIUpdate error on file: " + Config.getTestMpiConfFileName(fileName));
                                         /*if (mpiUpdateListener != null) {
                                             returnReason = Constants.ErrorReason;
                                             returnStatus = Constants.ErrorStatus;
@@ -375,7 +377,7 @@ public class MpiUpdateApi {
         for (File value : filesList) {
             String fileName = value.toString();
             if (fileName.contains("M000-TESTMPI")) {
-                if (!fileName.contains("CONF00-V6")) {
+                if (!fileName.contains("CONF")) {
                     String[] part = fileName.split("-V");
                     String file = part[1].trim();
                     String[] part2 = file.split(".tar");

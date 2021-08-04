@@ -26,7 +26,8 @@ public class Config {
         return (TEST_MPI_FILE_NAME_BASE + mpiVersion + FILE_EXTENSION);
     }
 
-    public static String getTestMpiConfFileName(String mpiVersion) {
-        return (TEST_MPI_CONF_FILE_NAME_BASE + mpiVersion + CONF_FILE_EXTENSION);
+    public static String getTestMpiConfFileName(String fileName) {
+        //return (TEST_MPI_CONF_FILE_NAME_BASE + mpiVersion + CONF_FILE_EXTENSION);
+        return fileName;
     }
 }

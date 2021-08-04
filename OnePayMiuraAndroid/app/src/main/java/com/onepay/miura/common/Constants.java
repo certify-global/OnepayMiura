@@ -22,7 +22,7 @@ public class Constants {
     public static int BluetoothDisconnectedStatus = 5;
     public static int TimeoutStatus = 6;
     public static int InvalidParametersStatus = 7;
-    public static int NoDirectoryStatus = 8;
+    public static int FileNotFoundStatus = 8;
     public static int BadFileUploadedStatus = 9;
     public static int Exception = 10;
     public static int AbortException = 11;

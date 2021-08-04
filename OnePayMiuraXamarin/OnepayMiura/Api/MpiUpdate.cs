@@ -8,11 +8,11 @@ namespace Onepay.Miura.Api
     public class MpiUpdate
     {
          public static event EventHandler<MpiUpdateData> MpiUpdateComplete;
-         public void PerformMpiUpdate(String btAddress, int tOut, String filePath)
+         public void PerformMpiUpdate(String btAddress, int tOut, String filePath, string configFileName)
          {
              try
              {
-                MpiUpdateApi.Instance.SetPerformMpiUpdate(btAddress, tOut, filePath);
+                MpiUpdateApi.Instance.SetPerformMpiUpdate(btAddress, tOut, filePath, configFileName);
                 MpiUpdateApi.Instance.PerformMpiUpdate(new MpiUpdate.MpiUpdateListener());
             }
             catch (Exception exception)

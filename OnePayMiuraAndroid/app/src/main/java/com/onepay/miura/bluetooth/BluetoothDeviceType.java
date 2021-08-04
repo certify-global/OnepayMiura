@@ -22,7 +22,7 @@ public enum BluetoothDeviceType {
     }
 
     public static BluetoothDeviceType getByDeviceTypeByName(String deviceName) {
-        if(deviceName.toLowerCase().contains(POS.name().toLowerCase()) || deviceName.toLowerCase().contains(ITP.name().toLowerCase())) {
+        if(deviceName!= null&&(deviceName.toLowerCase().contains(POS.name().toLowerCase()) || deviceName.toLowerCase().contains(ITP.name().toLowerCase()))) {
             return POS;
         }else{
             return PED;
