@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (Build.VERSION.SDK_INT >= 26 && (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)) {
+       /* if (Build.VERSION.SDK_INT >= 26 && (android.content.Context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)) {
             requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE}, 1000);
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -60,17 +60,15 @@ public class MainActivity extends AppCompatActivity {
                     checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE}, 1000);
             }
-        }
+        }*/
 
         //deviceInfo = findViewById(R.id.deviceInfoButton);
         transaction = findViewById(R.id.transactionButton);
         cancelTransaction = findViewById(R.id.cancelTransactionButton);
-        // manualTransaction = findViewById(R.id.onManualTransaction);
         cancelManualTransaction = findViewById(R.id.onManualCancelTransaction);
         showData = findViewById(R.id.show_text);
         edit_text_bt_address = findViewById(R.id.edit_text_bt_address);
         edit_text_pin = findViewById(R.id.edit_text_pin);
-        //setDeviceClock = findViewById(R.id.setDeviceClock);
     }
 
     //1.Event Handler 2. BroadCast Message
@@ -187,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 1-60b
         // 1-56
-        MpiUpdateApi.getInstance().setPerformMpiUpdate(btAddress, 120, path);
+        MpiUpdateApi.getInstance().setPerformMpiUpdate(btAddress, 120, path, "M000-TESTMPI-Vx-x-CONF121-V1.tar.gz");
 
         MpiUpdateApi.getInstance().performMpiUpdate(new MpiUpdateApi.MpiUpdateListener() {
             @Override
