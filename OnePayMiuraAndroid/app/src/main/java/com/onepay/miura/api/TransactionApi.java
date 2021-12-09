@@ -150,7 +150,7 @@ public class TransactionApi {
      * @param listener callback listener for the transaction
      */
     public void performTransaction(final TransactionListener listener) {
-        Log.d("TAG", "Naga...... count : " + count);
+        Log.d(TAG, "Perform transaction count : " + count);
         Log.d(TAG, "###RB#### perform transaction: ");
         startTransactionTimer();
         this.transactionListener = listener;
@@ -181,7 +181,7 @@ public class TransactionApi {
         if (BluetoothModule.getInstance().isSessionOpen()) {
             getDeviceInfo();
         } else {
-            Log.d(TAG, "Naga...........restartConnection: ");
+            Log.d(TAG, "RestartConnection: ");
             setDeviceReconnectListener();
             BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
         }
@@ -196,13 +196,13 @@ public class TransactionApi {
         deviceConnectListener = new BluetoothConnect.DeviceConnectListener() {
             @Override
             public void onConnectionSuccess() {
-                Log.d("TAG", "###RB#### onConnection Success ");
+                Log.d(TAG, "###RB#### onConnection Success ");
                 getDeviceInfo();
             }
 
             @Override
             public void onConnectionError() {
-                Log.d("TAG", "###RB#### on Connection Error: ");
+                Log.d(TAG, "###RB#### on Connection Error: ");
                 if (!isTimerTimedOut) {
                     reConnectDevice();
                     return;
@@ -216,7 +216,7 @@ public class TransactionApi {
 
             @Override
             public void onDeviceDisconnected() {
-                Log.d("TAG", "onDeviceDisconnected: ");
+                Log.d(TAG, "onDeviceDisconnected: ");
 
                 if (transactionListener != null) {
                     returnReason = Constants.BluetoothDisconnectedReason;
@@ -548,7 +548,7 @@ public class TransactionApi {
                     isTransactionInProcess = false;
                     if (insertStatus == EmvChipInsertStatus.CardIncompatibleError) {
                         count++;
-                        Log.d("TAG", "Naga...... count : " + count);
+                        Log.d(TAG, "HandleTransaction count : " + count);
                         if (count > 3) {
                             isFallBack = true;
                             entryMode = Constants.EmvFallback;
@@ -670,9 +670,8 @@ public class TransactionApi {
 
                     @Override
                     public void publishStartTransactionResult(@NonNull final String response) {
-                        Log.d(TAG, "Naga............ step 2");
                         isTransactionInProcess = true;
-                        Log.d(TAG, "Naga...............isTransactionInProcess : " + isTransactionInProcess);
+                        Log.d(TAG, " isTransactionInProcess : " + isTransactionInProcess);
 
                         Log.d(TAG, "###RB#### response: " + response);
                         if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
@@ -730,7 +729,7 @@ public class TransactionApi {
                                 return;*/
                             }
                             if (response.name().equals("USER_CANCELLED")) {
-                                Log.d(TAG, "Naga......... cancel through PED ...onError: ");
+                                Log.d(TAG, "Cancel through PED onError: ");
                                 if (transactionListener != null && !isTransactionComplete) {
                                     returnReason = Constants.CanceledThroughPEDReason;
                                     returnStatus = Constants.CanceledThroughPEDStatus;
@@ -944,16 +943,18 @@ public class TransactionApi {
 
     private String getSREDKSN(String response) {
         String[] splitAfterMaskedTrackData = response.split("SRED_KSN");
-        String splitResponse = splitAfterMaskedTrackData[1].trim();
+        if (splitAfterMaskedTrackData.length > 1) {
+            String splitResponse = splitAfterMaskedTrackData[1].trim();
 
-        String lines[] = splitResponse.split("\\r?\\n");
-        for (int i = 0; i < lines.length; i++) {
-            if (lines[i].contains("data")) {
-                String[] part = lines[i].split("\\[");
-                String part2 = part[1].trim();
-                String[] split = part2.split("\\]");
-                sRedKsn = split[0].trim();
-                return sRedKsn;
+            String lines[] = splitResponse.split("\\r?\\n");
+            for (int i = 0; i < lines.length; i++) {
+                if (lines[i].contains("data")) {
+                    String[] part = lines[i].split("\\[");
+                    String part2 = part[1].trim();
+                    String[] split = part2.split("\\]");
+                    sRedKsn = split[0].trim();
+                    return sRedKsn;
+                }
             }
         }
         return sRedKsn;
