@@ -360,6 +360,7 @@ public class MpiUpdateApi {
             Log.d("Files", "Path: " + this.filepath);
             File directory = new File(this.filepath);
             File[] files = directory.listFiles();
+            String[] list = directory.list();
             Log.d("Files", "Size: " + files.length);
             for (int i = 0; i < files.length; i++) {
                 Log.d("Files", "FileName:" + files[i].getName());

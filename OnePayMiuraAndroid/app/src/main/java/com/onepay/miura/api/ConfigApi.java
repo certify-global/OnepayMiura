@@ -1,5 +1,6 @@
 package com.onepay.miura.api;
 
+import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -10,6 +11,7 @@ import com.miurasystems.mpi.api.executor.MiuraManager;
 import com.miurasystems.mpi.api.listener.ApiGetDeviceInfoListener;
 import com.miurasystems.mpi.api.objects.Capability;
 import com.miurasystems.mpi.api.utils.DisplayTextUtils;
+import com.miurasystems.mpi.api.utils.StreamBinaryFile;
 import com.miurasystems.mpi.enums.InterfaceType;
 import com.miurasystems.mpi.enums.ResetDeviceType;
 import com.miurasystems.mpi.enums.SelectFileMode;
@@ -21,6 +23,7 @@ import com.onepay.miura.data.ConfigApiData;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +51,7 @@ public class ConfigApi {
     private Boolean isFileExtension = false;
     private Boolean isCygnusCfgExits = false;
     private Boolean isRebootRequired = false;
+    private Context mContext;
 
     public interface ConfigInfoListener {
         void onConfigUpdateComplete(ConfigApiData data);
@@ -67,7 +71,8 @@ public class ConfigApi {
      * @param tOut      Timeout process
      * @param filePath  Config file path
      */
-    public void performConfig(String btAddress, int tOut, String filePath) {
+    public void performConfig(Context context, String btAddress, int tOut, String filePath) {
+        this.mContext = context;
         bluetoothAddress = btAddress;
         mTimeOut = tOut;
         this.filepath = filePath;
@@ -129,8 +134,9 @@ public class ConfigApi {
                     public void runOnAsyncThread(MpiClient client) {
                         if (!isTimeOut) {
                             try {
-                                doFileUploads(client);
-                            } catch (IOException e) {
+                                //doFileUploads(client);
+                                writeConfigFiles(client);
+                            } catch (Exception e) {
                                 Log.e(TAG, "runOnAsyncThread: " + e.toString());
                                 if (listener != null) {
                                     returnReason = "Storage Permission, Failure";
@@ -153,6 +159,50 @@ public class ConfigApi {
                 BluetoothModule.getInstance().closeSession();
             }
         });
+    }
+
+    private void writeConfigFiles(MpiClient client) {
+        System.out.println();
+        this.mpiClient = client;
+        boolean ok = client.displayText(MPI, DisplayTextUtils.getCenteredText("Updating....\nConfig files..."),
+                true, true, true);
+        if (!ok) {
+            Log.e(TAG, "Text failed");
+        }
+
+        InterfaceType interfaceType = InterfaceType.MPI;
+        try {
+            InputStream is = mContext.getAssets().open("mpi_config/emv.cfg");
+            StreamBinaryFile.streamBinaryFile(client, interfaceType, "emv.cfg", is, new StreamBinaryFile.ProgressCallback() {
+                @Override
+                public void onProgress(int i) {
+                    Log.d(TAG, "Progress " + i);
+                }
+            });
+
+            InputStream is1 = mContext.getAssets().open("mpi_config/contactless.cfg");
+            StreamBinaryFile.streamBinaryFile(client, interfaceType, "contactless.cfg", is1, new StreamBinaryFile.ProgressCallback() {
+                @Override
+                public void onProgress(int i) {
+                    Log.d(TAG, "Progress " + i);
+                }
+            });
+
+            InputStream is2 = mContext.getAssets().open("mpi_config/emv-fallback.cfg");
+            StreamBinaryFile.streamBinaryFile(client, interfaceType, "emv-fallback.cfg", is2, new StreamBinaryFile.ProgressCallback() {
+                @Override
+                public void onProgress(int i) {
+                    Log.d(TAG, "Progress " + i);
+                }
+            });
+
+            client.resetDevice(interfaceType, ResetDeviceType.Hard_Reset);
+
+            client.closeSession();
+            listener.onConfigUpdateComplete(createConfigData());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void doFileUploads(@NonNull MpiClient client) throws IOException {

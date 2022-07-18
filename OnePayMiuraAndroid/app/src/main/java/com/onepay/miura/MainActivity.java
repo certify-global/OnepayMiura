@@ -10,8 +10,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.onepay.miura.api.ConfigApi;
 import com.onepay.miura.api.ConnectApi;
@@ -34,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
     Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
     EditText edit_text_bt_address, edit_text_pin;
-    String btAddress = "0C:9A:42:89:2E:B9";
+    //String btAddress = "0C:9A:42:89:2E:B9";
     //String btAddress = "C4:3A:35:40:56:51";
     //String btAddress  = "0C:9A:42:89:2E:CB";
     //String btAddress = "80:5E:4F:93:F6:AC";
@@ -42,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
     //String btAddress = "80:5E:4F:93:F8:1C";
     //80 5e 4f 93 f6 e5
     //String btAddress = "80:5E:4F:93:F6:E5";
+    String btAddress = "0C:9A:42:89:2E:B9";
+    //String btAddress = "C4:3A:35:D0:29:A4";
     boolean isPin = true;
 
     TextView showData;
@@ -51,16 +56,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-       /* if (Build.VERSION.SDK_INT >= 26 && (android.content.Context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)) {
+       /*if (Build.VERSION.SDK_INT >= 26 && (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)) {
             requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE}, 1000);
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
-                    checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-                    checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE}, 1000);
-            }
         }*/
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                    checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_EXTERNAL_STORAGE}, 1000);
+            }
+        }
 
         //deviceInfo = findViewById(R.id.deviceInfoButton);
         transaction = findViewById(R.id.transactionButton);
@@ -180,12 +184,14 @@ public class MainActivity extends AppCompatActivity {
 
     public void onUpdateConfig(View view) {
 
+        //String path = getExternalFilesDir(null) + "/miura/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
         String path = Environment.getExternalStorageDirectory() + "/Miura/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
+
         String path1 = "/storage/self/primary/mpi_config/";
 
         // 1-60b
         // 1-56
-        MpiUpdateApi.getInstance().setPerformMpiUpdate(btAddress, 120, path, "M000-TESTMPI-Vx-x-CONF121-V1.tar.gz");
+        /*MpiUpdateApi.getInstance().setPerformMpiUpdate(btAddress, 120, path, "M000-TESTMPI-V1-60.tar.gz");
 
         MpiUpdateApi.getInstance().performMpiUpdate(new MpiUpdateApi.MpiUpdateListener() {
             @Override
@@ -194,7 +200,22 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", "Naga...... status : " + data.getReturnStatus());
 
             }
+        });*/
+
+        ConfigApi.getInstance().setConfigListener(new ConfigApi.ConfigInfoListener() {
+            @Override
+            public void onConfigUpdateComplete(ConfigApiData data) {
+                Log.d("MainActivity", "Config updated status ");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, "Config files updated ", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
         });
+
+        ConfigApi.getInstance().performConfig(this, btAddress, 120, path);
     }
 
     public void onManualTransaction(View view) {
@@ -317,4 +338,8 @@ public class MainActivity extends AppCompatActivity {
         SetClockApi.getInstance().setDeviceClock(btAddress, 30, sDate1);
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
 }
