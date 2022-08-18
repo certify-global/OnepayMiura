@@ -150,7 +150,7 @@ public class TransactionApi {
      * @param listener callback listener for the transaction
      */
     public void performTransaction(final TransactionListener listener) {
-        Log.d("TAG", "Naga...... count : " + count);
+        Log.d("TAG", " count : " + count);
         Log.d(TAG, "###RB#### perform transaction: ");
         startTransactionTimer();
         this.transactionListener = listener;
@@ -181,7 +181,7 @@ public class TransactionApi {
         if (BluetoothModule.getInstance().isSessionOpen()) {
             getDeviceInfo();
         } else {
-            Log.d(TAG, "Naga...........restartConnection: ");
+            Log.d(TAG, ".....restartConnection: ");
             setDeviceReconnectListener();
             BluetoothConnect.getInstance().connect(this.bluetoothAddress, deviceConnectListener);
         }
@@ -548,7 +548,7 @@ public class TransactionApi {
                     isTransactionInProcess = false;
                     if (insertStatus == EmvChipInsertStatus.CardIncompatibleError) {
                         count++;
-                        Log.d("TAG", "Naga...... count : " + count);
+                        Log.d("TAG", " count : " + count);
                         if (count > 3) {
                             isFallBack = true;
                             entryMode = Constants.EmvFallback;
@@ -670,9 +670,9 @@ public class TransactionApi {
 
                     @Override
                     public void publishStartTransactionResult(@NonNull final String response) {
-                        Log.d(TAG, "Naga............ step 2");
+                        Log.d(TAG, "...... step 2");
                         isTransactionInProcess = true;
-                        Log.d(TAG, "Naga...............isTransactionInProcess : " + isTransactionInProcess);
+                        Log.d(TAG, ".........isTransactionInProcess : " + isTransactionInProcess);
 
                         Log.d(TAG, "###RB#### response: " + response);
                         if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
@@ -730,7 +730,7 @@ public class TransactionApi {
                                 return;*/
                             }
                             if (response.name().equals("USER_CANCELLED")) {
-                                Log.d(TAG, "Naga......... cancel through PED ...onError: ");
+                                Log.d(TAG, "... cancel through PED ...onError: ");
                                 if (transactionListener != null && !isTransactionComplete) {
                                     returnReason = Constants.CanceledThroughPEDReason;
                                     returnStatus = Constants.CanceledThroughPEDStatus;

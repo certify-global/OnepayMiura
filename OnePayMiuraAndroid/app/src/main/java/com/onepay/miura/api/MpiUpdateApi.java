@@ -321,7 +321,7 @@ public class MpiUpdateApi {
                                 Log.d(TAG, "onProgress: Mpi Progress, transferred " + 100 * bytesTransferred / mpiSize + "%");
 
                                 final int pc = (100 * bytesTransferred) / totalSize;
-                                Log.d(TAG, "Naga.......... pc count " + pc);
+                                Log.d(TAG, ".... pc count " + pc);
                                 //postOnUiThread(view -> view.setFileTransferProgress(pc));
                             }
                         });

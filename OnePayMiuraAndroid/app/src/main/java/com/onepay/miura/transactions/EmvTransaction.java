@@ -135,7 +135,7 @@ public class EmvTransaction {
         if (startResult.isSuccess()) {
             byte[] rawData = startResult.asSuccess().getValue();
             tlvData = bytesToHexString(rawData);
-            Log.d(TAG, "Naga...........process: "+ tlvData);
+            Log.d(TAG, ".....process: "+ tlvData);
         }
         List<TLVObject> startTlv = TLVParser.decode(startResult.asSuccess().getValue());
         //throwIfDeclined(startTlv);
