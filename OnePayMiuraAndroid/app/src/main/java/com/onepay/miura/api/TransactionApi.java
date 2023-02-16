@@ -646,7 +646,7 @@ public class TransactionApi {
     }
 
     @UiThread
-    private void startEmvTransaction(EmvTransactionType emvTransactionType) {
+    private void startEmvTransaction(final EmvTransactionType emvTransactionType) {
         startTransactionTimer();
         if (mEmvTransactionAsync != null) {
             if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
@@ -708,6 +708,23 @@ public class TransactionApi {
                     @Override
                     public void onSuccess(@NonNull final EmvTransactionSummary result) {
                         Log.d(TAG, "onSuccess: continue transaction success");
+                        if (emvTransactionType == EmvTransactionType.Contactless
+                            && result.mStartTransactionResponse != null) {
+                            getCardNumber(result.mStartTransactionResponse);
+                            getExpireCardNumber(result.mStartTransactionResponse);
+                            getCardHolderName(result.mStartTransactionResponse);
+                            getSREDKSN(result.mStartTransactionResponse);
+
+                            if (transactionListener != null) {
+                                returnReason = Constants.SuccessReason;
+                                returnStatus = Constants.SuccessStatus;
+                                transactionListener.onTransactionComplete(createTransactionData(cardData));
+                            }
+                            if (BluetoothModule.getInstance().isSessionOpen()) {
+                                deregisterEventHandlers();
+                                BluetoothModule.getInstance().closeSession();
+                            }
+                        }
                     }
 
                     @Override

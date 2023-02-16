@@ -120,6 +120,7 @@ public class EmvTransaction {
                     currencyCode,
                     null
             );
+            callback = null;
         } else {
             startResult = mMpiClient.startTransaction(
                     MPI,
