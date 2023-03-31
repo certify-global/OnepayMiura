@@ -135,12 +135,12 @@ public class EmvTransaction {
         if (startResult.isSuccess()) {
             byte[] rawData = startResult.asSuccess().getValue();
             tlvData = bytesToHexString(rawData);
-            Log.d(TAG, "Naga...........process: "+ tlvData);
+            Log.d(TAG, "...........process: "+ tlvData);
         }
         List<TLVObject> startTlv = TLVParser.decode(startResult.asSuccess().getValue());
         //throwIfDeclined(startTlv);
         String startOutput = getTransactionDisplayString(startTlv);
-        TLVObject hsmTlv = contactHSM(callback, startOutput);
+        TLVObject hsmTlv = contactHSM(null, startOutput);
         if (mAbortAttempted.get()) {
             throw new EmvTransactionException("Aborted");
         }
