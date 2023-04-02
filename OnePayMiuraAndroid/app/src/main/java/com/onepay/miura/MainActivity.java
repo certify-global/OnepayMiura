@@ -20,21 +20,19 @@ import com.onepay.miura.api.ConfigApi;
 import com.onepay.miura.api.ConnectApi;
 import com.onepay.miura.api.DeviceApi;
 import com.onepay.miura.api.ManualTransactionApi;
-import com.onepay.miura.api.MpiUpdateApi;
 import com.onepay.miura.api.SetClockApi;
 import com.onepay.miura.api.TransactionApi;
 import com.onepay.miura.data.ConfigApiData;
 import com.onepay.miura.data.ConnectApiData;
 import com.onepay.miura.data.DeviceApiData;
-import com.onepay.miura.data.MpiUpdateApiData;
 import com.onepay.miura.data.SetClockApiData;
 import com.onepay.miura.data.TransactionApiData;
 
 
 public class MainActivity extends AppCompatActivity {
 
-    Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
-    EditText edit_text_bt_address, edit_text_pin;
+    private Button deviceInfo, transaction, cancelTransaction, manualTransaction, cancelManualTransaction, setDeviceClock;
+    private EditText edit_text_bt_address, edit_text_pin, et_amount;
     //String btAddress = "0C:9A:42:89:2E:B9";
     //String btAddress = "C4:3A:35:40:56:51";
     //String btAddress  = "0C:9A:42:89:2E:CB";
@@ -42,12 +40,10 @@ public class MainActivity extends AppCompatActivity {
     //String btAddress = "80:5E:4F:93:F6:CA";
     //String btAddress = "80:5E:4F:93:F8:1C";
     //80 5e 4f 93 f6 e5
-    //String btAddress = "80:5E:4F:93:F6:E5";
-    String btAddress = "0C:9A:42:89:2E:B9";
-    //String btAddress = "C4:3A:35:D0:29:A4";
-    boolean isPin = true;
-
-    TextView showData;
+    private String btAddress = "";
+    private boolean isPin = true;
+    private TextView showData;
+    private boolean isManualTransaction = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         showData = findViewById(R.id.show_text);
         edit_text_bt_address = findViewById(R.id.edit_text_bt_address);
         edit_text_pin = findViewById(R.id.edit_text_pin);
+        et_amount = findViewById(R.id.edit_text_amount);
     }
 
     //1.Event Handler 2. BroadCast Message
@@ -94,40 +91,51 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void onTransaction(View view) {
-       /* showData.setText("CARD DETAILS");
-        btAddress = edit_text_bt_address.getText().toString();
-        isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
-        btAddress = edit_text_bt_address.getText().toString();
-        TransactionApi.getInstance().setTransactionParams(0.01, "", btAddress, false, false, 125);
-        TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
-            @Override
-            public void onTransactionComplete(TransactionApiData data) {
-                logTransactionData(data);
+    private void init() {
+        isManualTransaction = false;
+    }
 
-                /*Log.d("TAG", " DeviceId : " + data.deviceId());
-                Log.d("TAG", " transactionType : " + data.entryMode());
-                Log.d("TAG", " cardData : " + data.encryptedCardData());
-                Log.d("TAG", " amount : " + data.amount());
-                Log.d("TAG", " returnStatus : " + data.returnStatus());
-                Log.d("TAG", " returnReason : " + data.returnReason());
-                Log.d("TAG", " cardHolderName : " + data.cardHolderName());
-                Log.d("TAG", " cardNumber : " + data.cardNumber());
-                Log.d("TAG", " ccFirstFour : " + data.accountFirstFour());
-                Log.d("TAG", " ccLastFour : " + data.accountLastFour());
-                Log.d("TAG", " expiryDate : " + data.expiryDate());
-                Log.d("TAG", " pedDeviceId : " + data.deviceId());
-                Log.d("TAG", " sRedKSN : " + data.KSN());
-                Log.d("TAG", " sPinKsn : " + data.pinKsn());
-                Log.d("TAG", " sPinData : " + data.pinData());
-                Log.d("TAG", " tlv : " + data.getTLVData());*/
-            }
-        });
+    public void onTransaction(View view) {
+        init();
+        btAddress = edit_text_bt_address.getText().toString();
+        String amount = et_amount.getText().toString();
+        if (amount.isEmpty()) {
+            Toast.makeText(this, "Please enter transaction amount", Toast.LENGTH_LONG).show();
+        } else {
+            TransactionApi.getInstance().setTransactionParams(Double.parseDouble(amount), "", btAddress, false, false, 125);
+            TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
+                    @Override
+                    public void onTransactionComplete(TransactionApiData data) {
+                        logTransactionData(data);
+
+                    /*Log.d("TAG", " DeviceId : " + data.deviceId());
+                    Log.d("TAG", " transactionType : " + data.entryMode());
+                    Log.d("TAG", " cardData : " + data.encryptedCardData());
+                    Log.d("TAG", " amount : " + data.amount());
+                    Log.d("TAG", " returnStatus : " + data.returnStatus());
+                    Log.d("TAG", " returnReason : " + data.returnReason());
+                    Log.d("TAG", " cardHolderName : " + data.cardHolderName());
+                    Log.d("TAG", " cardNumber : " + data.cardNumber());
+                    Log.d("TAG", " ccFirstFour : " + data.accountFirstFour());
+                    Log.d("TAG", " ccLastFour : " + data.accountLastFour());
+                    Log.d("TAG", " expiryDate : " + data.expiryDate());
+                    Log.d("TAG", " pedDeviceId : " + data.deviceId());
+                    Log.d("TAG", " sRedKSN : " + data.KSN());
+                    Log.d("TAG", " sPinKsn : " + data.pinKsn());
+                    Log.d("TAG", " sPinData : " + data.pinData());
+                    Log.d("TAG", " tlv : " + data.getTLVData());*/
+                }
+            });
+        }
     }
 
     public void onCancelTransaction(View view) {
         showData.setText("CARD DETAILS");
-        TransactionApi.getInstance().cancelTransaction();
+        if (!isManualTransaction) {
+            TransactionApi.getInstance().cancelTransaction();
+        } else {
+            ManualTransactionApi.getInstance().cancelTransaction();
+        }
 
     }
 
@@ -195,13 +203,18 @@ public class MainActivity extends AppCompatActivity {
     public void onManualTransaction(View view) {
         /*showData.setText("CARD DETAILS");*/
         btAddress = edit_text_bt_address.getText().toString();
-        ManualTransactionApi.getInstance().setManualTransactionParams(0.01, "", btAddress, 180, true, false);
+        String amount = et_amount.getText().toString();
+        if (amount.isEmpty()) {
+            Toast.makeText(this, "Please enter transaction amount", Toast.LENGTH_LONG).show();
+        } else {
+            isManualTransaction = true;
+            ManualTransactionApi.getInstance().setManualTransactionParams(Double.parseDouble(amount), "", btAddress, 180, false, false);
 
-        ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
+            ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 
-            @Override
-            public void onManualTransactionComplete(TransactionApiData data) {
-                logTransactionData(data);
+                @Override
+                public void onManualTransactionComplete(TransactionApiData data) {
+                    logTransactionData(data);
 
                 /*Log.d("TAG", " DeviceId : " + data.deviceId());
                 Log.d("TAG", " transactionType : " + data.entryMode());
@@ -216,18 +229,24 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", " expiryDate : " + data.expiryDate());
                 Log.d("TAG", " pedDeviceId : " + data.deviceId());
                 Log.d("TAG", " sRedKSN : " + data.KSN());*/
-            }
-        });
+                }
+            });
+        }
     }
 
     public void onManualEbtTransaction(View view) {
         btAddress = edit_text_bt_address.getText().toString();
-        ManualTransactionApi.getInstance().setManualTransactionParams(0.01, "", btAddress, 180, true, false);
-        ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
+        String amount = et_amount.getText().toString();
+        if (amount.isEmpty()) {
+            Toast.makeText(this, "Please enter transaction amount", Toast.LENGTH_LONG).show();
+        } else {
+            isManualTransaction = true;
+            ManualTransactionApi.getInstance().setManualTransactionParams(Double.parseDouble(amount), "", btAddress, 180, true, false);
+            ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 
-            @Override
-            public void onManualTransactionComplete(TransactionApiData data) {
-                logTransactionData(data);
+                @Override
+                public void onManualTransactionComplete(TransactionApiData data) {
+                    logTransactionData(data);
 
                 /*Log.d("TAG", " DeviceId : " + data.deviceId());
                 Log.d("TAG", " transactionType : " + data.entryMode());
@@ -243,8 +262,52 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", " pedDeviceId : " + data.deviceId());
                 Log.d("TAG", " sRedKSN : " + data.KSN());*/
 
+                }
+            });
+        }
+    }
+
+    public void onEbtSwipeClick(View view) {
+        init();
+        btAddress = edit_text_bt_address.getText().toString();
+        edit_text_pin.setVisibility(View.VISIBLE);
+        String amount = et_amount.getText().toString();
+        if (amount.isEmpty()) {
+            Toast.makeText(this, "Please enter transaction amount", Toast.LENGTH_LONG).show();
+        } else {
+            boolean isPinRequired = false;
+            String pin = edit_text_pin.getText().toString();
+            if (pin.isEmpty()) {
+                Toast.makeText(this, "Please enter Is PIN required, true or false", Toast.LENGTH_LONG).show();
+                return;
             }
-        });
+            if (pin.equalsIgnoreCase("true")) {
+                isPinRequired = true;
+            }
+            TransactionApi.getInstance().setTransactionParams(Double.parseDouble(amount), "", btAddress, isPinRequired, true, 125);
+            TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
+                @Override
+                public void onTransactionComplete(TransactionApiData data) {
+                    logTransactionData(data);
+                    /*Log.d("TAG", " DeviceId : " + data.deviceId());
+                    Log.d("TAG", " transactionType : " + data.entryMode());
+                    Log.d("TAG", " cardData : " + data.encryptedCardData());
+                    Log.d("TAG", " amount : " + data.amount());
+                    Log.d("TAG", " returnStatus : " + data.returnStatus());
+                    Log.d("TAG", " returnReason : " + data.returnReason());
+                    Log.d("TAG", " cardHolderName : " + data.cardHolderName());
+                    Log.d("TAG", " cardNumber : " + data.cardNumber());
+                    Log.d("TAG", " ccFirstFour : " + data.accountFirstFour());
+                    Log.d("TAG", " ccLastFour : " + data.accountLastFour());
+                    Log.d("TAG", " expiryDate : " + data.expiryDate());
+                    Log.d("TAG", " pedDeviceId : " + data.deviceId());
+                    Log.d("TAG", " sRedKSN : " + data.KSN());
+                    Log.d("TAG", " sPinKsn : " + data.pinKsn());
+                    Log.d("TAG", " sPinData : " + data.pinData());
+                    Log.d("TAG", " tlv : " + data.getTLVData());*/
+                }
+            });
+        }
     }
 
     public void onCancelManualTransaction(View view) {

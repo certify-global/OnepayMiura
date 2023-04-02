@@ -625,7 +625,9 @@ public class TransactionApi {
                         if (transactionListener != null) {
                             returnReason = Constants.SuccessReason;
                             returnStatus = Constants.SuccessStatus;
-                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                            TransactionApiData data = createTransactionData(cardData);
+                            data.setDebit(true);
+                            transactionListener.onTransactionComplete(data);
                         }
 
                         closeBtSession();

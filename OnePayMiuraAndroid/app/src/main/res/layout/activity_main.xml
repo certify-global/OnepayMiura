@@ -6,31 +6,28 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-
     <EditText
         android:id="@+id/edit_text_bt_address"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="15dp"
         android:hint="Enter Bt address"
         android:inputType="textPersonName|textCapWords"
-        android:text="0C:9A:42:89:2E:CB"
         android:textColor="@color/colorBlack"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
-        android:id="@+id/edit_text_pin"
-        android:layout_width="wrap_content"
+        android:id="@+id/edit_text_amount"
+        android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="Type True or False"
-        android:inputType="textPersonName|textCapWords"
-        android:text="true"
+        android:layout_marginTop="15dp"
+        android:layout_marginEnd="10dp"
+        android:inputType="numberDecimal"
+        android:hint="Enter amount"
         android:textColor="@color/colorBlack"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toEndOf="@+id/edit_text_bt_address"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -43,7 +40,7 @@
         android:onClick="onTransaction"
         android:text="TRANSACTION"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/edit_text_bt_address" />
+        app:layout_constraintTop_toBottomOf="@+id/edit_text_amount" />
 
     <Button
         android:id="@+id/cancelTranButton"
@@ -54,8 +51,7 @@
         android:onClick="onCancelTransaction"
         android:text="CANCEL TRANSACTION"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/edit_text_pin" />
-
+        app:layout_constraintTop_toBottomOf="@+id/edit_text_amount" />
 
     <Button
         android:id="@+id/cancelTransactionButton"
@@ -116,20 +112,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/onManualCancelTransaction"/>
 
-
     <Button
-        android:id="@+id/osUpdateButton"
+        android:id="@+id/os_update"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         android:onClick="onOSUpdate"
         android:text="OS Update"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/manualTransaction" />
 
     <Button
-        android:id="@+id/onMpiUpdate"
+        android:id="@+id/mpi_update"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
@@ -138,5 +133,29 @@
         android:text="MPI Update"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/manualTransaction" />
+
+    <Button
+        android:id="@+id/ebt_swipe_transaction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        android:onClick="onEbtSwipeClick"
+        android:text="EBT Swipe Transaction"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/os_update" />
+
+    <EditText
+        android:id="@+id/edit_text_pin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="15dp"
+        android:layout_marginTop="05dp"
+        android:hint="Is PIN Required"
+        android:inputType="textPersonName|textCapWords"
+        android:visibility="gone"
+        android:textColor="@color/colorBlack"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ebt_swipe_transaction" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
