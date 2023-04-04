@@ -388,7 +388,8 @@ public class MainActivity extends AppCompatActivity {
                 + "\n" + "SRedKSN :" + data.KSN()
                 + "\n" + "PinKsn :" + data.pinKsn()
                 + "\n" + "PinData :" + data.pinData()
-                + "\n" + "isDebit :" + data.isDebit();
+                + "\n" + "isDebit :" + data.isDebit()
+                + "\n" + "tlv data :" + data.getTLVData();
         Log.d("TAG", cardData);
     }
 }

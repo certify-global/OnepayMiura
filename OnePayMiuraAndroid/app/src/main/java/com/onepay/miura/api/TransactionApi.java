@@ -896,13 +896,11 @@ public class TransactionApi {
 
     private void getTransactionDetails(String transactionResponse) {
         getCardNumber(transactionResponse);
-        if (isDebitTransaction(getCardVerificationMethod(transactionResponse))) {
-            pinData = getPinData(transactionResponse);
+        if (isDebitTransaction(getCardVerificationMethod(transactionResponse), transactionResponse)) {
             transactionData.setDebit(true);
         }
         getExpireCardNumber(transactionResponse);
         getCardHolderName(transactionResponse);
-        getCardApplicationLabel(transactionResponse);
         getApplicationID(transactionResponse);
         getSREDKSN(transactionResponse);
         getSREDData(transactionResponse);
@@ -996,14 +994,16 @@ public class TransactionApi {
     }
 
     private String getApplicationID(String response) {
+        String aid = "";
         try {
             String[] splitAfterMaskedTrackData = response.split("Application_Identifier_AID_terminal");
             String splitResponse = splitAfterMaskedTrackData[1].trim();
             aid = getData(splitResponse, "data");
-            return aid;
+            this.aid = aid.toUpperCase();
+            return this.aid;
         } catch (Exception ex) {
             Log.d(TAG, "###RB#### exception at cardHolderName: " + ex.toString());
-            return aid;
+            return this.aid;
         }
     }
 
@@ -1077,15 +1077,21 @@ public class TransactionApi {
         return data;
     }
 
-    private boolean isDebitTransaction(String strValue) {
+    private boolean isDebitTransaction(String cvmValue, String transactionResponse) {
         boolean result = false;
-        if (!strValue.isEmpty() && Utils.isNumeric(strValue)) {
-            int data = Utils.getByteData(strValue);
+        getCardApplicationLabel(transactionResponse);
+        if (!cvmValue.isEmpty() && Utils.isNumeric(cvmValue)) {
+            int data = Utils.getByteData(cvmValue);
             int firstByte = Utils.getByteData(String.valueOf(data));
-            if (firstByte == 2 || firstByte == 42) {
+            if ((firstByte == 2 || firstByte == 42) &&
+                    (applicationLabel.toLowerCase().contains("debit"))) {
                 isDebitTransaction = true;
                 result = true;
             }
+        }
+        pinData = getPinData(transactionResponse);
+        if (!pinData.isEmpty() && applicationLabel.toLowerCase().contains("debit")) {
+            result = true;
         }
         return result;
     }
