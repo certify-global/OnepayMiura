@@ -7,6 +7,8 @@ public class TransactionApiData {
     private double amount;
     private int returnStatus;
     private String returnReason;
+    private String applicationLabel;
+    private String aid;
     private String cardHolderName;
     private String cardNumber;
     private String accountFirstFour;
@@ -17,6 +19,7 @@ public class TransactionApiData {
     private String maskedTrack2Data;
     private String pinData;
     private String pinKsn;
+    private boolean isDebit;
     private String TLVData;
 
     public String deviceCode() {
@@ -155,4 +158,27 @@ public class TransactionApiData {
         this.TLVData = TLVData;
     }
 
+    public String applicationLabel() {
+        return applicationLabel;
+    }
+
+    public void setApplicationLabel(String applicationLabel) {
+        this.applicationLabel = applicationLabel;
+    }
+
+    public String aid() {
+        return aid;
+    }
+
+    public void setAid(String aid) {
+        this.aid = aid;
+    }
+
+    public boolean isDebit() {
+        return isDebit;
+    }
+
+    public void setDebit(boolean isDebit) {
+        this.isDebit = isDebit;
+    }
 }

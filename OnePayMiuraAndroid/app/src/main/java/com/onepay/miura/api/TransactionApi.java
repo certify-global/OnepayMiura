@@ -44,6 +44,7 @@ import com.onepay.miura.transactions.EmvTransactionAsync;
 import com.onepay.miura.transactions.MagSwipeTransaction;
 import com.onepay.miura.transactions.MagSwipeTransactionAsync;
 import com.onepay.miura.transactions.SignatureSummary;
+import com.onepay.miura.utils.Utils;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -90,6 +91,12 @@ public class TransactionApi {
     private boolean isEbt = false;
     private boolean isFallBack = false;
     private int count = 1;
+    private boolean isDebitTransaction = false;
+    private String sRedKsn = "";
+    private String sRedData = "";
+    private String sPinKsn = "";
+    private String applicationLabel = "";
+    private String aid = "";
 
     @Nullable
     private EmvTransactionAsync mEmvTransactionAsync;
@@ -618,7 +625,9 @@ public class TransactionApi {
                         if (transactionListener != null) {
                             returnReason = Constants.SuccessReason;
                             returnStatus = Constants.SuccessStatus;
-                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                            TransactionApiData data = createTransactionData(cardData);
+                            data.setDebit(true);
+                            transactionListener.onTransactionComplete(data);
                         }
 
                         closeBtSession();
@@ -646,7 +655,7 @@ public class TransactionApi {
     }
 
     @UiThread
-    private void startEmvTransaction(final EmvTransactionType emvTransactionType) {
+    private void startEmvTransaction(EmvTransactionType emvTransactionType) {
         startTransactionTimer();
         if (mEmvTransactionAsync != null) {
             if (!mEmvTransactionAsync.mEmvTransaction.errorEmv) {
@@ -678,10 +687,7 @@ public class TransactionApi {
                             if (!isEmv) {
                                 entryMode = Constants.NFC;
                             }
-                            getCardNumber(response);
-                            getExpireCardNumber(response);
-                            getCardHolderName(response);
-                            getSREDKSN(response);
+                            getTransactionDetails(response);
 
                             if (transactionListener != null) {
                                 returnReason = Constants.SuccessReason;
@@ -708,22 +714,16 @@ public class TransactionApi {
                     @Override
                     public void onSuccess(@NonNull final EmvTransactionSummary result) {
                         Log.d(TAG, "onSuccess: continue transaction success");
-                        if (emvTransactionType == EmvTransactionType.Contactless
-                            && result.mStartTransactionResponse != null) {
-                            getCardNumber(result.mStartTransactionResponse);
-                            getExpireCardNumber(result.mStartTransactionResponse);
-                            getCardHolderName(result.mStartTransactionResponse);
-                            getSREDKSN(result.mStartTransactionResponse);
+                        getTransactionDetails(result.mStartTransactionResponse);
 
-                            if (transactionListener != null) {
-                                returnReason = Constants.SuccessReason;
-                                returnStatus = Constants.SuccessStatus;
-                                transactionListener.onTransactionComplete(createTransactionData(cardData));
-                            }
-                            if (BluetoothModule.getInstance().isSessionOpen()) {
-                                deregisterEventHandlers();
-                                BluetoothModule.getInstance().closeSession();
-                            }
+                        if (transactionListener != null) {
+                            returnReason = Constants.SuccessReason;
+                            returnStatus = Constants.SuccessStatus;
+                            transactionListener.onTransactionComplete(createTransactionData(cardData));
+                        }
+                        if (BluetoothModule.getInstance().isSessionOpen()) {
+                            deregisterEventHandlers();
+                            BluetoothModule.getInstance().closeSession();
                         }
                     }
 
@@ -833,9 +833,15 @@ public class TransactionApi {
                     }
                 }
                 transactionData.setMaskedTrack2Data(cardData.getMaskedTrack2Data().toString());
-                transactionData.setKSN(cardData.getSredKSN().toUpperCase());
-                transactionData.setEncryptedCardData(cardData.getSredData().toUpperCase());
-
+                if (isDebitTransaction) {
+                    transactionData.setKSN(sRedKsn);
+                    transactionData.setEncryptedCardData(sRedData);
+                } else {
+                    transactionData.setKSN(cardData.getSredKSN().toUpperCase());
+                    transactionData.setEncryptedCardData(cardData.getSredData().toUpperCase());
+                }
+                transactionData.setAid(aid);
+                transactionData.setApplicationLabel(applicationLabel);
                 transactionData.setPinData(pinData);
                 transactionData.setPinKsn(pinKsn);
             } else {
@@ -858,6 +864,11 @@ public class TransactionApi {
                                 transactionData.setCardHolderName(cardHolderName);
                             if (sRedKsn != null && sRedKsn.length() > 0)
                                 transactionData.setKSN(sRedKsn.toUpperCase());
+                            transactionData.setEncryptedCardData(sRedData);
+                            transactionData.setAid(aid);
+                            transactionData.setApplicationLabel(applicationLabel);
+                            transactionData.setPinData(pinData);
+                            transactionData.setPinKsn(sPinKsn);
                         }
                     }
                 }
@@ -880,6 +891,20 @@ public class TransactionApi {
 
         expireNumber = lastTwo + firstTwo;
         return expireNumber;
+    }
+
+    private void getTransactionDetails(String transactionResponse) {
+        getCardNumber(transactionResponse);
+        if (isDebitTransaction(getCardVerificationMethod(transactionResponse), transactionResponse)) {
+            transactionData.setDebit(true);
+        }
+        getExpireCardNumber(transactionResponse);
+        getCardHolderName(transactionResponse);
+        getCardApplicationLabel(transactionResponse);
+        getApplicationID(transactionResponse);
+        getSREDKSN(transactionResponse);
+        getSREDData(transactionResponse);
+        getPinKSN(transactionResponse);
     }
 
     private String getCardNumber(String response) {
@@ -956,25 +981,117 @@ public class TransactionApi {
         }
     }
 
-    private String sRedKsn = "";
+    private String getCardApplicationLabel(String response) {
+        try {
+            String[] splitAfterMaskedTrackData = response.split("Application_Label");
+            String splitResponse = splitAfterMaskedTrackData[1].trim();
+            applicationLabel = getData(splitResponse, "text");
+            return applicationLabel;
+        } catch (Exception ex) {
+            Log.d(TAG, "###RB#### exception at cardHolderName: " + ex.toString());
+            return applicationLabel;
+        }
+    }
+
+    private String getApplicationID(String response) {
+        try {
+            String[] splitAfterMaskedTrackData = response.split("Application_Identifier_AID_terminal");
+            String splitResponse = splitAfterMaskedTrackData[1].trim();
+            aid = getData(splitResponse, "data");
+            return aid.toUpperCase();
+        } catch (Exception ex) {
+            Log.d(TAG, "###RB#### exception at cardHolderName: " + ex.toString());
+            return aid;
+        }
+    }
+
+    private String getCardVerificationMethod(String response) {
+        String cvmData = "";
+        try {
+            String[] splitAfterMaskedTrackData = response.split("Cardholder_Verification_Method_CVM_Results");
+            String splitResponse = splitAfterMaskedTrackData[1].trim();
+            cvmData = getData(splitResponse, "data");
+            return cvmData;
+        } catch (Exception ex) {
+            Log.d(TAG, "###RB#### exception at cardHolderName: " + ex.toString());
+            return cvmData;
+        }
+    }
+
+    private String getPinData(String response) {
+        String pinData = "";
+        try {
+            String[] splitAfterMaskedTrackData = response.split("Online_PIN_Data");
+            String splitResponse = splitAfterMaskedTrackData[1].trim();
+            pinData = getData(splitResponse, "data");
+            return pinData;
+        } catch (Exception ex) {
+            Log.d(TAG, "###RB#### exception at cardHolderName: " + ex.toString());
+            return pinData;
+        }
+    }
 
     private String getSREDKSN(String response) {
-        String[] splitAfterMaskedTrackData = response.split("SRED_KSN");
-        if (splitAfterMaskedTrackData.length > 1) {
+        if (response.contains("SRED_KSN")) {
+            String[] splitAfterMaskedTrackData = response.split("SRED_KSN");
             String splitResponse = splitAfterMaskedTrackData[1].trim();
-
-            String lines[] = splitResponse.split("\\r?\\n");
-            for (int i = 0; i < lines.length; i++) {
-                if (lines[i].contains("data")) {
-                    String[] part = lines[i].split("\\[");
-                    String part2 = part[1].trim();
-                    String[] split = part2.split("\\]");
-                    sRedKsn = split[0].trim();
-                    return sRedKsn;
-                }
-            }
+            sRedKsn = getData(splitResponse, "data");
         }
         return sRedKsn;
+    }
+
+    private String getSREDData(String response) {
+        if (response.contains("SRED_Data")) {
+            String[] splitAfterMaskedTrackData = response.split("SRED_Data");
+            String splitResponse = splitAfterMaskedTrackData[1].trim();
+            sRedData = getData(splitResponse, "data");
+        }
+        return sRedData;
+    }
+
+    private String getPinKSN(String response) {
+        if (response.contains("Online_PIN_KSN")) {
+            String[] splitAfterMaskedTrackData = response.split("Online_PIN_KSN");
+            String splitResponse = splitAfterMaskedTrackData[1].trim();
+            sPinKsn = getData(splitResponse, "data");
+        }
+        return sPinKsn;
+    }
+
+    private String getData(String value, String tag) {
+        String data = "";
+        String lines[] = value.split("\\r?\\n");
+        for (int i = 0; i < lines.length; i++) {
+            if (lines[i].contains(tag)) {
+                String[] part = lines[i].split(tag);
+                String split1 = part[1];
+                String[] part1 = split1.split("\\[");
+                String part2 = part1[1].trim();
+                String[] split = part2.split("\\]");
+                data = split[0].trim();
+                return data;
+            }
+        }
+        return data;
+    }
+
+    private boolean isDebitTransaction(String cvmValue, String transactionResponse) {
+        boolean result = false;
+        getCardApplicationLabel(transactionResponse);
+        if (!cvmValue.isEmpty() && Utils.isNumeric(cvmValue)) {
+            int data = Utils.getByteData(cvmValue);
+            int firstByte = Utils.getByteData(String.valueOf(data));
+            if ((firstByte == 2 || firstByte == 42) &&
+                    (applicationLabel.toLowerCase().contains("debit"))) {
+                isDebitTransaction = true;
+                result = true;
+            }
+        }
+        pinData = getPinData(transactionResponse);
+        if (!pinData.isEmpty() && applicationLabel.toLowerCase().contains("debit")) {
+            result = true;
+        }
+        return result;
     }
 
     /**
@@ -1048,5 +1165,9 @@ public class TransactionApi {
         maskedCreditCardNumber = "";
         expireDate = "";
         transactionListener = null;
+        isDebitTransaction = false;
+        pinData = "";
+        applicationLabel = "";
+        aid = "";
     }
 }
