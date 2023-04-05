@@ -900,7 +900,6 @@ public class TransactionApi {
         }
         getExpireCardNumber(transactionResponse);
         getCardHolderName(transactionResponse);
-        getCardApplicationLabel(transactionResponse);
         getApplicationID(transactionResponse);
         getSREDKSN(transactionResponse);
         getSREDData(transactionResponse);
@@ -994,14 +993,16 @@ public class TransactionApi {
     }
 
     private String getApplicationID(String response) {
+        String aid = "";
         try {
             String[] splitAfterMaskedTrackData = response.split("Application_Identifier_AID_terminal");
             String splitResponse = splitAfterMaskedTrackData[1].trim();
             aid = getData(splitResponse, "data");
-            return aid.toUpperCase();
+            this.aid = aid.toUpperCase();
+            return this.aid;
         } catch (Exception ex) {
             Log.d(TAG, "###RB#### exception at cardHolderName: " + ex.toString());
-            return aid;
+            return this.aid;
         }
     }
 
