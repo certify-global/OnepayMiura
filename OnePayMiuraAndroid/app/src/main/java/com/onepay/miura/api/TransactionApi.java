@@ -716,6 +716,7 @@ public class TransactionApi {
                         Log.d(TAG, "onSuccess: continue transaction success");
                         if (emvTransactionType == EmvTransactionType.Contactless
                                 && result.mStartTransactionResponse != null) {
+                            entryMode = Constants.NFC;
                             getTransactionDetails(result.mStartTransactionResponse);
 
                             if (transactionListener != null) {
