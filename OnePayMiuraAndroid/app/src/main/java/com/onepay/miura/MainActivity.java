@@ -106,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
             TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
                     @Override
                     public void onTransactionComplete(TransactionApiData data) {
-                        logTransactionData(data);
+                        logTransactionData(data, false);
 
                     /*Log.d("TAG", " DeviceId : " + data.deviceId());
                     Log.d("TAG", " transactionType : " + data.entryMode());
@@ -214,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onManualTransactionComplete(TransactionApiData data) {
-                    logTransactionData(data);
+                    logTransactionData(data, false);
 
                 /*Log.d("TAG", " DeviceId : " + data.deviceId());
                 Log.d("TAG", " transactionType : " + data.entryMode());
@@ -246,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onManualTransactionComplete(TransactionApiData data) {
-                    logTransactionData(data);
+                    logTransactionData(data, true);
 
                 /*Log.d("TAG", " DeviceId : " + data.deviceId());
                 Log.d("TAG", " transactionType : " + data.entryMode());
@@ -288,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
             TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
                 @Override
                 public void onTransactionComplete(TransactionApiData data) {
-                    logTransactionData(data);
+                    logTransactionData(data, true);
                     /*Log.d("TAG", " DeviceId : " + data.deviceId());
                     Log.d("TAG", " transactionType : " + data.entryMode());
                     Log.d("TAG", " cardData : " + data.encryptedCardData());
@@ -369,7 +369,7 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
-    private void logTransactionData(TransactionApiData data) {
+    private void logTransactionData(TransactionApiData data, boolean isEbt) {
         String cardData = "CARD DETAILS"
                 + "\n" + "DeviceId :" + data.deviceId()
                 + "\n" + "TransactionType :" + data.entryMode()
@@ -389,6 +389,7 @@ public class MainActivity extends AppCompatActivity {
                 + "\n" + "PinKsn :" + data.pinKsn()
                 + "\n" + "PinData :" + data.pinData()
                 + "\n" + "isDebit :" + data.isDebit()
+                + "\n" + "isEbt :" + isEbt
                 + "\n" + "tlv data :" + data.getTLVData();
         Log.d("TAG", cardData);
     }
