@@ -563,6 +563,7 @@ public class TransactionApi {
                     }
 
                     if (!isFallBack) {
+                        entryMode = Constants.NFC;
                         startEmvTransaction(EmvTransactionType.Contactless);
                         return;
                     }
@@ -714,9 +715,9 @@ public class TransactionApi {
                     @Override
                     public void onSuccess(@NonNull final EmvTransactionSummary result) {
                         Log.d(TAG, "onSuccess: continue transaction success");
-                        if (emvTransactionType == EmvTransactionType.Contactless
+                        if ((emvTransactionType == EmvTransactionType.Contactless ||
+                                emvTransactionType == EmvTransactionType.Chip)
                                 && result.mStartTransactionResponse != null) {
-                            entryMode = Constants.NFC;
                             getTransactionDetails(result.mStartTransactionResponse);
 
                             if (transactionListener != null) {
