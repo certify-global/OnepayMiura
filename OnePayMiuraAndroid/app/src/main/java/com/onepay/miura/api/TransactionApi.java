@@ -900,6 +900,7 @@ public class TransactionApi {
 
     private void getTransactionDetails(String transactionResponse) {
         getCardNumber(transactionResponse);
+        getCardApplicationLabel(transactionResponse);
         if (isDebitTransaction(getCardVerificationMethod(transactionResponse), transactionResponse)) {
             transactionData.setDebit(true);
         }
@@ -1083,18 +1084,16 @@ public class TransactionApi {
 
     private boolean isDebitTransaction(String cvmValue, String transactionResponse) {
         boolean result = false;
-        getCardApplicationLabel(transactionResponse);
         if (!cvmValue.isEmpty() && Utils.isNumeric(cvmValue)) {
             int data = Utils.getByteData(cvmValue);
             int firstByte = Utils.getByteData(String.valueOf(data));
-            if ((firstByte == 2 || firstByte == 42) &&
-                    (applicationLabel.toLowerCase().contains("debit"))) {
+            if ((firstByte == 2) || (firstByte == 42)) {
                 isDebitTransaction = true;
                 result = true;
             }
         }
         pinData = getPinData(transactionResponse);
-        if (!pinData.isEmpty() && applicationLabel.toLowerCase().contains("debit")) {
+        if (!pinData.isEmpty()) {
             result = true;
         }
         return result;
