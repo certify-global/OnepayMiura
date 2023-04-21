@@ -563,6 +563,7 @@ public class TransactionApi {
                     }
 
                     if (!isFallBack) {
+                        entryMode = Constants.NFC;
                         startEmvTransaction(EmvTransactionType.Contactless);
                         return;
                     }
@@ -715,9 +716,9 @@ public class TransactionApi {
                     @Override
                     public void onSuccess(@NonNull final EmvTransactionSummary result) {
                         Log.d(TAG, "onSuccess: continue transaction success");
-                        if (emvTransactionType == EmvTransactionType.Contactless
-                                && result.mStartTransactionResponse != null) {
-                            entryMode = Constants.NFC;
+                        if ((emvTransactionType == EmvTransactionType.Contactless ||
+                                emvTransactionType == EmvTransactionType.Chip)
+                                && (result.mStartTransactionResponse != null)) {
                             getTransactionDetails(result.mStartTransactionResponse);
 
                             if (transactionListener != null) {
@@ -1083,19 +1084,14 @@ public class TransactionApi {
 
     private boolean isDebitTransaction(String cvmValue, String transactionResponse) {
         boolean result = false;
-        getCardApplicationLabel(transactionResponse);
-        if (!cvmValue.isEmpty() && Utils.isNumeric(cvmValue)) {
+        pinData = getPinData(transactionResponse);
+        if (!pinData.isEmpty()) {
             int data = Utils.getByteData(cvmValue);
             int firstByte = Utils.getByteData(String.valueOf(data));
-            if ((firstByte == 2 || firstByte == 42) &&
-                    (applicationLabel.toLowerCase().contains("debit"))) {
-                isDebitTransaction = true;
+            if (cvmValue.isEmpty() || (Utils.isNumeric(cvmValue) &&
+                    ((firstByte == 2) || (firstByte == 42)))) {
                 result = true;
             }
-        }
-        pinData = getPinData(transactionResponse);
-        if (!pinData.isEmpty() && applicationLabel.toLowerCase().contains("debit")) {
-            result = true;
         }
         return result;
     }
