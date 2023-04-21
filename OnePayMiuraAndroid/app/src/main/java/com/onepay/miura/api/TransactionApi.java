@@ -1084,17 +1084,14 @@ public class TransactionApi {
 
     private boolean isDebitTransaction(String cvmValue, String transactionResponse) {
         boolean result = false;
-        if (!cvmValue.isEmpty() && Utils.isNumeric(cvmValue)) {
-            int data = Utils.getByteData(cvmValue);
-            int firstByte = Utils.getByteData(String.valueOf(data));
-            if ((firstByte == 2) || (firstByte == 42)) {
-                isDebitTransaction = true;
-                result = true;
-            }
-        }
         pinData = getPinData(transactionResponse);
         if (!pinData.isEmpty()) {
-            result = true;
+            int data = Utils.getByteData(cvmValue);
+            int firstByte = Utils.getByteData(String.valueOf(data));
+            if (cvmValue.isEmpty() || (Utils.isNumeric(cvmValue) &&
+                    ((firstByte == 2) || (firstByte == 42)))) {
+                result = true;
+            }
         }
         return result;
     }
