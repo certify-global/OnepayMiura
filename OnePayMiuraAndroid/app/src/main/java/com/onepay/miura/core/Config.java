@@ -9,8 +9,8 @@ import java.util.List;
 
 public class Config {
 
-    private static final String REQUIRED_OS_VERSION = "9-2";
-    private static final String REQUIRED_MPI_VERSION = "1-60b";
+    private static final String REQUIRED_OS_VERSION = "9-7";
+    private static final String REQUIRED_MPI_VERSION = "1-64b";
     private static final String REQUIRED_RPI_VERSION = "1-6";
     private static final String REQUIRED_RPI_OS_VERSION = "1-6";
     private static final int MAX_TIME_DIFFERENCE_SECONDS = 10;
@@ -18,9 +18,9 @@ public class Config {
 
     /*File names*/
     private static final String TEST_OS_FILE_NAME_BASE = "M000-TESTOS-V";
-    private static final String TEST_OS_UPDATE_FILE_NAME = "M000-TESTOSUPDATE-V1-8.tar.gz";
+    private static final String TEST_OS_UPDATE_FILE_NAME = "M000-TESTOSUPDATE-V1-8.tar.gz.tmp";
     private static final String OS_FILE_NAME_BASE = "M000-OS-V";
-    private static final String OS_UPDATE_FILE_NAME = "M000-OSUPDATE-V1-6.tar.gz";
+    private static final String OS_UPDATE_FILE_NAME = "M000-OSUPDATE-V1-8.tar.gz.tmp";
     private static final String TEST_MPI_FILE_NAME_BASE = "M000-TESTMPI-V";
     private static final String TEST_MPI_CONF_FILE_NAME_BASE = "M000-TESTMPI-V";
     private static final String CONF_FILE_EXTENSION = "-CONF00-V6.tar.gz";

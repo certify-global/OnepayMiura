@@ -19,6 +19,7 @@ import com.onepay.miura.bluetooth.BluetoothConnect;
 import com.onepay.miura.bluetooth.BluetoothModule;
 import com.onepay.miura.common.Constants;
 import com.onepay.miura.data.ConfigApiData;
+import com.onepay.miura.data.MpiUpdateApiData;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -136,6 +137,7 @@ public class ConfigApi {
                             try {
                                 //doFileUploads(client);
                                 writeConfigFiles(client);
+
                             } catch (Exception e) {
                                 Log.e(TAG, "runOnAsyncThread: " + e.toString());
                                 if (listener != null) {
@@ -170,26 +172,83 @@ public class ConfigApi {
             Log.e(TAG, "Text failed");
         }
 
-        InterfaceType interfaceType = InterfaceType.MPI;
+        /*try {
+            String[] fileNames = mContext.getAssets().list("mpi_config/");
+            for (String fileName : fileNames) {
+                streamBinaryFile(client, fileName);
+            }
+            client.resetDevice(InterfaceType.MPI, ResetDeviceType.Hard_Reset);
+
+            client.closeSession();
+            listener.onConfigUpdateComplete(createConfigData());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
+
+        streamBinaryFile(client, "ARQCDOL.CFG");
+        streamBinaryFile(client, "capkeys.cfg");
+        streamBinaryFile(client, "capkeys.cfg.sig");
+        streamBinaryFile(client, "contactless.cfg");
+        streamBinaryFile(client, "emv.cfg");
+        streamBinaryFile(client, "MPI-Production.cfg");
+
+        client.resetDevice(MPI, ResetDeviceType.Hard_Reset);
+
+        client.closeSession();
+        listener.onConfigUpdateComplete(createConfigData());
+
+        /*InterfaceType interfaceType = InterfaceType.MPI;
         try {
-            InputStream is = mContext.getAssets().open("mpi_config/emv.cfg");
-            StreamBinaryFile.streamBinaryFile(client, interfaceType, "emv.cfg", is, new StreamBinaryFile.ProgressCallback() {
+            InputStream is = mContext.getAssets().open("mpi_config/ARQCDOL.CFG");
+            StreamBinaryFile.streamBinaryFile(client, interfaceType, "ARQCDOL.CFG", is, new StreamBinaryFile.ProgressCallback() {
                 @Override
                 public void onProgress(int i) {
                     Log.d(TAG, "Progress " + i);
                 }
             });
 
-            InputStream is1 = mContext.getAssets().open("mpi_config/contactless.cfg");
-            StreamBinaryFile.streamBinaryFile(client, interfaceType, "contactless.cfg", is1, new StreamBinaryFile.ProgressCallback() {
+            InputStream is1 = mContext.getAssets().open("mpi_config/capkeys.cfg");
+            StreamBinaryFile.streamBinaryFile(client, interfaceType, "capkeys.cfg", is1, new StreamBinaryFile.ProgressCallback() {
                 @Override
                 public void onProgress(int i) {
                     Log.d(TAG, "Progress " + i);
                 }
             });
 
-            InputStream is2 = mContext.getAssets().open("mpi_config/emv-fallback.cfg");
-            StreamBinaryFile.streamBinaryFile(client, interfaceType, "emv-fallback.cfg", is2, new StreamBinaryFile.ProgressCallback() {
+            InputStream is2 = mContext.getAssets().open("mpi_config/capkeys.cfg.sig");
+            StreamBinaryFile.streamBinaryFile(client, interfaceType, "capkeys.cfg", is2, new StreamBinaryFile.ProgressCallback() {
+                @Override
+                public void onProgress(int i) {
+                    Log.d(TAG, "Progress " + i);
+                }
+            });
+
+            InputStream is3 = mContext.getAssets().open("mpi_config/contactless.cfg");
+            boolean result = StreamBinaryFile.streamBinaryFile(client, interfaceType, "contactless.cfg", is3, new StreamBinaryFile.ProgressCallback() {
+                @Override
+                public void onProgress(int i) {
+                    Log.d(TAG, "Progress " + i);
+                }
+            });
+
+            InputStream is4 = mContext.getAssets().open("mpi_config/emv.cfg");
+            StreamBinaryFile.streamBinaryFile(client, interfaceType, "emv.cfg", is4, new StreamBinaryFile.ProgressCallback() {
+                @Override
+                public void onProgress(int i) {
+                    Log.d(TAG, "Progress " + i);
+                }
+            });
+
+            InputStream is5 = mContext.getAssets().open("mpi_config/capkeys.cfg");
+            StreamBinaryFile.streamBinaryFile(client, interfaceType, "capkeys.cfg", is5, new StreamBinaryFile.ProgressCallback() {
+                @Override
+                public void onProgress(int i) {
+                    Log.d(TAG, "Progress " + i);
+                }
+            });
+
+            InputStream is6 = mContext.getAssets().open("mpi_config/capkeys.cfg.sig");
+            StreamBinaryFile.streamBinaryFile(client, interfaceType, "capkeys.cfg", is6, new StreamBinaryFile.ProgressCallback() {
                 @Override
                 public void onProgress(int i) {
                     Log.d(TAG, "Progress " + i);
@@ -200,6 +259,21 @@ public class ConfigApi {
 
             client.closeSession();
             listener.onConfigUpdateComplete(createConfigData());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
+    }
+
+    private void streamBinaryFile(MpiClient client, String fileName) {
+        InputStream is = null;
+        try {
+            is = mContext.getAssets().open("mpi_config/" + fileName);
+            StreamBinaryFile.streamBinaryFile(client, InterfaceType.MPI, fileName, is, new StreamBinaryFile.ProgressCallback() {
+                @Override
+                public void onProgress(int i) {
+                    Log.d(TAG, "Progress " + i);
+                }
+            });
         } catch (IOException e) {
             e.printStackTrace();
         }

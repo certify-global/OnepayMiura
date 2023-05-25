@@ -1,7 +1,6 @@
 package com.onepay.miura;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,9 +29,6 @@ import com.onepay.miura.data.DeviceApiData;
 import com.onepay.miura.data.MpiUpdateApiData;
 import com.onepay.miura.data.SetClockApiData;
 import com.onepay.miura.data.TransactionApiData;
-
-import java.io.File;
-import java.util.ArrayList;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -104,12 +100,12 @@ public class MainActivity extends AppCompatActivity {
         btAddress = edit_text_bt_address.getText().toString();
         isPin = Boolean.parseBoolean(edit_text_pin.getText().toString().toLowerCase());*/
         btAddress = edit_text_bt_address.getText().toString();
-        TransactionApi.getInstance().setTransactionParams(10, "", btAddress, false, false, 125);
+        TransactionApi.getInstance().setTransactionParams(0.01, "", btAddress, true, false, 125);
         TransactionApi.getInstance().performTransaction(new TransactionApi.TransactionListener() {
             @Override
             public void onTransactionComplete(TransactionApiData data) {
 
-                /*String cardData = "CARD DETAILS"
+                /* String cardData = "CARD DETAILS"
                         + "\n" + "TransactionType :" + data.entryMode()
                         + "\n" + "CardData :" + data.encryptedCardData()
                         + "\n" + "Amount :" + data.amount()
@@ -187,6 +183,51 @@ public class MainActivity extends AppCompatActivity {
         ConfigApi.getInstance().performConfig(btAddress, 380, path);
     }*/
 
+    public void onOSUpdate(final View view) {
+        String path = Environment.getExternalStorageDirectory() + "/Miura/";
+        btAddress = edit_text_bt_address.getText().toString();
+
+        MpiUpdateApi.getInstance().setPerformOSMpiUpdate(this, btAddress, 120, path, "M000-TESTOSUPDATE-V1-8.tar.gz.tmp");
+        MpiUpdateApi.getInstance().performOSUpdate(new MpiUpdateApi.OSUpdateListener() {
+            @Override
+            public void onOSUpdateComplete(final String message) {
+                Log.d("MainActivity", "onOSUpdate complete");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+                        try {
+                            Thread.sleep(20000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        onMpiUpdate(view);
+                    }
+                });
+            }
+        });
+    }
+
+    public void onMpiUpdate(View view) {
+        String path = Environment.getExternalStorageDirectory() + "/Miura/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
+        btAddress = edit_text_bt_address.getText().toString();
+
+        MpiUpdateApi.getInstance().setPerformOSMpiUpdate(this, btAddress, 120, path, "M000-TESTMPI-V1-64.tar.gz.tmp");
+
+        MpiUpdateApi.getInstance().performMpiUpdate(new MpiUpdateApi.MpiUpdateListener() {
+            @Override
+            public void onMpiUpdateComplete(MpiUpdateApiData data) {
+                Log.d("MainActivity", "onMpiUpdate complete");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, "MPI Updated", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+    }
+
     public void onUpdateConfig(View view) {
 
         //String path = getExternalFilesDir(null) + "/miura/"; //getExternalFilesDir(null).getAbsolutePath() +  "/miura/";
@@ -226,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
     public void onManualTransaction(View view) {
         /*showData.setText("CARD DETAILS");*/
         btAddress = edit_text_bt_address.getText().toString();
-        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", btAddress, 180, false, false);
+        ManualTransactionApi.getInstance().setManualTransactionParams(0.01, "", btAddress, 180, false, false);
 
         ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 
@@ -260,14 +301,13 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", " expiryDate : " + data.expiryDate());
                 Log.d("TAG", " pedDeviceId : " + data.deviceId());
                 Log.d("TAG", " sRedKSN : " + data.KSN());
-
             }
         });
     }
 
     public void onManualEbtTransaction(View view) {
         btAddress = edit_text_bt_address.getText().toString();
-        ManualTransactionApi.getInstance().setManualTransactionParams(1, "", btAddress, 180, true, false);
+        ManualTransactionApi.getInstance().setManualTransactionParams(0.01, "", btAddress, 180, true, false);
         ManualTransactionApi.getInstance().performManualTransaction(new ManualTransactionApi.ManualTransactionListener() {
 
             @Override
