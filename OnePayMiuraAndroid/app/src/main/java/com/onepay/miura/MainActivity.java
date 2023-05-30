@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     //String btAddress = "80:5E:4F:93:F8:1C";
     //80 5e 4f 93 f6 e5
     //String btAddress = "80:5E:4F:93:F6:E5";
-    String btAddress = "0C:9A:42:89:2E:B9";
+    String btAddress = "C4:3A:35:D0:24:DD";
     //String btAddress = "C4:3A:35:D0:29:A4";
     boolean isPin = true;
 
@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
         showData = findViewById(R.id.show_text);
         edit_text_bt_address = findViewById(R.id.edit_text_bt_address);
         edit_text_pin = findViewById(R.id.edit_text_pin);
+        edit_text_bt_address.setText(btAddress);
     }
 
 
@@ -85,12 +86,20 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("TAG", " returnReason : " + data.dateTime());
             }
         });*/
-
+        btAddress = edit_text_bt_address.getText().toString();
         ConnectApi.getInstance().connect(btAddress, 10, new ConnectApi.ConnectListener() {
             @Override
             public void onConnectionComplete(ConnectApiData data) {
                 Log.d("TAG", " returnReason : " + data.returnReason());
                 Log.d("TAG", " returnStatus : " + data.returnStatus());
+                DeviceApi.getInstance().onDeviceInfo(new DeviceApi.DeviceInfoListener() {
+                    @Override
+                    public void onGetDeviceInfoComplete(DeviceApiData data) {
+                        Log.d("TAG", " DeviceId : " + data.mpiVersion());
+
+                    }
+                });
+                DeviceApi.getInstance().getDeviceInfo(btAddress, 10);
             }
         });
     }

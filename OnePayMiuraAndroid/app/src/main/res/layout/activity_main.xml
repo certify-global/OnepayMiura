@@ -138,5 +138,16 @@
         android:text="MPI Update"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/manualTransaction" />
+    <Button
+        android:id="@+id/deviceInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:onClick="deviceInfo"
+        android:text="Device Info"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/onMpiUpdate" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
